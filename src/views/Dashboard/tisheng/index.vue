@@ -13,7 +13,7 @@
       <div class="left-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
-          <div class="section-title">
+          <div class="section-title1">
             <span class="title-text">关键设备</span>
             <div class="title-line"></div>
           </div>
@@ -169,7 +169,7 @@
       <div class="right-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
-          <div class="section-title">
+          <div class="section-title1">
             <span class="title-text">环境监控</span>
             <div class="title-line"></div>
           </div>
@@ -509,7 +509,8 @@ onUnmounted(() => {
 .dashboard-container {
   width: 100%;
   min-width: 1200px; /* 设置最小宽度 */
-  height: calc(100vh - 80px);
+  height: calc(100vh - 100px);
+  /* height: 87vh; */
   background: #001440;
   color: #ffffff;
   font-family: 'Microsoft YaHei', Arial, sans-serif;
@@ -566,34 +567,50 @@ onUnmounted(() => {
 .dashboard-main {
 	flex: 1;
 	display: flex;
-	padding: 70px 15px 15px 15px; /* 增加顶部padding为标题留出空间 */
+	padding: 50px 15px 15px 15px; /* 增加顶部padding为标题留出空间 */
 	gap: 20px;
 	min-width: 1170px; /* 减去padding后的最小宽度 */
 	overflow-y: auto; /* 允许主内容区域滚动 */
 }
 
-.left-panel, .right-panel {
+.left-panel {
 	/* background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%); */
 	/* border: 1px solid rgba(0, 188, 212, 0.3); */
-  background: url('@/assets/img/272.png') no-repeat center center;
+  background: url('@/assets/img/239.png') left;
   background-size: cover;
 	border-radius: 8px;
 	width: 350px;
-	min-width: 300px; /* 面板最小宽度 */
-	max-width: 350px; /* 面板最大宽度 */
-	height: calc(100% - 40px); /* 恢复固定高度以充分利用空间 */
+	min-width: 300px;
+	max-width: 350px;
+	height: calc(100% - 10px);
 	display: flex;
 	flex-direction: column;
-	gap: 15px; /* 减小间距 */
-	margin-top: 0; /* 移除margin-top，因为主内容区已经有padding */
-	padding: 15px 15px 15px 12px; /* 减小padding */
-	flex-shrink: 0; /* 防止面板被压缩 */
-	overflow-y: hidden; /* 隐藏滚动条，让内容充分展开 */
+	gap: 15px;
+	margin-top: 0;
+	padding: 15px 15px 15px 25px;
+	flex-shrink: 0;
+	overflow-y: hidden;
+}
+.right-panel {
+  background: url('@/assets/img/240.png') right;
+  background-size: cover;
+	border-radius: 8px;
+	width: 350px;
+	min-width: 300px;
+	max-width: 350px;
+	height: calc(100% - 10px);
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin-top: 0;
+	padding: 15px 25px 15px 15px;
+	flex-shrink: 0;
+	overflow-y: hidden;
 }
 
 .center-panel {
   flex: 1;
-  min-width: 400px; /* 中央面板最小宽度 */
+  min-width: 400px;
   position: relative;
   display: flex;
   align-items: center;
@@ -601,13 +618,7 @@ onUnmounted(() => {
 }
 
 /* 面板区域 */
-/* .panel-section1 {
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%);
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  border-radius: 8px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-} */
+
 .panel-section1 {
   /* padding: 5px; */
   backdrop-filter: blur(10px);
@@ -622,26 +633,45 @@ onUnmounted(() => {
 .section-title {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  /* position: relative; */
-  background: url('@/assets/img/186.png') no-repeat left center;
+  justify-content: center;
+  margin-bottom: 15px;
+  position: relative;
+  background: url('@/assets/img/225.png') no-repeat center;
   background-size: cover;
+  text-align: center;
 }
+
+.section-title1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+  margin-bottom: 15px;
+  position: relative;
+  background: url('@/assets/img/225.png') no-repeat center;
+  background-size: cover;
+  text-align: center;
+}
+
 
 .title-text {
   /* color: #00bcd4; */
   color: #fff;
   font-size: 16px;
   font-weight: bold;
-  margin-right: 15px;
   text-align: center;
-  padding-left: 30px;
+  padding: 4px 10px;
+  letter-spacing: 2px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.title-line {
+/* .title-line {
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, #00bcd4 0%, transparent 100%);
-}
+} */
 
 /* 数据卡片 */
 .data-cards {

@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
 			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">煤矿运维大屏</div>
+			<div class="header-title">运输机大屏</div>
 		</div>
 
 
@@ -45,7 +45,7 @@
               </div>
             </div>
             <div class="data-card">
-              <div class="env-icon">🏢</div>
+              <div class="card-icon">🏢</div>
               <div class="card-content">
                 <div class="card-value">4</div>
                 <div class="card-label">告警数量</div>
@@ -61,7 +61,6 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- 智慧园区数据展示 -->
@@ -170,13 +169,13 @@
       <div class="right-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
-          <div class="section-title">
+          <div class="section-title1">
             <span class="title-text">环境监控</span>
             <div class="title-line"></div>
           </div>
 
 
-          <div class="data-cards">
+          <div class="data-cards env-cards">
             <div class="env-card">
               <img class="env-icon" src="@/assets/img/wen.png" alt="温度">
               <div class="env-content">
@@ -282,7 +281,7 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, watch,onMounted,onUnmounted} from 'vue'
+import {ref, onMounted, onUnmounted} from 'vue'
 import * as echarts from 'echarts'
 
 const chartRef = ref(null)
@@ -509,44 +508,31 @@ onUnmounted(() => {
 
 .dashboard-container {
   width: 100%;
-  height: 100vh;
+  min-width: 1200px; /* 设置最小宽度 */
+  height: calc(100vh - 80px);
   background: #001440;
   color: #ffffff;
   font-family: 'Microsoft YaHei', Arial, sans-serif;
+  overflow-x: auto; /* 水平滚动 */
   overflow-y: hidden;
   display: flex;
   flex-direction: column;
+  position: relative; /* 为内部固定定位元素建立定位上下文 */
 }
 
-/* 顶部标题区 */
-/* .dashboard-header {
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 188, 212, 0.1) 50%, transparent 100%);
-  border-bottom: 1px solid rgba(0, 188, 212, 0.3);
-  position: relative;
-} */
 
-/* .dashboard-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #00bcd4 50%, transparent 100%);
-} */
 .dashboard-header {
-	position: relative;
+	position: absolute;
+	top: 0;
+	left: 0;
 	width: 100%;
-	height: 100px;
+	min-width: 1200px; /* 与容器保持一致 */
+	height: 80px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-  /* background: linear-gradient(rgba(10,26,42) 80%, rgba(10,26,42,0.9) 100%); */
+	z-index: 100;
+	/* background: linear-gradient(rgba(10,26,42) 80%, rgba(10,26,42,0.9) 100%); */
 }
 .header-bg {
 	position: absolute;
@@ -554,7 +540,7 @@ onUnmounted(() => {
 	top: 0;
 	transform: translateX(-50%);
 	width: 100%;
-	height: 70px;
+	height: 85px;
 	object-fit: cover;
 	z-index: 1;
 	pointer-events: none;
@@ -562,7 +548,7 @@ onUnmounted(() => {
 .header-title {
 	position: relative;
 	z-index: 2;
-  padding-top: 10px;
+	padding-top: 0;
 	font-size: 32px;
 	font-weight: bold;
 	color: #fff;
@@ -576,40 +562,54 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-/*
-.main-title {
-  font-size: 32px;
-  font-weight: bold;
-  background: linear-gradient(45deg, #00bcd4, #ffffff, #00bcd4);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 20px rgba(0, 188, 212, 0.5);
-  letter-spacing: 4px;
-} */
-
 /* 主体内容区 */
 .dashboard-main {
-  flex: 1;
-  display: flex;
-  padding: 10px 15px 15px 15px;
-  gap: 20px;
+	flex: 1;
+	display: flex;
+	padding: 50px 15px 15px 15px; /* 增加顶部padding为标题留出空间 */
+	gap: 20px;
+	min-width: 1170px; /* 减去padding后的最小宽度 */
+	overflow-y: auto; /* 允许主内容区域滚动 */
 }
 
-.left-panel, .right-panel {
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%);
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  border-radius: 8px;
-  width: 350px;
-  height: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px 20px 20px 15px;
+.left-panel {
+	/* background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%); */
+	/* border: 1px solid rgba(0, 188, 212, 0.3); */
+  background: url('@/assets/img/239.png') left;
+  background-size: cover;
+	border-radius: 8px;
+	width: 350px;
+	min-width: 300px;
+	max-width: 350px;
+	height: calc(100% - 10px);
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin-top: 0;
+	padding: 15px 15px 15px 25px;
+	flex-shrink: 0;
+	overflow-y: hidden;
+}
+.right-panel {
+  background: url('@/assets/img/240.png') right;
+  background-size: cover;
+	border-radius: 8px;
+	width: 350px;
+	min-width: 300px;
+	max-width: 350px;
+	height: calc(100% - 10px);
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin-top: 0;
+	padding: 15px 25px 15px 15px;
+	flex-shrink: 0;
+	overflow-y: hidden;
 }
 
 .center-panel {
   flex: 1;
+  min-width: 400px;
   position: relative;
   display: flex;
   align-items: center;
@@ -617,118 +617,86 @@ onUnmounted(() => {
 }
 
 /* 面板区域 */
-.panel-section {
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%);
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  border-radius: 8px;
-  padding: 20px;
+
+.panel-section1 {
+  /* padding: 5px; */
   backdrop-filter: blur(10px);
+  height: auto;
+  flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 允许flex子元素缩小 */
+  overflow: visible; /* 允许内容正常显示 */
 }
 
 .section-title {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  justify-content: center;
+  margin-bottom: 15px;
   position: relative;
+  background: url('@/assets/img/225.png') no-repeat center;
+  background-size: cover;
+  text-align: center;
 }
 
-.title-text {
-  color: #00bcd4;
-  font-size: 16px;
-  font-weight: bold;
-  margin-right: 15px;
-}
-
-.title-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, #00bcd4 0%, transparent 100%);
-}
-
-
-/* KPI卡片 */
-.kpi-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.kpi-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: var(--shadow-small);
-  transition: all 0.3s ease;
-}
-
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
-}
-
-.kpi-icon {
-  width: 40px;
-  height: 40px;
-
+.section-title1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 18px;
+  margin-top: 22px;
+  margin-bottom: 15px;
+  position: relative;
+  background: url('@/assets/img/225.png') no-repeat center;
+  background-size: cover;
+  text-align: center;
 }
 
-.kpi-content {
-  flex: 1;
-}
 
-.kpi-value {
-  font-size: 20px;
+.title-text {
+  /* color: #00bcd4; */
+  color: #fff;
+  font-size: 16px;
   font-weight: bold;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.kpi-label {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin: 4px 0;
-}
-
-.kpi-trend {
-  font-size: 12px;
-  font-weight: 500;
+  text-align: center;
+  padding: 4px 10px;
+  letter-spacing: 2px;
+  width: 100%;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 4px;
 }
+/* .title-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #00bcd4 0%, transparent 100%);
+} */
 
-.kpi-trend.up {
-  color: var(--success-color);
-}
-
-.kpi-trend.down {
-  color: var(--error-color);
-}
 /* 数据卡片 */
 .data-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  flex: 1; /* 使卡片区域能够扩展和收缩 */
+  min-height: 120px; /* 设置最小高度，确保至少能显示2行卡片 */
+  max-height: 100%; /* 限制最大高度不超过父容器 */
+  overflow-y: hidden; /* 内容超出时显示滚动条 */
+  overflow-x: hidden; /* 隐藏水平滚动条 */
+  align-content: start; /* 卡片从顶部开始排列 */
 }
 
 .data-card {
   background: rgba(0, 188, 212, 0.1);
   border: 1px solid rgba(0, 188, 212, 0.3);
   border-radius: 6px;
-  padding: 12px 1px 5px 15px;
+  padding: 10px 5px 8px 12px; /* 调整padding给内容更多空间 */
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 150PX;
+  gap: 8px; /* 减小间距 */
+  width: 100%; /* 使用100%宽度而不是固定宽度 */
+  height: auto; /* 让高度自适应内容 */
+  min-height: 75px; /* 设置合适的最小高度 */
+  max-width: 150px; /* 保持最大宽度限制 */
 }
 
 .card-icon {
@@ -741,16 +709,17 @@ onUnmounted(() => {
 }
 
 .card-value {
-  font-size: 19px;
+  font-size: clamp(16px, 2.5vw, 19px); /* 响应式字体大小 */
   font-weight: bold;
   color: #ffffff;
-  margin-bottom: 4px;
+  margin-bottom: 2px; /* 减小间距 */
 }
 
 .card-label {
-  font-size: 12px;
+  font-size: clamp(10px, 1.5vw, 12px); /* 响应式字体大小 */
   color: #cccccc;
-  margin-bottom: 2px;
+  margin-bottom: 1px; /* 减小间距 */
+  line-height: 1.2; /* 调整行高 */
 }
 
 .card-unit {
@@ -765,7 +734,8 @@ onUnmounted(() => {
 .progress-data {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px; /* 减小间距 */
+  flex: 0 0 auto; /* 根据内容大小确定高度 */
 }
 
 .progress-item {
@@ -815,7 +785,9 @@ onUnmounted(() => {
 .circle-charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px; /* 减小间距 */
+  flex: 0 0 auto; /* 根据内容大小确定高度 */
+  align-content: start; /* 从顶部开始排列 */
 }
 
 .circle-chart {
@@ -898,16 +870,20 @@ onUnmounted(() => {
 
 .env-card {
   border-radius: 6px;
-  padding: 12px 1px 5px 5px;
+  padding: 8px 1px 4px 8px; /* 减小padding以适应更小的空间 */
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 150PX;
+  gap: 8px; /* 减小间距 */
+  width: 100%;
+  height: auto; /* 让高度自适应内容 */
+  min-height: 80px; /* 设置合适的最小高度，考虑到图标较大 */
+  max-width: 150px; /* 保持最大宽度限制 */
 }
 .env-icon {
-  width: 70px;
-  height: 70px;
+  width: clamp(50px, 8vw, 70px); /* 响应式图标宽度 */
+  height: clamp(50px, 8vw, 70px); /* 响应式图标高度 */
   color: #00bcd4;
+  flex-shrink: 0; /* 防止图标被压缩 */
 }
 
 .env-content {
@@ -919,25 +895,26 @@ onUnmounted(() => {
 }
 
 .env-value {
-  font-size: 16px;
+  font-size: clamp(14px, 2.2vw, 16px); /* 响应式字体大小 */
   font-weight: bold;
   color: #ffffff;
-  margin-bottom: 4px;
+  margin-bottom: 2px; /* 减小间距 */
 }
 
 .env-label {
-  font-size: 12px;
+  font-size: clamp(10px, 1.4vw, 12px); /* 响应式字体大小 */
   color: #cccccc;
-  margin-bottom: 2px;
+  margin-bottom: 1px; /* 减小间距 */
+  line-height: 1.2; /* 调整行高 */
 }
 
 .env-unit {
-  font-size: 10px;
+  font-size: clamp(8px, 1.2vw, 10px); /* 响应式字体大小 */
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 5px;
-  padding: 1px 6px;
+  gap: 3px; /* 减小间距 */
+  border-radius: 4px; /* 减小圆角 */
+  padding: 1px 5px; /* 减小padding */
 }
 .env-unit.green {
   background: rgba(82, 196, 26, 0.1);
@@ -1053,7 +1030,8 @@ onUnmounted(() => {
 .icon-data {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px; /* 减小间距 */
+  flex: 0 0 auto; /* 根据内容大小确定高度 */
 }
 
 .icon-item {
@@ -1110,39 +1088,155 @@ onUnmounted(() => {
 
 
 /* 响应式设计 */
-@media (max-width: 1400px) {
+/* 大屏幕优化 */
+@media (min-width: 1600px) {
   .left-panel, .right-panel {
-    width: 300px;
+    width: 380px;
   }
 
-  .main-title {
-    font-size: 28px;
+  .center-panel {
+    min-width: 500px;
+  }
+}
+
+/* 中等屏幕 */
+@media (max-width: 1400px) and (min-width: 1200px) {
+  .left-panel, .right-panel {
+    width: 320px;
+    min-width: 280px;
   }
 
-  .building-model {
-    max-width: 400px;
-    max-height: 300px;
+  .center-panel {
+    min-width: 350px;
+  }
+
+  .dashboard-main {
+    min-width: 1070px; /* 调整最小宽度 */
+  }
+}
+
+/* 高度响应式调整 */
+@media (max-height: 800px) {
+  .data-cards {
+    gap: 8px; /* 减小卡片间距 */
+  }
+
+  .data-card {
+    min-height: 60px; /* 减小卡片最小高度 */
+    padding: 6px 1px 4px 10px; /* 进一步减小padding */
+  }
+
+  .card-value {
+    font-size: clamp(14px, 2vw, 16px); /* 进一步减小字体 */
+  }
+
+  .card-label {
+    font-size: clamp(9px, 1.2vw, 11px); /* 进一步减小字体 */
+  }
+
+  /* 环境卡片响应式调整 */
+  .env-card {
+    min-height: 70px; /* 减小环境卡片最小高度 */
+    padding: 6px 1px 4px 6px; /* 进一步减小padding */
+  }
+
+  .env-icon {
+    width: clamp(40px, 6vw, 60px); /* 进一步减小图标尺寸 */
+    height: clamp(40px, 6vw, 60px);
+  }
+
+  .env-value {
+    font-size: clamp(12px, 1.8vw, 14px); /* 进一步减小字体 */
+  }
+
+  .env-label {
+    font-size: clamp(9px, 1.2vw, 11px); /* 进一步减小字体 */
+  }
+
+  .env-unit {
+    font-size: clamp(7px, 1vw, 9px); /* 进一步减小字体 */
+  }
+}
+
+@media (max-height: 600px) {
+  .data-cards {
+    gap: 6px;
+  }
+
+  .data-card {
+    min-height: 45px; /* 极小卡片高度 */
+    padding: 4px 1px 3px 8px;
+  }
+
+  .card-icon {
+    font-size: 18px; /* 减小图标尺寸 */
+  }
+
+  .card-value {
+    font-size: clamp(12px, 1.8vw, 14px);
+    margin-bottom: 1px;
+  }
+
+  .card-label {
+    font-size: clamp(8px, 1vw, 10px);
+    margin-bottom: 0;
+  }
+
+
+  .env-card {
+    min-height: 55px;
+    padding: 4px 1px 3px 5px;
+    gap: 6px;
+  }
+
+  .env-icon {
+    width: clamp(35px, 5vw, 50px);
+    height: clamp(35px, 5vw, 50px);
+  }
+
+  .env-value {
+    font-size: clamp(11px, 1.5vw, 13px);
+    margin-bottom: 1px;
+  }
+
+  .env-label {
+    font-size: clamp(8px, 1vw, 10px);
+    margin-bottom: 0;
+  }
+
+  .env-unit {
+    font-size: clamp(6px, 0.8vw, 8px);
+    padding: 1px 3px;
   }
 }
 
 @media (max-width: 1200px) {
-  .dashboard-main {
-    flex-direction: column;
-    gap: 15px;
+
+  .dashboard-container {
+    min-width: 1200px;
   }
 
+  .dashboard-header {
+    min-width: 1200px;
+  }
+
+  .dashboard-main {
+    min-width: 1170px;
+  }
+
+
   .left-panel, .right-panel {
-    width: 100%;
-    flex-direction: row;
-    gap: 15px;
+    width: 350px;
+    min-width: 300px;
+    flex-shrink: 0;
   }
 
   .center-panel {
-    height: 400px;
+    min-width: 400px;
+    flex-shrink: 0;
   }
 }
 </style>
-
 
 
 

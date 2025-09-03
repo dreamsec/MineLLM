@@ -13,7 +13,6 @@ const router = createRouter({
             name: 'Dashboard',
             component: () => import('../views/Dashboard/index.vue'),
             meta: { title: '首页大屏', icon: 'Monitor' },
-            redirect: '/dashboard/tisheng',
             children: [
                     {
                       path: 'tisheng',
@@ -67,6 +66,12 @@ const router = createRouter({
             name: 'Monitor',
             component: () => import('../views/Monitoring/index.vue'),
             meta: { title: '实时监控', icon: 'View' },
+          },
+          {
+            path: '/gis',
+            name: 'GIS',
+            component: () => import('../views/GIS/index.vue'),
+            meta: { title: '地理信息系统', icon: 'Map' },
           },
           {
             path: '/ai-diagnosis',
