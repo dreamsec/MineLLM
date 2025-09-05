@@ -30,7 +30,7 @@
               </div>
               <h3>智能运维助手</h3>
               <p>我是您的智能运维助手，可以为您解答设备维护、故障诊断、操作规程等相关问题。</p>
-              <div class="quick-start-tips">
+              <!-- <div class="quick-start-tips">
                 <h4>您可以问我：</h4>
                 <ul>
                   <li>设备故障诊断和处理方法</li>
@@ -38,7 +38,7 @@
                   <li>安全规程和注意事项</li>
                   <li>技术参数查询</li>
                 </ul>
-              </div>
+              </div> -->
             </div>
           </div>
 
@@ -278,16 +278,16 @@ const quickQuestions = ref<QuickQuestion[]>([
     text: '安全操作规程有哪些要点？',
     icon: 'fas fa-shield-alt',
   },
-  {
-    id: 5,
-    text: '设备故障代码查询',
-    icon: 'fas fa-code',
-  },
-  {
-    id: 6,
-    text: '温度异常的处理方法',
-    icon: 'fas fa-thermometer-half',
-  },
+  // {
+  //   id: 5,
+  //   text: '设备故障代码查询',
+  //   icon: 'fas fa-code',
+  // },
+  // {
+  //   id: 6,
+  //   text: '温度异常的处理方法',
+  //   icon: 'fas fa-thermometer-half',
+  // },
 ])
 
 // 对话历史
@@ -304,12 +304,12 @@ const chatSessions = ref<ChatSession[]>([
     lastMessage: new Date().getTime() - 172800000,
     messageCount: 8,
   },
-  {
-    id: '3',
-    title: '故障诊断方法',
-    lastMessage: new Date().getTime() - 259200000,
-    messageCount: 15,
-  },
+  // {
+  //   id: '3',
+  //   title: '故障诊断方法',
+  //   lastMessage: new Date().getTime() - 259200000,
+  //   messageCount: 15,
+  // },
 ])
 
 // 知识库分类
@@ -332,12 +332,12 @@ const knowledgeCategories = ref<KnowledgeCategory[]>([
     icon: 'fas fa-exclamation-triangle',
     count: 234,
   },
-  {
-    id: 4,
-    name: '技术标准',
-    icon: 'fas fa-certificate',
-    count: 67,
-  },
+  // {
+  //   id: 4,
+  //   name: '技术标准',
+  //   icon: 'fas fa-certificate',
+  //   count: 67,
+  // },
 ])
 
 // 使用统计
@@ -761,6 +761,7 @@ watch(inputText, () => {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  min-height: 0;
 }
 
 .chat-messages {
@@ -780,6 +781,7 @@ watch(inputText, () => {
 
 .welcome-content {
   max-width: 500px;
+  overflow: auto;
 }
 
 .welcome-content .ai-avatar {
@@ -790,7 +792,7 @@ watch(inputText, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
+  margin: 20px auto 20px;
   box-shadow: 0 8px 24px rgba(24, 144, 255, 0.3);
 }
 
@@ -808,13 +810,13 @@ watch(inputText, () => {
 .welcome-content p {
   color: #666666;
   line-height: 1.6;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .quick-start-tips {
   text-align: left;
   background: #ffffff;
-  padding: 20px;
+  padding: 20px 10px 10px 20px;
   border-radius: 8px;
   border: 1px solid #e8e8e8;
 }
@@ -1099,6 +1101,7 @@ watch(inputText, () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
 }
 
 .history-section,
