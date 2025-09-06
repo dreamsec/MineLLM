@@ -1184,6 +1184,7 @@ watch(inputText, () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   min-height: 0;
+  margin-bottom: 10px;
 }
 
 .chat-messages {
@@ -1430,6 +1431,28 @@ watch(inputText, () => {
   border-color: #1890ff;
   background: #f0f8ff;
   transform: translateY(-1px);
+}
+@media (max-height: 768px) {
+  .question-card {
+    gap: 6px;
+    padding: 4px;
+  }
+  .quick-questions {
+  padding: 10px;
+ }
+
+.quick-questions h4 {
+  margin: 0 0 12px 0;
+  color: #333333;
+  font-size: 16px;
+}
+
+.question-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 7px;
+}
+
 }
 
 .question-card i {
