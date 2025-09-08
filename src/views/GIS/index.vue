@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, onActivated, nextTick, onMounted} from 'vue'
+import {ref, onActivated, nextTick, onMounted,onBeforeUnmount} from 'vue'
 // 图标资源
 import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图片作为底图
 import {throttle} from "lodash";
@@ -31,9 +31,25 @@ const TOKEN = 'token';
 // 定义 canvas 元素的引用
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-// 底图宽高 - 设置为占满容器
-const restrictedWidth = ref<number>(1200);
-const restrictedHeight = ref<number>(900);
+// 响应式调整底图宽高
+const restrictedWidth = ref<number>(window.innerWidth);
+const restrictedHeight = ref<number>(window.innerHeight);
+
+// 监听窗口大小变化
+const handleResize = () => {
+  restrictedWidth.value = window.innerWidth;
+  restrictedHeight.value = window.innerHeight;
+  initCanvas(); // 重新初始化canvas
+};
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
 // 图标列表
 const CameraList = ref<Camera[]>([
   {
@@ -44,8 +60,8 @@ const CameraList = ref<Camera[]>([
     password: '123456',
     rtsp: 'rtsp://192.168.1.100:554/test',
     status: 1,
-    vx: 200,
-    vy: 300,
+    vx: 500,
+    vy: 222,
     x: 0,
     y: 0,
     create_time: '2021-01-01',
@@ -60,7 +76,7 @@ const CameraList = ref<Camera[]>([
     rtsp: 'rtsp://192.168.1.100:554/test',
     status: 1,
     vx: 200,
-    vy: 300,
+    vy: 330,
     x: 0,
     y: 0,
     create_time: '2021-01-01',
@@ -74,8 +90,8 @@ const CameraList = ref<Camera[]>([
     password: '123456',
     rtsp: 'rtsp://192.168.1.100:554/test',
     status: 1,
-    vx: 1000,
-    vy: 295,
+    vx: 1100,
+    vy: 252,
     x: 0,
     y: 0,
     create_time: '2021-01-01',
@@ -274,7 +290,7 @@ onActivated(() => {
 <template>
   <div class="content-container">
     <div class="main-box">
-      <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 900px;"
+      <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 100%;"
              :src="surfaceImage" @load="handleSVGLoad"/>
       <canvas ref="canvasRef"></canvas>
     </div>
