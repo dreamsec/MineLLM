@@ -1,7 +1,6 @@
 <template>
   <div id="label">
     <div class="ai-open-data">
-      <div class="ai-data-head"><div class="app-head" /></div>
       <div class="ai-data-main">
         <div class="online-calibrate-wrap">
           <!-- head -->
@@ -975,9 +974,11 @@ onMounted(() => {
 <style src="@/styles/tag_style/tag.css" scoped></style>
 <style lang="scss" scoped>
 #label {
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden; // 隐藏水平滚动条
+  overflow: hidden; // 隐藏水平滚动条
+  height: calc(100vh - 100px); // 减去header(60px)和main-content的padding(40px)
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
 }
 
 div {
@@ -991,22 +992,19 @@ div {
   width: 100%;
   height: 100%;
   overflow: hidden; // 重要: 防止溢出导致滚动条出现
-  position: absolute;
+  display: flex;
+  flex-direction: column;
 }
 .ai-data-main {
-  z-index: 0;
-  position: absolute;
-  left: 0;
-  overflow: auto;
-  bottom: 0;
-  right: 0;
-  top: 0;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   .online-calibrate-wrap {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    position: static;
   }
 }
 .album-header {
@@ -1354,6 +1352,9 @@ div {
 
 // 响应式设计
 @media (max-width: 1400px) {
+  #label {
+    height: calc(100vh - 100px); // 保持一致的高度计算
+  }
   .album-content {
     .left {
       flex: 0 0 22%;
@@ -1369,6 +1370,9 @@ div {
 }
 
 @media (max-width: 1000px) {
+  #label {
+    height: calc(100vh - 100px); // 保持一致的高度计算
+  }
   .album-content {
     .left {
       flex: 0 0 20%;
@@ -1384,6 +1388,9 @@ div {
 }
 
 @media (max-width: 768px) {
+  #label {
+    height: calc(100vh - 100px); // 保持一致的高度计算
+  }
   .album-content {
     flex-direction: column;
     .left {

@@ -16,10 +16,11 @@
     <!-- Unity 容器 - 使用你提供的结构 -->
     <div class="center-panel">
       <iframe
-        :src="`/Inspection/index.html`"
+        :src="unityUrl"
         style="width:100%; height:100%; border:none; background:transparent;"
         allowfullscreen
         @load="handleIframeLoad"
+        :key="selectedScene"
       ></iframe>
 
       <!-- 加载提示 -->
@@ -63,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 // 场景选择
 const selectedScene = ref('mineInspection')
@@ -81,18 +82,22 @@ const getSceneName = (scene: string) => {
 
 // 计算 Unity 场景 URL
 const unityUrl = computed(() => {
-  const basePath = import.meta.env.BASE_URL || '/'
   const urls: Record<string, string> = {
-    mineInspection: `${basePath}MineInspection/index.html`,
-    elevator: `${basePath}elevator/index.html`,
-    newElevator: `${basePath}NewElevator/index.html`
+    mineInspection: '/Inspection/index.html',
+    elevator: '/elevator/index.html',
+    newElevator: '/NewElevator/index.html'
   }
-  return urls[selectedScene.value] || `${basePath}MineInspection/index.html`
+  return urls[selectedScene.value] || '/Inspection/index.html'
 })
 
 // 刷新 Unity 场景
 const reloadUnity = () => {
   loading.value = true
+  // 通过改变 key 强制重新加载 iframe
+  const iframe = document.querySelector('iframe') as HTMLIFrameElement
+  if (iframe) {
+    iframe.src = iframe.src
+  }
   setTimeout(() => {
     loading.value = false
   }, 2000)
@@ -124,6 +129,11 @@ const resetCamera = () => {
 const handleIframeLoad = () => {
   loading.value = false
 }
+
+// 监听场景切换
+watch(selectedScene, () => {
+  loading.value = true
+})
 
 onMounted(() => {
   loading.value = true
@@ -165,6 +175,9 @@ onMounted(() => {
   position: relative;
   background-color: #000;
   overflow: hidden;
+  /* 确保没有内边距和边距 */
+  padding: 0;
+  margin: 0;
 }
 
 iframe {
@@ -172,6 +185,12 @@ iframe {
   height: 100%;
   border: none;
   background: transparent;
+  /* 确保iframe完全贴合容器 */
+  display: block;
+  margin: 0;
+  padding: 0;
+  /* 防止出现滚动条 */
+  overflow: hidden;
 }
 
 .loading-overlay {

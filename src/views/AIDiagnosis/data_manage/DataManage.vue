@@ -1273,7 +1273,6 @@ defineOptions({
 
 <style lang="scss" scoped>
 #data_manage {
-  margin: 20px;
   background-color: #fff;
 }
 

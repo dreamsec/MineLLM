@@ -117,7 +117,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: '/gis',
         name: 'GIS',
         component: () => import('../views/GIS/index.vue'),
-        meta: { title: 'GIS一张图', icon: 'Map' },
+        meta: { title: 'GIS一张图', icon: 'Picture' },
       },
       {
         path: '/qa',
@@ -129,7 +129,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: '/ai-diagnosis',
         name: 'AIDiagnosis',
         component: () => import('../views/AIDiagnosis/index.vue'),
-        meta: { title: 'AI智能体', icon: 'Warning' },
+        meta: { title: 'AI智能体', icon: 'Connection' },
         children: [
           {
             path: "data_manage",

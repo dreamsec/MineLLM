@@ -733,7 +733,7 @@ onActivated(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px;
+  padding: 10px 12px;
   background: rgba(0, 40, 100, 0.8);
   border-bottom: 1px solid rgba(64, 158, 255, 0.2);
   color: #fff;
@@ -785,7 +785,7 @@ onActivated(() => {
     color: #409EFF;
     margin: 0;
     padding: 8px 12px; /* 减少内边距 */
-    font-size: 13px; /* 稍微减小字体 */
+    font-size: 14px; /* 统一标题字体大小 */
     font-weight: bold;
     border-bottom: 1px solid rgba(64, 158, 255, 0.2);
   }
@@ -794,7 +794,8 @@ onActivated(() => {
 /* 左侧边栏面板高度分配 */
 .left-sidebar .panel {
   &.layer-control {
-    flex: 0 0 auto; /* 图层控制固定高度 */
+    flex: 1 1 auto; /* 图层控制占用剩余空间 */
+    min-height: 200px; /* 设置最小高度 */
   }
 
   &.device-status {
@@ -802,7 +803,7 @@ onActivated(() => {
   }
 
   &.working-face {
-    flex: 0 1 auto; /* 工作面信息占用剩余空间 */
+    flex: 0 0 auto; /* 工作面信息固定高度 */
     min-height: 100px;
   }
 }
@@ -835,29 +836,66 @@ onActivated(() => {
 
 /* 图层控制面板 */
 .layer-control {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 占满父容器高度 */
+  padding: 8px 0; /* 添加上下内边距 */
+  
+  h4 {
+    flex-shrink: 0; /* 标题不压缩 */
+    padding: 12px 16px; /* 减少标题内边距 */
+    margin: 0;
+    background: rgba(64, 158, 255, 0.15);
+    border-bottom: 2px solid rgba(64, 158, 255, 0.3);
+    font-size: 14px; /* 统一标题字体大小 */
+    font-weight: 600;
+    color: #409EFF;
+  }
+  
   .layer-item {
-    padding: 6px 12px; /* 减少内边距 */
+    padding: 12px 16px; /* 减少内边距，保留空间 */
     border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+    flex: 1; /* 每个图层项平均分配剩余空间 */
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    margin: 0 8px; /* 添加左右边距 */
 
     &:last-child {
       border-bottom: none;
     }
 
+    &:hover {
+      background: rgba(64, 158, 255, 0.05);
+    }
+
     label {
       display: flex;
       align-items: center;
-      color: #fff;
+      width: 100%; /* 占满容器宽度 */
       cursor: pointer;
-      font-size: 12px; /* 减小字体 */
+      color: #fff;
+      font-size: 13px; /* 统一内容字体大小 */
+      transition: all 0.2s ease;
 
       input[type="checkbox"] {
-        margin-right: 6px; /* 减少间距 */
+        margin-right: 12px; /* 增加间距 */
         accent-color: #409EFF;
-        transform: scale(0.9); /* 稍微缩小复选框 */
+        transform: scale(1.1); /* 稍微放大复选框 */
+        cursor: pointer;
+      }
+
+      span {
+        color: #fff;
+        font-size: 13px; /* 统一内容字体大小 */
+        flex: 1; /* 文字占满剩余空间 */
+        font-weight: 500;
       }
 
       &:hover {
         color: #409EFF;
+        background: rgba(64, 158, 255, 0.1);
+        border-radius: 4px;
       }
     }
   }
@@ -870,7 +908,7 @@ onActivated(() => {
     align-items: center;
     padding: 6px 12px; /* 减少内边距 */
     color: #fff;
-    font-size: 12px; /* 减小字体 */
+    font-size: 13px; /* 统一字体大小 */
 
     .status-dot {
       width: 6px; /* 缩小状态点 */
@@ -910,11 +948,11 @@ onActivated(() => {
 
     .face-name {
       color: #fff;
-      font-size: 12px; /* 减小字体 */
+      font-size: 13px; /* 统一字体大小 */
     }
 
     .face-status {
-      font-size: 10px; /* 减小字体 */
+      font-size: 11px; /* 统一字体大小 */
       padding: 1px 6px; /* 减少内边距 */
       border-radius: 8px; /* 减小圆角 */
 
@@ -1033,14 +1071,14 @@ onActivated(() => {
     }
 
     .alert-time {
-      font-size: 11px;
+      font-size: 12px; /* 统一字体大小 */
       color: #909399;
       margin-bottom: 4px;
       font-weight: 500;
     }
 
     .alert-message {
-      font-size: 12px;
+      font-size: 13px; /* 统一字体大小 */
       color: #fff;
       margin-bottom: 4px;
       font-weight: bold;
@@ -1049,7 +1087,7 @@ onActivated(() => {
     }
 
     .alert-location {
-      font-size: 11px;
+      font-size: 12px; /* 统一字体大小 */
       color: #C0C4CC;
       display: flex;
       align-items: center;
@@ -1057,7 +1095,7 @@ onActivated(() => {
       &::before {
         content: "📍";
         margin-right: 4px;
-        font-size: 10px;
+        font-size: 11px; /* 统一字体大小 */
       }
     }
   }
@@ -1078,13 +1116,13 @@ onActivated(() => {
 
     .env-label {
       color: #C0C4CC;
-      font-size: 11px; /* 减小字体 */
+      font-size: 12px; /* 统一字体大小 */
     }
 
     .env-value {
       color: #67C23A;
       font-weight: bold;
-      font-size: 11px; /* 减小字体 */
+      font-size: 12px; /* 统一字体大小 */
 
       &.danger {
         color: #F56C6C;
@@ -1115,14 +1153,14 @@ onActivated(() => {
 
       .stat-number {
         display: block;
-        font-size: 16px; /* 减小字体 */
+        font-size: 18px; /* 统一字体大小 */
         font-weight: bold;
         color: #409EFF;
         margin-bottom: 2px; /* 减少间距 */
       }
 
       .stat-label {
-        font-size: 10px; /* 减小字体 */
+        font-size: 12px; /* 统一字体大小 */
         color: #C0C4CC;
       }
     }
@@ -1357,7 +1395,7 @@ canvas {
   }
 
   .panel h4 {
-    font-size: 13px;
+    font-size: 14px; /* 统一标题字体大小 */
     padding: 10px 12px;
   }
 
@@ -1402,7 +1440,7 @@ canvas {
   }
 
   .panel h4 {
-    font-size: 12px;
+    font-size: 13px; /* 统一标题字体大小 */
     padding: 8px 10px;
   }
 
@@ -1475,7 +1513,7 @@ canvas {
   }
 
   .panel h4 {
-    font-size: 11px;
+    font-size: 12px; /* 统一标题字体大小 */
     padding: 6px 8px;
   }
 
@@ -1555,7 +1593,7 @@ canvas {
   }
 
   .panel h4 {
-    font-size: 15px;
+    font-size: 16px; /* 统一标题字体大小 */
     padding: 15px 18px;
   }
 

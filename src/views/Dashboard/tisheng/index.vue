@@ -13,8 +13,9 @@
       <div class="center-panel">
         <iframe
           src="/NewElevator/index.html"
-          style="width:100%; height:100%; border:none; background:transparent;"
+          style="width:100%; height:100%; border:none; background:transparent; overflow:hidden;"
           allowfullscreen
+          scrolling="no"
         ></iframe>
       </div>
 
@@ -583,6 +584,34 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
+/* 全局隐藏滚动条 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+html, body {
+  overflow: hidden; /* 隐藏页面级别滚动条 */
+}
+
+/* 确保所有可滚动元素都隐藏滚动条 */
+div, section, aside, main, article {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+div::-webkit-scrollbar,
+section::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+main::-webkit-scrollbar,
+article::-webkit-scrollbar {
+  display: none;
+}
+
 .dashboard-container {
   width: 100%; /* 使用100%宽度自适应父容器 */
   height: calc(100vh - 100px);
@@ -665,6 +694,12 @@ onUnmounted(() => {
 	left: 15px; /* 减小左边距 */
 	z-index: 10;
 	overflow-y: auto; /* 允许垂直滚动 */
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+}
+
+.left-panel::-webkit-scrollbar {
+	display: none; /* Chrome, Safari and Opera */
 }
 
 .right-panel {
@@ -684,6 +719,12 @@ onUnmounted(() => {
 	right: 15px; /* 减小右边距 */
 	z-index: 10; /* 确保在3D模型上方 */
 	overflow-y: auto; /* 允许滚动 */
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+}
+
+.right-panel::-webkit-scrollbar {
+	display: none; /* Chrome, Safari and Opera */
 }
 
 .center-panel {
@@ -693,6 +734,7 @@ onUnmounted(() => {
   width: 100%; /* 使用100%宽度自适应父容器 */
   height: 100%;
   z-index: 1; /* 确保3D模型在底层 */
+  overflow: hidden;
 }
 
 /* 面板区域 */
