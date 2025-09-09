@@ -27,6 +27,7 @@
     "naive-ui": "^2.42.0",
     "nprogress": "^0.2.0",
     "pinia": "^3.0.3",
+    "simple-image-label": "^0.0.7",
     "svg-pan-zoom": "^3.6.2",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1"

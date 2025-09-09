@@ -433,7 +433,7 @@ const datasetFilename = localStorage.getItem("dataset_filename")
 // 返回上一级
 const go_back = () => {
   handleAddUpadteLabel()
-  router.push("/models/data_manage")
+  router.push("/ai-diagnosis/data_manage")
   handleClickExportYaml()
 }
 
