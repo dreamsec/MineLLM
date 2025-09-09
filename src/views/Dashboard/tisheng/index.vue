@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
 			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">提升机监控中心</div>
+			<div class="header-title">提升机孪生平台</div>
 		</div>
 
 
