@@ -114,13 +114,6 @@
               </div>
               <div class="progress-value">98%</div>
             </div>
-            <div class="progress-item">
-              <div class="progress-label">润滑系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill yellow" style="width: 82%"></div>
-              </div>
-              <div class="progress-value">82%</div>
-            </div>
           </div>
         </div>
 
@@ -146,7 +139,6 @@
                 <div class="chart-data">
                   <div>提升高度: 680m</div>
                   <div>载重: 12吨/次</div>
-                  <div>运行时间: 18.5h</div>
                 </div>
               </div>
             </div>
@@ -162,7 +154,6 @@
                 <div class="chart-label">运行效率</div>
                 <div class="chart-data">
                   <div>故障次数: 0</div>
-                  <div>维护时间: 1.2h</div>
                   <div>可用率: 98.5%</div>
                 </div>
               </div>
@@ -179,7 +170,7 @@
           <img src="@/assets/img/3D.png" alt="3D建筑模型" class="building-model">
         </div> -->
         <iframe
-          src="/elevator/index.html"
+          src="/NewElevator/index.html"
           style="width:100%; height:100%; border:none; background:transparent;"
           allowfullscreen
         ></iframe>
@@ -196,7 +187,7 @@
           </div>
 
 
-          <div class="data-cards env-cards">
+          <div class="env-cards">
             <div class="env-card">
               <img class="env-icon" src="@/assets/img/wen.png" alt="温度">
               <div class="env-content">
@@ -240,8 +231,8 @@
             <div class="title-line"></div>
           </div>
 
-          <div class="chart-container">
-            <div ref="chartRef" style="width: 100%; height: 200px"></div>
+          <div class="panel-section1">
+            <div class="chart-container" ref="chartRef"></div>
           </div>
 
         </div>
@@ -264,16 +255,16 @@
                 <div class="icon-unit">正常</div>
               </div>
             </div>
-            <!-- <div class="icon-item">
+            <div class="icon-item">
               <div class="icon-3d">🏢</div>
               <div class="icon-info">
                 <div class="info-left">
-                  <div class="icon-label">采煤机#3</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
+                  <div class="icon-label">主提升机#2</div>
+                  <div class="icon-value">温度：55℃  运行：12h</div>
                 </div>
                 <div class="icon-unit orange">预警</div>
               </div>
-            </div> -->
+            </div>
             <!-- <div class="icon-item">
               <div class="icon-3d">🏢</div>
               <div class="icon-info">
@@ -305,15 +296,39 @@ defineOptions({
 import {ref, onMounted, onUnmounted} from 'vue'
 import * as echarts from 'echarts'
 
-const chartRef = ref(null)
+const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
+
+// 根据窗口高度计算图表高度
+const calculateChartHeight = (windowHeight: number): number => {
+  // 基础高度
+  let baseHeight = 200
+
+  if (windowHeight < 600) {
+    baseHeight = 120  // 极小屏幕
+  } else if (windowHeight < 900) {
+    baseHeight = 160  // 小屏幕
+  } else if (windowHeight < 1000) {
+    baseHeight = 180  // 中等屏幕
+  } else if (windowHeight < 1200) {
+    baseHeight = 200  // 大屏幕
+  } else {
+    baseHeight = 220  // 超大屏幕
+  }
+
+  return baseHeight
+}
 
 const initChart = () => {
   if (chartRef.value) {
+    // 根据窗口高度动态设置图表容器高度
+    const windowHeight = window.innerHeight
+    const chartHeight = calculateChartHeight(windowHeight)
+    chartRef.value.style.height = chartHeight + 'px'
     chart = echarts.init(chartRef.value)
     const xData = ["提升效率", "提升速度", "载重状态", "制动系统", "安全指数"]
 
-    const percent = [94, 87, 76, 98, 92]
+    const percent = [94, 87, 76, 100, 92]
 
     const imgList: Array<{
       coord: [number, number];
@@ -371,7 +386,7 @@ const initChart = () => {
           show: true,
           textStyle: { color: '#fff', fontSize: 11 },
           interval: 0,
-          formatter: function(value) {
+          formatter: function(value: string) {
             // 长文字分两行显示
             if (value.length > 3) {
               return value.substring(0, 2) + '\n' + value.substring(2)
@@ -381,6 +396,7 @@ const initChart = () => {
         }
       },
       yAxis: {
+        max: 110,
         splitLine: {
           show: false
         },
@@ -511,9 +527,46 @@ const initChart = () => {
   }
 }
 
-// 监听窗口大小变化，重新绘制图表
 const resizeChart = () => {
-  chart?.resize()
+   if (chart && chartRef.value) {
+    const windowHeight = window.innerHeight;
+
+    // 动态调整容器高度
+    const newHeight = calculateChartHeight(windowHeight)
+    chartRef.value.style.height = newHeight + 'px'
+
+    // 重新调整图表大小
+    chart.resize()
+
+    // 根据窗口高度调整Y轴最大值
+    let newMax = 110;
+
+    if (windowHeight < 600) {
+      newMax = 160;
+    } else if (windowHeight < 900) {
+      newMax = 140;
+    } else if (windowHeight < 1000) {
+      newMax = 130;
+    } else {
+      newMax = 100;
+    }
+
+    chart.setOption(
+      {
+        yAxis: {
+          max: newMax
+        },
+        grid: {
+          top: '10%',
+          bottom: '10%',
+          right: 0,
+          left: 0,
+        }
+      },
+      false
+    )
+
+  }
 }
 
 onMounted(() => {
@@ -656,7 +709,6 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0; /* 允许flex子元素缩小 */
   overflow: visible; /* 允许内容正常显示 */
-  overflow-y: auto; /* 添加滚动条 */
 
 }
 
@@ -709,7 +761,7 @@ onUnmounted(() => {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   flex: 1; /* 使卡片区域能够扩展和收缩 */
-  min-height: 120px; /* 设置最小高度，确保至少能显示2行卡片 */
+  min-height: 80px; /* 设置最小高度，确保至少能显示2行卡片 */
   max-height: 100%; /* 限制最大高度不超过父容器 */
   overflow-y: hidden; /* 内容超出时显示滚动条 */
   overflow-x: hidden; /* 隐藏水平滚动条 */
@@ -776,8 +828,8 @@ onUnmounted(() => {
 }
 
 .progress-label {
-  width: 60px;
-  font-size: 12px;
+  width: 85px;
+  font-size: 14px;
   color: #cccccc;
 }
 
@@ -816,7 +868,7 @@ onUnmounted(() => {
 .circle-charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px; /* 减小间距 */
+  gap: 13px; /* 减小间距 */
   flex: 0 0 auto; /* 根据内容大小确定高度 */
   align-content: start; /* 从顶部开始排列 */
 }
@@ -825,13 +877,13 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
 .chart-circle {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
 }
 
 .chart-circle svg {
@@ -870,7 +922,7 @@ onUnmounted(() => {
 .chart-label {
   font-size: 12px;
   color: #00bcd4;
-  margin-bottom: 5px;
+  margin-bottom: 1px;
 }
 
 .chart-data {
@@ -899,6 +951,16 @@ onUnmounted(() => {
 
 /* 右侧图标数据 */
 
+.env-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1; /* 使卡片区域能够扩展和收缩 */
+  min-height: 100px; /* 设置最小高度，确保至少能显示2行卡片 */
+  max-height: 100%; /* 限制最大高度不超过父容器 */
+  align-content: start; /* 卡片从顶部开始排列 */
+  margin-bottom: 5px;
+}
 .env-card {
   border-radius: 6px;
   padding: 8px 1px 4px 8px; /* 减小padding以适应更小的空间 */
@@ -1116,6 +1178,12 @@ onUnmounted(() => {
   background: rgba(248, 190, 15, 0.1);
   color: #f8cc3b;
 }
+.chart-container{
+  width: 100%;
+  height: auto; /* 移除固定高度，让容器自适应 */
+  min-height: 120px; /* 设置最小高度，防止过小 */
+  max-height: 300px; /* 设置最大高度，防止过大 */
+}
 
 
 /* 响应式设计 */
@@ -1147,46 +1215,98 @@ onUnmounted(() => {
 }
 
 /* 高度响应式调整 */
-@media (max-height: 800px) {
+@media (max-height: 900px) {
   .data-cards {
-    gap: 8px; /* 减小卡片间距 */
+    gap: 12px; /* 减小卡片间距 */
   }
 
   .data-card {
-    min-height: 60px; /* 减小卡片最小高度 */
-    padding: 6px 1px 4px 10px; /* 进一步减小padding */
+    min-height: 45px; /* 减小卡片最小高度 */
+    padding: 4px 4px 4px 10px; /* 进一步减小padding */
   }
 
   .card-value {
-    font-size: clamp(14px, 2vw, 16px); /* 进一步减小字体 */
+    font-size: clamp(14px, 2vw, 12px); /* 进一步减小字体 */
   }
 
   .card-label {
-    font-size: clamp(9px, 1.2vw, 11px); /* 进一步减小字体 */
+    font-size: clamp(9px, 1.2vw, 10px); /* 进一步减小字体 */
   }
-
+  .progress-label {
+    width: 60px;
+    font-size: 11px;
+  }
+  .progress-value {
+    width: 40px;
+    font-size: 12px;
+  }
   /* 环境卡片响应式调整 */
   .env-card {
-    min-height: 70px; /* 减小环境卡片最小高度 */
-    padding: 6px 1px 4px 6px; /* 进一步减小padding */
+    min-height: 50px; /* 减小环境卡片最小高度 */
+    padding: 1px 1px 4px 4px; /* 进一步减小padding */
   }
 
   .env-icon {
-    width: clamp(40px, 6vw, 60px); /* 进一步减小图标尺寸 */
-    height: clamp(40px, 6vw, 60px);
+    width: clamp(40px, 6vw, 45px); /* 进一步减小图标尺寸 */
+    height: clamp(40px, 6vw, 45px);
   }
 
   .env-value {
-    font-size: clamp(12px, 1.8vw, 14px); /* 进一步减小字体 */
+    font-size: clamp(12px, 1.8vw, 12px); /* 进一步减小字体 */
   }
 
   .env-label {
-    font-size: clamp(9px, 1.2vw, 11px); /* 进一步减小字体 */
+    font-size: clamp(9px, 1.2vw, 10px); /* 进一步减小字体 */
   }
 
   .env-unit {
-    font-size: clamp(7px, 1vw, 9px); /* 进一步减小字体 */
+    font-size: clamp(7px, 1vw, 8px); /* 进一步减小字体 */
   }
+  .chart-circle {
+    width: 70px;
+    height: 70px;
+  }
+
+  .chart-container{
+   min-height: 100px; /* 小屏幕时减小最小高度 */
+   max-height: 180px; /* 小屏幕时减小最大高度 */
+  }
+  .chart-value {
+    font-size: 14px;
+  }
+
+  .chart-labels {
+    text-align: center;
+  }
+
+  .chart-label {
+    font-size: 12px;
+    color: #00bcd4;
+    margin-bottom: 5px;
+  }
+
+  .chart-data {
+    font-size: 10px;
+    color: #cccccc;
+    line-height: 1.2;
+  }
+    .icon-item {
+      gap: 8px;
+      padding: 4px;
+    }
+    .icon-label {
+      font-size: 12px;
+    }
+
+    .icon-value {
+      font-size: 10px;
+    }
+
+    .icon-unit {
+      font-size: 10px;
+      padding: 2px 8px;
+      margin-left: 10px;
+    }
 }
 
 @media (max-height: 600px) {
@@ -1195,7 +1315,7 @@ onUnmounted(() => {
   }
 
   .data-card {
-    min-height: 45px; /* 极小卡片高度 */
+    min-height: 40px; /* 极小卡片高度 */
     padding: 4px 1px 3px 8px;
   }
 
@@ -1215,14 +1335,14 @@ onUnmounted(() => {
 
   /* 极小屏幕环境卡片调整 */
   .env-card {
-    min-height: 55px; /* 极小环境卡片高度 */
+    min-height: 80px; /* 极小环境卡片高度 */
     padding: 4px 1px 3px 5px; /* 进一步减小padding */
     gap: 6px; /* 减小间距 */
   }
 
   .env-icon {
-    width: clamp(35px, 5vw, 50px); /* 极小图标尺寸 */
-    height: clamp(35px, 5vw, 50px);
+    width: clamp(35px, 5vw, 40px); /* 极小图标尺寸 */
+    height: clamp(35px, 5vw, 40px);
   }
 
   .env-value {
@@ -1238,6 +1358,12 @@ onUnmounted(() => {
   .env-unit {
     font-size: clamp(6px, 0.8vw, 8px); /* 极小字体 */
     padding: 1px 3px; /* 减小padding */
+  }
+
+  /* 极小屏幕下的图表高度调整 */
+  .chart-container{
+    min-height: 80px; /* 极小屏幕时进一步减小最小高度 */
+    max-height: 120px; /* 极小屏幕时进一步减小最大高度 */
   }
 }
 
