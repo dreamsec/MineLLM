@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, onActivated, nextTick, onMounted,onBeforeUnmount} from 'vue'
+import {ref, onActivated, nextTick, onMounted, onBeforeUnmount} from 'vue'
 // 图标资源
 import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图片作为底图
 import {throttle} from "lodash";
@@ -213,7 +213,7 @@ const initPanZoom = () => {
         // 设置初始缩放倍数为1.5倍
         svgTiger.value.zoom(1.5);
         // 设置初始偏移
-        svgTiger.value.pan({ x: 50, y: 120 });
+        svgTiger.value.pan({x: 50, y: 120});
         // 更新状态变量
         scale.value = 1.5;
         offsetX.value = 50;
@@ -289,6 +289,7 @@ onActivated(() => {
 
 <template>
   <div class="content-container">
+    <div class="title-box"><span>GIS一张图</span></div>
     <div class="main-box">
       <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 100%;"
              :src="surfaceImage" @load="handleSVGLoad"/>
@@ -299,8 +300,8 @@ onActivated(() => {
         <span>地图加载中...</span>
       </div>
     </div>
-
     <CameraItem
+      class="icon-box"
       v-for="item in CameraList"
       :item="item"
       :scale="scale"
@@ -318,11 +319,37 @@ onActivated(() => {
   overflow: hidden;
 }
 
+.title-box {
+  position: relative;
+  background-image: url('@/assets/img/up.png');
+  height: 100px;
+  background-position: 0 -20px;
+  background-size: cover;
+  z-index: 10;
+
+  span {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 30px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 8px;
+    text-shadow: 0 4px 16px #1e90ff, 0 1px 0 #000;
+  }
+}
+
 .main-box {
+  position: relative;
   background-color: #001440;
   will-change: transform;
   width: 100%;
   height: 100%;
+}
+
+.icon-box {
+  position: absolute;
 }
 
 /* 遮罩层样式 */
