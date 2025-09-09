@@ -46,7 +46,7 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('../layouts/MainLayout.vue'),
-    redirect: '/dashboard/tisheng',
+    redirect: '/dashboard/home',
     children: [
       {
         path: '/dashboard',
@@ -173,7 +173,7 @@ export const constantRoutes: RouteRecordRaw[] = [
       },
       {
         path: "/label",
-        component: () => import("@/views/Label/index.vue"),
+        component: () => import("@/views/AIDiagnosis/label/index.vue"),
         meta: {
           hideInMenu: true
         }

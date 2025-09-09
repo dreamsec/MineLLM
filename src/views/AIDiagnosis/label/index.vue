@@ -391,12 +391,12 @@ import SimpleImageLabel from "simple-image-label"
 import { ref, onMounted, watch, computed } from "vue"
 import { onBeforeUnmount } from "vue"
 
-import { deleteTagApi, listTagApi, exportTagApi, searchTagApi } from "@/api/tag"
-import { addLabelApi, deleteLabelApi, updateLabelApi, listLabelApi, exportLabelApi } from "@/api/label"
-import { listImageApi, updateImageApi, countImageApi, deleteImageApi } from "@/api/image"
+import { deleteTagApi, listTagApi, exportTagApi, searchTagApi } from "@/api/tag/index.js"
+import { addLabelApi, deleteLabelApi, updateLabelApi, listLabelApi, exportLabelApi } from "@/api/label/index.js"
+import { listImageApi, updateImageApi, countImageApi, deleteImageApi } from "@/api/image/index.js"
 import Dialog from "./components/dialog.vue"
-import { isNull } from "@/utils/filters"
-import router from "@/router"
+import { isNull } from "@/utils/filters.js"
+import router from "@/router/index.js"
 import SvgIcon from "@/components/SvgIcon/index.vue"
 
 // 配置
@@ -976,6 +976,8 @@ onMounted(() => {
 <style lang="scss" scoped>
 #label {
   width: 100%;
+  height: 100%;
+  overflow-x: hidden; // 隐藏水平滚动条
 }
 
 div {
@@ -988,8 +990,6 @@ div {
 .ai-open-data {
   width: 100%;
   height: 100%;
-  //min-width: 1300px;
-  min-height: 444px;
   overflow: hidden; // 重要: 防止溢出导致滚动条出现
   position: absolute;
 }
@@ -1018,7 +1018,8 @@ div {
   justify-content: space-between;
   align-items: center;
   .left {
-    flex: 0 0 700px;
+    flex: 1;
+    min-width: 200px;
     display: flex;
     align-items: center;
     .el-icon {
@@ -1032,7 +1033,8 @@ div {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    flex: 0 0 268px;
+    flex: 0 0 auto;
+    min-width: 200px;
   }
 }
 
@@ -1056,8 +1058,12 @@ div {
   display: flex;
   overflow: hidden;
   z-index: 0;
+  min-width: 0; // 防止flex子元素溢出
+  width: 100%; // 确保占满父容器宽度
   .left {
-    flex: 0 0 20%; // 左侧固定占总宽度的20%
+    flex: 0 0 25%; // 左侧占25%宽度
+    min-width: 200px; // 最小宽度保证可用性
+    max-width: 300px; // 最大宽度防止过宽
     height: 100%;
     z-index: 1;
     box-shadow: 0 0 25px -5px rgba(0, 0, 0, 0.1);
@@ -1097,7 +1103,8 @@ div {
     }
   }
   .center {
-    flex: 0 0 60%; // 中间固定占总宽度的60%
+    flex: 1; // 中间区域自适应剩余空间
+    min-width: 300px; // 最小宽度保证标注区域可用性
     display: flex;
     flex-direction: column;
     position: relative;
@@ -1166,7 +1173,9 @@ div {
     }
   }
   .label-manage-right {
-    flex: 0 0 20%; // 右侧固定占总宽度的20%
+    flex: 0 0 25%; // 右侧占25%宽度
+    min-width: 200px; // 最小宽度保证可用性
+    max-width: 300px; // 最大宽度防止过宽
     height: 100%;
     position: relative;
     z-index: 1;
@@ -1341,5 +1350,56 @@ div {
 :deep(.label-text) {
   font-size: 16px !important;
   background: rgba(0, 0, 0, 0.8);
+}
+
+// 响应式设计
+@media (max-width: 1400px) {
+  .album-content {
+    .left {
+      flex: 0 0 22%;
+      min-width: 180px;
+      max-width: 250px;
+    }
+    .label-manage-right {
+      flex: 0 0 22%;
+      min-width: 180px;
+      max-width: 250px;
+    }
+  }
+}
+
+@media (max-width: 1000px) {
+  .album-content {
+    .left {
+      flex: 0 0 20%;
+      min-width: 150px;
+      max-width: 200px;
+    }
+    .label-manage-right {
+      flex: 0 0 20%;
+      min-width: 150px;
+      max-width: 200px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .album-content {
+    flex-direction: column;
+    .left {
+      flex: 0 0 200px;
+      min-width: 100%;
+      max-width: 100%;
+    }
+    .center {
+      flex: 1;
+      min-width: 100%;
+    }
+    .label-manage-right {
+      flex: 0 0 200px;
+      min-width: 100%;
+      max-width: 100%;
+    }
+  }
 }
 </style>

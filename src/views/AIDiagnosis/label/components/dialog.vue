@@ -22,7 +22,7 @@
 </template>
 <script setup>
 import { ref, watch } from "vue"
-import { addTagApi, updateTagApi } from "@/api/tag"
+import { addTagApi, updateTagApi } from "@/api/tag/index.js"
 import { ElMessage } from "element-plus"
 
 // 定义dialogTitle dialogTableValue属性 父组件可以直接使用属性
