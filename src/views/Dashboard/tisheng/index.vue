@@ -9,7 +9,16 @@
 
     <!-- 主体内容区 -->
     <div class="dashboard-main">
-      <!-- 左侧数据区 -->
+      <!-- 中央3D区域 - 布满整个页面 -->
+      <div class="center-panel">
+        <iframe
+          src="/NewElevator/index.html"
+          style="width:100%; height:100%; border:none; background:transparent;"
+          allowfullscreen
+        ></iframe>
+      </div>
+
+      <!-- 左侧数据区 - 透明浮层 -->
       <div class="left-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
@@ -164,20 +173,7 @@
 
       </div>
 
-      <!-- 中央3D区域 -->
-      <div class="center-panel">
-        <!-- <div class="building-3d">
-          <img src="@/assets/img/3D.png" alt="3D建筑模型" class="building-model">
-        </div> -->
-        <iframe
-          src="/NewElevator/index.html"
-          style="width:100%; height:100%; border:none; background:transparent;"
-          allowfullscreen
-        ></iframe>
-
-      </div>
-
-      <!-- 右侧数据区 -->
+      <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
@@ -588,15 +584,12 @@ onUnmounted(() => {
 }
 
 .dashboard-container {
-  width: 100%;
-  min-width: 1200px; /* 设置最小宽度 */
+  width: 100%; /* 使用100%宽度自适应父容器 */
   height: calc(100vh - 100px);
-  /* height: 87vh; */
   background: #001440;
   color: #ffffff;
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  overflow-x: auto; /* 水平滚动 */
-  overflow-y: hidden;
+  overflow: hidden; /* 完全隐藏滚动条 */
   display: flex;
   flex-direction: column;
   position: relative; /* 为内部固定定位元素建立定位上下文 */
@@ -608,7 +601,6 @@ onUnmounted(() => {
 	top: 0;
 	left: 0;
 	width: 100%;
-	min-width: 1200px; /* 与容器保持一致 */
 	height: 80px;
 	display: flex;
 	align-items: center;
@@ -648,54 +640,59 @@ onUnmounted(() => {
 .dashboard-main {
 	flex: 1;
 	display: flex;
-	padding: 50px 15px 15px 15px; /* 增加顶部padding为标题留出空间 */
-	gap: 20px;
-	min-width: 1170px; /* 减去padding后的最小宽度 */
-	overflow-y: auto; /* 允许主内容区域滚动 */
+	padding: 0;
+	gap: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden; /* 隐藏滚动条 */
+	position: relative; /* 为浮层定位做准备 */
 }
 
 .left-panel {
-	/* background: linear-gradient(135deg, rgba(0, 188, 212, 0.1) 0%, rgba(26, 35, 50, 0.8) 100%); */
-	/* border: 1px solid rgba(0, 188, 212, 0.3); */
   background: url('@/assets/img/239.png') left;
   background-size: cover;
-	border-radius: 8px;
-	width: 350px;
-	min-width: 300px;
-	max-width: 350px;
-	height: calc(100% - 10px);
+	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
+	min-width: 250px; /* 减小最小宽度 */
+	max-width: 350px; /* 减小最大宽度 */
+	height: calc(100vh - 190px); /* 使用视口高度 */
 	display: flex;
 	flex-direction: column;
 	gap: 15px;
-	margin-top: 0;
+	margin: 0;
 	padding: 15px 15px 15px 25px;
-	flex-shrink: 0;
-	overflow-y: hidden;
+	position: absolute;
+	top: 60px; /* 在标题下方 */
+	left: 15px; /* 减小左边距 */
+	z-index: 10;
+	overflow-y: auto; /* 允许垂直滚动 */
 }
+
 .right-panel {
-  background: url('@/assets/img/240.png') right;
+	background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
   background-size: cover;
-	border-radius: 8px;
-	width: 350px;
-	min-width: 300px;
-	max-width: 350px;
-	height: calc(100% - 10px);
+	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
+	min-width: 250px; /* 减小最小宽度 */
+	max-width: 350px; /* 减小最大宽度 */
+	height: calc(100vh - 190px); /* 使用视口高度 */
 	display: flex;
 	flex-direction: column;
 	gap: 15px;
-	margin-top: 0;
+	margin: 0;
 	padding: 15px 25px 15px 15px;
-	flex-shrink: 0;
-	overflow-y: hidden;
+	position: absolute; /* 绝对定位浮层 */
+	top: 60px; /* 在标题下方 */
+	right: 15px; /* 减小右边距 */
+	z-index: 10; /* 确保在3D模型上方 */
+	overflow-y: auto; /* 允许滚动 */
 }
 
 .center-panel {
-  flex: 1;
-  min-width: 400px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%; /* 使用100%宽度自适应父容器 */
+  height: 100%;
+  z-index: 1; /* 确保3D模型在底层 */
 }
 
 /* 面板区域 */
@@ -1190,27 +1187,15 @@ onUnmounted(() => {
 /* 大屏幕优化 */
 @media (min-width: 1600px) {
   .left-panel, .right-panel {
-    width: 380px;
-  }
-
-  .center-panel {
-    min-width: 500px;
+    width: min(350px, 20vw);
   }
 }
 
 /* 中等屏幕 */
 @media (max-width: 1400px) and (min-width: 1200px) {
   .left-panel, .right-panel {
-    width: 320px;
-    min-width: 280px;
-  }
-
-  .center-panel {
-    min-width: 350px;
-  }
-
-  .dashboard-main {
-    min-width: 1070px; /* 调整最小宽度 */
+    width: min(300px, 22vw);
+    min-width: 250px;
   }
 }
 
@@ -1367,31 +1352,51 @@ onUnmounted(() => {
   }
 }
 
-/* 当窗口宽度小于最小宽度时，内容保持固定宽度并出现水平滚动条 */
+/* 小屏幕适配 */
 @media (max-width: 1200px) {
-  /* 保持最小宽度，不进行响应式调整 */
-  .dashboard-container {
-    min-width: 1200px; /* 强制保持最小宽度 */
-  }
-
-  .dashboard-header {
-    min-width: 1200px; /* 标题也保持最小宽度 */
-  }
-
-  .dashboard-main {
-    min-width: 1170px; /* 主内容区域保持最小宽度 */
-  }
-
-  /* 确保左右面板不会被压缩 */
   .left-panel, .right-panel {
-    width: 350px;
-    min-width: 300px;
-    flex-shrink: 0; /* 防止压缩 */
+    width: min(280px, 25vw);
+    min-width: 220px;
   }
 
-  .center-panel {
-    min-width: 400px;
-    flex-shrink: 0; /* 防止压缩 */
+  .left-panel {
+    left: 10px; /* 减小左边距 */
+  }
+
+  .right-panel {
+    right: 10px; /* 减小右边距 */
+  }
+}
+
+/* 超小屏幕适配 */
+@media (max-width: 768px) {
+  .left-panel, .right-panel {
+    width: min(250px, 30vw);
+    min-width: 200px;
+  }
+
+  .left-panel {
+    left: 5px;
+  }
+
+  .right-panel {
+    right: 5px;
+  }
+}
+
+/* 极小屏幕适配 */
+@media (max-width: 480px) {
+  .left-panel, .right-panel {
+    width: min(220px, 35vw);
+    min-width: 180px;
+  }
+
+  .left-panel {
+    left: 2px;
+  }
+
+  .right-panel {
+    right: 2px;
   }
 }
 </style>
