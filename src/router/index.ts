@@ -191,6 +191,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '设备管理', icon: 'Setting' }
       },
       {
+        path: '/ins',
+        name: 'Inspection',
+        component: () => import('../views/Inspection/index.vue'),
+        meta: { title: '虚拟巡检', icon: 'ChatDotRound' }
+      },
+      {
         path: '/system',
         name: 'System',
         component: () => import('../views/System/index.vue'),
