@@ -19,10 +19,10 @@
     <main class="dashboard-content">
       <!-- 左侧控制面板 -->
       <aside class="left-sidebar">
-        <div class="sidebar-section">
+        <div class="sidebar-section compact">
           <h3>设备状态</h3>
-          <div class="device-grid">
-            <div class="device-card active">
+          <div class="device-grid compact">
+            <div class="device-card compact active">
               <div class="device-icon">🏗️</div>
               <div class="device-info">
                 <span class="device-name">提升机</span>
@@ -30,7 +30,7 @@
               </div>
               <div class="status-light green"></div>
             </div>
-            <div class="device-card active">
+            <div class="device-card compact active">
               <div class="device-icon">🌪️</div>
               <div class="device-info">
                 <span class="device-name">通风机</span>
@@ -38,7 +38,7 @@
               </div>
               <div class="status-light green"></div>
             </div>
-            <div class="device-card warning">
+            <div class="device-card compact warning">
               <div class="device-icon">⚙️</div>
               <div class="device-info">
                 <span class="device-name">压风机</span>
@@ -46,7 +46,7 @@
               </div>
               <div class="status-light yellow"></div>
             </div>
-            <div class="device-card active">
+            <div class="device-card compact active">
               <div class="device-icon">💧</div>
               <div class="device-info">
                 <span class="device-name">排水机</span>
@@ -57,31 +57,31 @@
           </div>
         </div>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section compact">
           <h3>环境参数</h3>
-          <div class="env-cards">
-            <div class="env-card">
+          <div class="env-cards compact">
+            <div class="env-card compact">
               <div class="env-icon">🌡️</div>
               <div class="env-data">
                 <span class="env-value">28.5°C</span>
                 <span class="env-label">温度</span>
               </div>
             </div>
-            <div class="env-card">
+            <div class="env-card compact">
               <div class="env-icon">💨</div>
               <div class="env-data">
                 <span class="env-value">65%</span>
                 <span class="env-label">湿度</span>
               </div>
             </div>
-            <div class="env-card">
+            <div class="env-card compact">
               <div class="env-icon">🌬️</div>
               <div class="env-data">
                 <span class="env-value">2.3m/s</span>
                 <span class="env-label">风速</span>
               </div>
             </div>
-            <div class="env-card">
+            <div class="env-card compact">
               <div class="env-icon">⚠️</div>
               <div class="env-data">
                 <span class="env-value">0.2%</span>
@@ -91,24 +91,24 @@
           </div>
         </div>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section compact stats-section">
           <h3>今日统计</h3>
-          <div class="stats-container">
-            <div class="stat-item">
+          <div class="stats-container compact">
+            <div class="stat-item compact">
               <div class="stat-icon">📈</div>
               <div class="stat-content">
                 <span class="stat-number">156</span>
                 <span class="stat-label">提升次数</span>
               </div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item compact">
               <div class="stat-icon">⏱️</div>
               <div class="stat-content">
                 <span class="stat-number">18.5h</span>
                 <span class="stat-label">运行时长</span>
               </div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item compact">
               <div class="stat-icon">✅</div>
               <div class="stat-content">
                 <span class="stat-number">0</span>
@@ -121,18 +121,18 @@
 
       <!-- 中间Unity3D区域 -->
       <section class="center-viewport">
-        <div class="viewport-header">
+        <div class="viewport-header compact">
           <h2>3D可视化监控中心</h2>
           <div class="viewport-controls">
-            <button class="control-btn">
+            <button class="control-btn compact">
               <span class="icon">🔍</span>
               全屏
             </button>
-            <button class="control-btn">
+            <button class="control-btn compact">
               <span class="icon">🔄</span>
               重置视角
             </button>
-            <button class="control-btn">
+            <button class="control-btn compact">
               <span class="icon">📷</span>
               截图
             </button>
@@ -156,10 +156,10 @@
 
       <!-- 右侧信息面板 -->
       <aside class="right-sidebar">
-        <div class="sidebar-section">
+        <div class="sidebar-section compact">
           <h3>实时告警</h3>
-          <div class="alerts-container">
-            <div class="alert-item warning">
+          <div class="alerts-container compact">
+            <div class="alert-item compact warning">
               <div class="alert-time">14:32</div>
               <div class="alert-message">
                 <span class="alert-title">压风机温度异常</span>
@@ -167,7 +167,7 @@
               </div>
               <div class="alert-priority high"></div>
             </div>
-            <div class="alert-item info">
+            <div class="alert-item compact info">
               <div class="alert-time">13:15</div>
               <div class="alert-message">
                 <span class="alert-title">系统自检完成</span>
@@ -175,7 +175,7 @@
               </div>
               <div class="alert-priority low"></div>
             </div>
-            <div class="alert-item success">
+            <div class="alert-item compact success">
               <div class="alert-time">12:00</div>
               <div class="alert-message">
                 <span class="alert-title">日常维护完成</span>
@@ -186,48 +186,48 @@
           </div>
         </div>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section compact">
           <h3>效率分析</h3>
-          <div class="efficiency-circles">
-            <div class="efficiency-circle">
-              <svg class="circle-chart" viewBox="0 0 36 36">
+          <div class="efficiency-circles compact">
+            <div class="efficiency-circle compact">
+              <svg class="circle-chart compact" viewBox="0 0 36 36">
                 <path class="circle-bg" d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
                   a 15.9155 15.9155 0 0 1 0 -31.831"/>
                 <path class="circle" stroke-dasharray="94, 100" d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
                   a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                <text class="percentage" x="18" y="20.35">94%</text>
+                <text class="percentage compact" x="18" y="20.35">94%</text>
               </svg>
               <span>整体效率</span>
             </div>
-            <div class="efficiency-circle">
-              <svg class="circle-chart" viewBox="0 0 36 36">
+            <div class="efficiency-circle compact">
+              <svg class="circle-chart compact" viewBox="0 0 36 36">
                 <path class="circle-bg" d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
                   a 15.9155 15.9155 0 0 1 0 -31.831"/>
                 <path class="circle" stroke-dasharray="88, 100" d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
                   a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                <text class="percentage" x="18" y="20.35">88%</text>
+                <text class="percentage compact" x="18" y="20.35">88%</text>
               </svg>
               <span>提升系统</span>
             </div>
           </div>
         </div>
 
-        <div class="sidebar-section">
+        <div class="sidebar-section compact">
           <h3>快捷操作</h3>
-          <div class="quick-actions">
-            <button class="action-btn emergency">
+          <div class="quick-actions compact">
+            <button class="action-btn compact emergency">
               <span class="icon">🚨</span>
               紧急停止
             </button>
-            <button class="action-btn primary">
+            <button class="action-btn compact primary">
               <span class="icon">📊</span>
               生成报表
             </button>
-            <button class="action-btn">
+            <button class="action-btn compact">
               <span class="icon">🔔</span>
               设置提醒
             </button>
@@ -237,31 +237,31 @@
     </main>
 
     <!-- 底部快捷按钮栏 -->
-    <footer class="bottom-toolbar">
-      <div class="toolbar-section">
-        <button class="toolbar-btn primary">
+    <footer class="bottom-toolbar compact">
+      <div class="toolbar-section compact">
+        <button class="toolbar-btn compact primary">
           <span class="icon">▶️</span>
           启动系统
         </button>
-        <button class="toolbar-btn">
+        <button class="toolbar-btn compact">
           <span class="icon">⏸️</span>
           暂停监控
         </button>
-        <button class="toolbar-btn">
+        <button class="toolbar-btn compact">
           <span class="icon">🔄</span>
           重置数据
         </button>
       </div>
-      <div class="toolbar-section">
-        <button class="toolbar-btn">
+      <div class="toolbar-section compact">
+        <button class="toolbar-btn compact">
           <span class="icon">📥</span>
           导出数据
         </button>
-        <button class="toolbar-btn">
+        <button class="toolbar-btn compact">
           <span class="icon">⚙️</span>
           系统设置
         </button>
-        <button class="toolbar-btn">
+        <button class="toolbar-btn compact">
           <span class="icon">❓</span>
           帮助
         </button>
@@ -295,20 +295,22 @@ onUnmounted(() => {
   background: #0a0e1a;
   color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
 }
 
 .top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
+  padding: 12px 25px;
   background: linear-gradient(90deg, #1a1f3a 0%, #0f1419 100%);
   border-bottom: 1px solid #2a2f4a;
+  height: 60px;
 }
 
 .logo-section h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   background: linear-gradient(45deg, #00d4ff, #0099ff);
   -webkit-background-clip: text;
@@ -316,22 +318,22 @@ onUnmounted(() => {
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: #8892b0;
-  margin-left: 10px;
+  margin-left: 8px;
 }
 
 .status-indicators {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
 .indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
 }
 
 .dot {
@@ -347,57 +349,77 @@ onUnmounted(() => {
 
 .time-display {
   font-family: 'Courier New', monospace;
-  font-size: 16px;
+  font-size: 15px;
   color: #00d4ff;
 }
 
 .dashboard-content {
   flex: 1;
   display: flex;
-  gap: 20px;
-  padding: 20px;
+  gap: 15px;
+  padding: 15px;
   overflow: hidden;
+  min-height: 0;
 }
 
 .left-sidebar,
 .right-sidebar {
-  width: 320px;
+  width: 300px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .sidebar-section {
   background: rgba(26, 31, 58, 0.6);
   border: 1px solid #2a2f4a;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 15px;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.sidebar-section:last-child {
+  flex-shrink: 1;
+  min-height: fit-content;
+}
+
+.sidebar-section.compact {
+  padding: 12px;
 }
 
 .sidebar-section h3 {
-  margin: 0 0 15px 0;
-  font-size: 16px;
+  margin: 0 0 10px 0;
+  font-size: 14px;
   color: #00d4ff;
   border-bottom: 1px solid #2a2f4a;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 .device-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+.device-grid.compact {
+  gap: 6px;
 }
 
 .device-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 15px;
+  gap: 10px;
+  padding: 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
   border-left: 3px solid #00d4ff;
+}
+
+.device-card.compact {
+  padding: 8px;
+  gap: 8px;
 }
 
 .device-card.active {
@@ -409,7 +431,7 @@ onUnmounted(() => {
 }
 
 .device-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .device-info {
@@ -420,16 +442,17 @@ onUnmounted(() => {
   display: block;
   font-weight: 600;
   color: #ffffff;
+  font-size: 13px;
 }
 
 .device-status {
-  font-size: 12px;
+  font-size: 11px;
   color: #8892b0;
 }
 
 .status-light {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
@@ -446,20 +469,28 @@ onUnmounted(() => {
 .env-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
+}
+
+.env-cards.compact {
+  gap: 6px;
 }
 
 .env-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
+  gap: 8px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
+}
+
+.env-card.compact {
+  padding: 6px;
 }
 
 .env-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .env-data {
@@ -468,33 +499,42 @@ onUnmounted(() => {
 }
 
 .env-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: #00d4ff;
 }
 
 .env-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #8892b0;
 }
 
 .stats-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 6px;
+}
+
+.stats-container.compact {
+  gap: 4px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 15px;
+  gap: 8px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
+}
+
+.stat-item.compact {
+  padding: 5px;
+  gap: 6px;
 }
 
 .stat-icon {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .stat-content {
@@ -503,13 +543,13 @@ onUnmounted(() => {
 }
 
 .stat-number {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 700;
   color: #00d4ff;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 9px;
   color: #8892b0;
 }
 
@@ -519,7 +559,7 @@ onUnmounted(() => {
   flex-direction: column;
   background: rgba(26, 31, 58, 0.6);
   border: 1px solid #2a2f4a;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -527,34 +567,43 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 15px;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid #2a2f4a;
 }
 
+.viewport-header.compact {
+  padding: 12px;
+}
+
 .viewport-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   color: #00d4ff;
 }
 
 .viewport-controls {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .control-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 16px;
+  gap: 4px;
+  padding: 6px 12px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid #2a2f4a;
-  border-radius: 6px;
+  border-radius: 4px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.control-btn.compact {
+  padding: 4px 8px;
+  font-size: 10px;
 }
 
 .control-btn:hover {
@@ -577,63 +626,27 @@ onUnmounted(() => {
   object-fit: contain;
 }
 
-.unity-placeholder {
-  text-align: center;
-  color: #8892b0;
-}
-
-.placeholder-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.unity-logo {
-  font-size: 64px;
-  opacity: 0.5;
-}
-
-.placeholder-content h3 {
-  margin: 0;
-  font-size: 24px;
-  color: #ffffff;
-}
-
-.loading-animation {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(0, 212, 255, 0.3);
-  border-top: 3px solid #00d4ff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .alerts-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+
+.alerts-container.compact {
+  gap: 6px;
 }
 
 .alert-item {
   display: flex;
-  gap: 12px;
-  padding: 15px;
+  gap: 8px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
   border-left: 3px solid;
+}
+
+.alert-item.compact {
+  padding: 6px;
 }
 
 .alert-item.warning {
@@ -649,9 +662,9 @@ onUnmounted(() => {
 }
 
 .alert-time {
-  font-size: 12px;
+  font-size: 11px;
   color: #8892b0;
-  min-width: 40px;
+  min-width: 35px;
 }
 
 .alert-message {
@@ -663,16 +676,17 @@ onUnmounted(() => {
 .alert-title {
   font-weight: 600;
   color: #ffffff;
+  font-size: 12px;
 }
 
 .alert-desc {
-  font-size: 12px;
+  font-size: 10px;
   color: #8892b0;
 }
 
 .alert-priority {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   align-self: center;
 }
@@ -688,19 +702,32 @@ onUnmounted(() => {
 .efficiency-circles {
   display: flex;
   justify-content: space-around;
-  gap: 20px;
+  gap: 15px;
+}
+
+.efficiency-circles.compact {
+  gap: 10px;
 }
 
 .efficiency-circle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+}
+
+.efficiency-circle span {
+  font-size: 11px;
 }
 
 .circle-chart {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
+}
+
+.circle-chart.compact {
+  width: 60px;
+  height: 60px;
 }
 
 .circle-bg {
@@ -717,15 +744,9 @@ onUnmounted(() => {
   animation: progress 1s ease-out forwards;
 }
 
-@keyframes progress {
-  0% {
-    stroke-dasharray: 0 100;
-  }
-}
-
 .percentage {
   fill: #00d4ff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-anchor: middle;
 }
@@ -733,20 +754,30 @@ onUnmounted(() => {
 .quick-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+
+.quick-actions.compact {
+  gap: 6px;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
+  gap: 8px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid #2a2f4a;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 12px;
+}
+
+.action-btn.compact {
+  padding: 8px;
+  font-size: 11px;
 }
 
 .action-btn:hover {
@@ -771,33 +802,39 @@ onUnmounted(() => {
 .bottom-toolbar {
   display: flex;
   justify-content: space-between;
-  padding: 20px 30px;
+  padding: 12px 25px;
   background: rgba(26, 31, 58, 0.8);
   border-top: 1px solid #2a2f4a;
+  height: 50px;
 }
 
 .toolbar-section {
   display: flex;
-  gap: 15px;
+  gap: 12px;
 }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+  gap: 6px;
+  padding: 8px 16px;
   background: rgba(0, 212, 255, 0.1);
   border: 1px solid rgba(0, 212, 255, 0.3);
-  border-radius: 8px;
+  border-radius: 6px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
+.toolbar-btn.compact {
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
 .toolbar-btn:hover {
   background: rgba(0, 212, 255, 0.2);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .toolbar-btn.primary {
