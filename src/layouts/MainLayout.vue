@@ -4,7 +4,7 @@
       <!-- 顶部导航栏 -->
       <el-header class="header">
         <div class="header-left">
-          <h2 class="logo">煤矿提升机智能运维大模型</h2>
+          <h2 class="logo">煤矿设备运维多模态大模型平台</h2>
         </div>
         <div class="header-right">
           <el-dropdown>

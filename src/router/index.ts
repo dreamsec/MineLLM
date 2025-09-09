@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 export const constantRoutes: RouteRecordRaw[] = [
   {
@@ -52,13 +52,13 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: '/dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard/index.vue'),
-        meta: {title: '首页大屏', icon: 'Monitor'},
+        meta: { title: '首页大屏', icon: 'Monitor' },
         children: [
           {
             path: 'home',
             name: 'Home',
             component: () => import('../views/Home/index.vue'),
-            meta: {title: '首页', icon: 'Monitor', hideInMenu: true},
+            meta: { title: '首页', icon: 'Monitor', hideInMenu: true },
           },
           {
             path: 'tisheng',
@@ -117,13 +117,19 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: '/gis',
         name: 'GIS',
         component: () => import('../views/GIS/index.vue'),
-        meta: {title: 'GIS一图统览', icon: 'Map'},
+        meta: { title: 'GIS一张图', icon: 'Map' },
+      },
+      {
+        path: '/qa',
+        name: 'QA',
+        component: () => import('../views/AIQA/index.vue'),
+        meta: { title: '大模型问答', icon: 'ChatDotRound' }
       },
       {
         path: '/ai-diagnosis',
         name: 'AIDiagnosis',
         component: () => import('../views/AIDiagnosis/index.vue'),
-        meta: {title: 'AI故障诊断中心', icon: 'Warning'},
+        meta: { title: 'AI智能体', icon: 'Warning' },
         children: [
           {
             path: "data_manage",
@@ -166,28 +172,29 @@ export const constantRoutes: RouteRecordRaw[] = [
         ]
       },
       {
-        path: '/qa',
-        name: 'QA',
-        component: () => import('../views/AIQA/index.vue'),
-        meta: {title: '智能问答', icon: 'ChatDotRound'}
+        path: "/label",
+        component: () => import("@/views/Label/index.vue"),
+        meta: {
+          hideInMenu: true
+        }
       },
       {
         path: '/knowledge',
         name: 'Knowledge',
         component: () => import('../views/Knowledge/index.vue'),
-        meta: {title: '知识库管理', icon: 'Files'}
+        meta: { title: '知识库管理', icon: 'Files' }
       },
       {
         path: '/devices',
         name: 'Devices',
         component: () => import('../views/Devices/index.vue'),
-        meta: {title: '设备管理', icon: 'Setting'}
+        meta: { title: '设备管理', icon: 'Setting' }
       },
       {
         path: '/system',
         name: 'System',
         component: () => import('../views/System/index.vue'),
-        meta: {title: '系统管理', icon: 'Tools'},
+        meta: { title: '系统管理', icon: 'Tools' },
         children: [
           {
             path: 'users',
