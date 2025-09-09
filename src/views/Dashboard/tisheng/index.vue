@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
 			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">煤矿运维大屏</div>
+			<div class="header-title">提升机监控中心</div>
 		</div>
 
 
@@ -14,7 +14,7 @@
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">关键设备</span>
+            <span class="title-text">提升机运行情况</span>
             <div class="title-line"></div>
           </div>
 
@@ -23,8 +23,8 @@
             <div class="data-card">
               <div class="card-icon">🏢</div>
               <div class="card-content">
-                <div class="card-value">13</div>
-                <div class="card-label">设备总数</div>
+                <div class="card-value">130</div>
+                <div class="card-label">提升机总数</div>
                 <!-- <div class="card-unit">+2
                   <n-icon size="16">
                   <ArrowUpOutlined/>
@@ -35,7 +35,7 @@
             <div class="data-card">
               <div class="card-icon">🏢</div>
               <div class="card-content">
-                <div class="card-value">130</div>
+                <div class="card-value">13</div>
                 <div class="card-label">在线设备</div>
                 <!-- <div class="card-unit">+1
                    <n-icon size="16">
@@ -66,54 +66,69 @@
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">设备健康状态</span>
+            <span class="title-text">提升机健康状态</span>
             <div class="title-line"></div>
           </div>
 
           <!-- 进度条数据 -->
           <div class="progress-data">
             <div class="progress-item">
-              <div class="progress-label">运输系统</div>
+              <div class="progress-label">主电机系统</div>
               <div class="progress-bar">
-                <div class="progress-fill red" style="width: 45%"></div>
+                <div class="progress-fill green" style="width: 92%"></div>
               </div>
-              <div class="progress-value">45%</div>
+              <div class="progress-value">92%</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">通风系统</div>
+              <div class="progress-label">制动系统</div>
               <div class="progress-bar">
-                <div class="progress-fill green" style="width: 70%"></div>
+                <div class="progress-fill green" style="width: 88%"></div>
               </div>
-              <div class="progress-value">70%</div>
+              <div class="progress-value">88%</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">供电系统</div>
+              <div class="progress-label">钢丝绳状态</div>
               <div class="progress-bar">
-                <div class="progress-fill" style="width: 60%"></div>
+                <div class="progress-fill yellow" style="width: 85%"></div>
               </div>
-              <div class="progress-value">60%</div>
+              <div class="progress-value">85%</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">通信系统</div>
+              <div class="progress-label">液压系统</div>
               <div class="progress-bar">
-                <div class="progress-fill green" style="width: 80%"></div>
+                <div class="progress-fill green" style="width: 90%"></div>
               </div>
-              <div class="progress-value">80%</div>
+              <div class="progress-value">90%</div>
             </div>
             <div class="progress-item">
-              <div class="progress-label">照明系统</div>
+              <div class="progress-label">控制系统</div>
               <div class="progress-bar">
-                <div class="progress-fill" style="width: 65%"></div>
+                <div class="progress-fill green" style="width: 95%"></div>
               </div>
-              <div class="progress-value">65%</div>
+              <div class="progress-value">95%</div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">安全保护系统</div>
+              <div class="progress-bar">
+                <div class="progress-fill green" style="width: 98%"></div>
+              </div>
+              <div class="progress-value">98%</div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">润滑系统</div>
+              <div class="progress-bar">
+                <div class="progress-fill yellow" style="width: 82%"></div>
+              </div>
+              <div class="progress-value">82%</div>
             </div>
           </div>
         </div>
 
         <!-- 智慧园区数据展示 - 圆形图表 -->
+         <!-- 提升机运行数据统计 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">智慧园区数据展示</span>
+            <span class="title-text">提升机运行数据统计</span>
             <div class="title-line"></div>
           </div>
 
@@ -122,16 +137,16 @@
               <div class="chart-circle">
                 <svg viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="50.24"/>
+                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="62.8"/>
                 </svg>
-                <div class="chart-value">01</div>
+                <div class="chart-value">156</div>
               </div>
               <div class="chart-labels">
-                <div class="chart-label">样本</div>
+                <div class="chart-label">今日提升次数</div>
                 <div class="chart-data">
-                  <div>01机房网络设备</div>
-                  <div>01机房网络设备</div>
-                  <div>01机房网络设备</div>
+                  <div>提升高度: 680m</div>
+                  <div>载重: 12吨/次</div>
+                  <div>运行时间: 18.5h</div>
                 </div>
               </div>
             </div>
@@ -139,22 +154,23 @@
               <div class="chart-circle">
                 <svg viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="75.36"/>
+                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="37.68"/>
                 </svg>
-                <div class="chart-value">01</div>
+                <div class="chart-value">94.7%</div>
               </div>
               <div class="chart-labels">
-                <div class="chart-label">数据监控</div>
+                <div class="chart-label">运行效率</div>
                 <div class="chart-data">
-                  <div>3650</div>
-                  <div>3650</div>
-                  <div>3650</div>
+                  <div>故障次数: 0</div>
+                  <div>维护时间: 1.2h</div>
+                  <div>可用率: 98.5%</div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
+
+
       </div>
 
       <!-- 中央3D区域 -->
@@ -162,6 +178,11 @@
         <!-- <div class="building-3d">
           <img src="@/assets/img/3D.png" alt="3D建筑模型" class="building-model">
         </div> -->
+        <iframe
+          src="/elevator/index.html"
+          style="width:100%; height:100%; border:none; background:transparent;"
+          allowfullscreen
+        ></iframe>
 
       </div>
 
@@ -237,7 +258,7 @@
               <div class="icon-3d">🏢</div>
               <div class="icon-info">
                 <div class="info-left">
-                  <div class="icon-label">主通风机#1</div>
+                  <div class="icon-label">主提升机#1</div>
                   <div class="icon-value">温度：65℃  运行：72h</div>
                 </div>
                 <div class="icon-unit">正常</div>
@@ -290,8 +311,9 @@ let chart: echarts.ECharts | null = null
 const initChart = () => {
   if (chartRef.value) {
     chart = echarts.init(chartRef.value)
-    const xData = ["提升机", "通风机", "压缩机", "水泵站", "输送机"]
-    const percent = [81, 68, 51, 75, 95]
+    const xData = ["提升效率", "提升速度", "载重状态", "制动系统", "安全指数"]
+
+    const percent = [94, 87, 76, 98, 92]
 
     const imgList: Array<{
       coord: [number, number];
@@ -347,8 +369,14 @@ const initChart = () => {
         },
         axisLabel: {
           show: true,
-          textStyle: {
-            color: '#fff'
+          textStyle: { color: '#fff', fontSize: 11 },
+          interval: 0,
+          formatter: function(value) {
+            // 长文字分两行显示
+            if (value.length > 3) {
+              return value.substring(0, 2) + '\n' + value.substring(2)
+            }
+            return value
           }
         }
       },
@@ -628,6 +656,8 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0; /* 允许flex子元素缩小 */
   overflow: visible; /* 允许内容正常显示 */
+  overflow-y: auto; /* 添加滚动条 */
+
 }
 
 .section-title {
@@ -696,7 +726,7 @@ onUnmounted(() => {
   gap: 8px; /* 减小间距 */
   width: 100%; /* 使用100%宽度而不是固定宽度 */
   height: auto; /* 让高度自适应内容 */
-  min-height: 75px; /* 设置合适的最小高度 */
+  min-height: 50px; /* 设置合适的最小高度 */
   max-width: 150px; /* 保持最大宽度限制 */
 }
 
