@@ -14,9 +14,7 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>个人信息</el-dropdown-item>
-                <el-dropdown-item>修改密码</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -97,6 +95,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Fold, Expand } from '@element-plus/icons-vue'
 import * as ElementPlusIcons from '@element-plus/icons-vue'
+import { useUserStoreHook } from '@/store/modules/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -143,6 +142,18 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
   handleResize()
 })
+
+// 处理退出登录
+const handleLogout = async () => {
+  try {
+    // 调用用户Store的logout方法执行退出登录
+    useUserStoreHook().logout()
+    // 退出登录后跳转到登录页面
+    router.push('/login')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+  }
+}
 </script>
 
 
