@@ -840,7 +840,7 @@ onActivated(() => {
   flex-direction: column;
   height: 100%; /* 占满父容器高度 */
   padding: 8px 0; /* 添加上下内边距 */
-  
+
   h4 {
     flex-shrink: 0; /* 标题不压缩 */
     padding: 12px 16px; /* 减少标题内边距 */
@@ -851,7 +851,7 @@ onActivated(() => {
     font-weight: 600;
     color: #409EFF;
   }
-  
+
   .layer-item {
     padding: 12px 16px; /* 减少内边距，保留空间 */
     border-bottom: 1px solid rgba(64, 158, 255, 0.1);

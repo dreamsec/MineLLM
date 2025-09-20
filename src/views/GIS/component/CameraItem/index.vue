@@ -71,7 +71,7 @@ const positionStyle = computed(() => {
   // 使用实际图片尺寸或默认尺寸
   const imageWidth = cameraImage.complete ? cameraImage.width : 32;
   const imageHeight = cameraImage.complete ? cameraImage.height : 32;
-  
+
   return {
     left: `${baseX - imageWidth / 2}px`,
     top: `${baseY - imageHeight / 2}px`,
@@ -207,24 +207,24 @@ const videoHeight = computed(() => {
 </script>
 
 <template>
-  <div 
-    class="item-container" 
+  <div
+    class="item-container"
     @contextmenu.prevent="showContextMenu($event, item)"
-    :style="positionStyle" 
-    @mouseleave="handleMouseLeave" 
+    :style="positionStyle"
+    @mouseleave="handleMouseLeave"
     @mouseenter="handleMouseEnter"
     @click.stop="handleClick"
     @mousedown.stop
     @mouseup.stop>
-    <img 
-      :src="cameraImageSrc" 
-      alt="摄像头" 
+    <img
+      :src="cameraImageSrc"
+      alt="摄像头"
       draggable="false"
       @click.stop="handleClick">
-    
+
     <!-- 摄像头名称标签 -->
-    <div 
-      class="camera-name-tooltip" 
+    <div
+      class="camera-name-tooltip"
       :class="{ 'show': isHovered }"
       :style="tooltipStyle">
       {{ props.item.name }}
@@ -300,24 +300,24 @@ const videoHeight = computed(() => {
   position: absolute;
   cursor: pointer;
   user-select: none;
-  
+
   /* 确保摄像头图标能正确接收点击事件 */
   pointer-events: auto;
   z-index: 1001; /* 确保在覆盖层中的最高层级 */
-  
+
   /* 悬停效果 */
   &:hover {
     transform: scale(1.1);
     filter: drop-shadow(0 0 8px rgba(64, 158, 255, 0.6));
     transition: all 0.2s ease;
   }
-  
+
   /* 点击效果 */
   &:active {
     transform: scale(1.05);
     filter: drop-shadow(0 0 12px rgba(64, 158, 255, 0.8));
   }
-  
+
   img {
     width: 32px;
     height: 32px;
@@ -345,7 +345,7 @@ const videoHeight = computed(() => {
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  
+
   /* 小箭头指向摄像头图标 */
   &::before {
     content: '';
@@ -359,7 +359,7 @@ const videoHeight = computed(() => {
     border-right: 4px solid transparent;
     border-bottom: 4px solid rgba(0, 0, 0, 0.8);
   }
-  
+
   &.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -378,28 +378,28 @@ const videoHeight = computed(() => {
     border-radius: 8px !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
   }
-  
+
   .el-dialog__body {
     height: calc(85vh - 120px) !important; /* 减去标题和按钮高度 */
     padding: 20px !important;
     overflow: hidden;
     background: #000;
   }
-  
+
   .el-dialog__header {
     padding: 20px 20px 10px 20px !important;
     background: #f5f7fa;
     border-bottom: 1px solid #ebeef5;
     border-radius: 8px 8px 0 0;
   }
-  
+
   .el-dialog__footer {
     padding: 10px 20px 20px 20px !important;
     background: #f5f7fa;
     border-top: 1px solid #ebeef5;
     border-radius: 0 0 8px 8px;
   }
-  
+
   .el-dialog__headerbtn {
     top: 15px !important;
     right: 15px !important;
