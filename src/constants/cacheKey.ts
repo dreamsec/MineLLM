@@ -1,4 +1,4 @@
-const SYSTEM_NAME = "yolov5_garbage_detect"
+const SYSTEM_NAME = "equipment_yunwei"
 
 /** 缓存数据时用到的 Key */
 class CacheKey {
