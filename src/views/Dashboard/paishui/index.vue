@@ -12,7 +12,7 @@
       <!-- 中央3D区域 - 布满整个页面 -->
       <div class="center-panel">
         <iframe
-          src="/NewElevator/index.html"
+          src="/waterMachine/index.html"
           style="width:100%; height:100%; border:none; background:transparent; overflow:hidden;"
           allowfullscreen
           scrolling="no"
