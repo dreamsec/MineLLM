@@ -32,11 +32,11 @@ export const useUserStore = defineStore("user", () => {
       loginApi({
         username: loginData.username,
         password: loginData.password,
-        code: loginData.code
+        //code: loginData.code
       })
         .then((res) => {
-          setToken(res.data.token)
-          token.value = res.data.token
+          setToken(res.data.access_token)
+          token.value = res.data.access_token
           resolve(true)
         })
         .catch((error) => {

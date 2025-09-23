@@ -18,7 +18,7 @@ const codeUrl = ref("")
 const loginForm: ILoginRequestData = reactive({
   username: "",
   password: "",
-  code: ""
+  //code: ""
 })
 /** 登录表单校验规则 */
 const loginFormRules: FormRules = {
@@ -37,7 +37,7 @@ const handleLogin = () => {
         .login({
           username: loginForm.username,
           password: loginForm.password,
-          code: loginForm.code
+          //code: loginForm.code
         })
         .then(() => {
           router.push({ path: "/" })
