@@ -1,9 +1,9 @@
-import { request } from "@/utils/service"
+import { request2 } from "@/utils/service"
 import type * as Table from "./types/data"
 // import {createDataTypeResponseData, IDatasetType, IGetAllTableRequestData, IModifyDatasetType} from "./types/data";
 
 export function deleteDataTypeApi(dataset_type:string) {
-  return request<Table.deleteTableResponseData>({
+  return request2<Table.deleteTableResponseData>({
     url: `data/delete_dataset_type/${dataset_type}`,
     method: "delete"
   })
@@ -12,7 +12,7 @@ export function deleteDataTypeApi(dataset_type:string) {
 
 /** 删 */
 export function deleteTableDataApi(id: string) {
-  return request<Table.deleteTableResponseData>({
+  return request2<Table.deleteTableResponseData>({
     url: `data/delete/${id}`,
     method: "delete"
   })
@@ -20,7 +20,7 @@ export function deleteTableDataApi(id: string) {
 
 /** 查 */
 export function getTableDataApi(params: Table.IGetTableRequestData) {
-  return request<Table.GetTableResponseData>({
+  return request2<Table.GetTableResponseData>({
     url: "data/list",
     // url: "table",
     method: "get",
@@ -29,7 +29,7 @@ export function getTableDataApi(params: Table.IGetTableRequestData) {
 }
 
 export function getTableDatanameApi() {
-  return request<Table.GetTableResponseData>({
+  return request2<Table.GetTableResponseData>({
     url: "data/list_data_name",
     // url: "table",
     method: "get"
@@ -38,7 +38,7 @@ export function getTableDatanameApi() {
 
 /** 查 */
 export function getTableDatapathApi(params: Table.IdatasetpathRequestData) {
-  return request<Table.GETdatasetpathResponseData>({
+  return request2<Table.GETdatasetpathResponseData>({
     url: "data/list_dataset_path",
     // url: "table",
     method: "post",
@@ -47,7 +47,7 @@ export function getTableDatapathApi(params: Table.IdatasetpathRequestData) {
 }
 
 export function getTableApi(params: Table.IGetAllTableRequestData) {
-  return request<Table.GetTableResponseData>({
+  return request2<Table.GetTableResponseData>({
     url: "data/list_all",
     method: "get",
     params
@@ -55,7 +55,7 @@ export function getTableApi(params: Table.IGetAllTableRequestData) {
 }
 
 export function createDatasetTypeApi(params: Table.IDatasetType) {
-  return request<Table.createDataTypeResponseData>({
+  return request2<Table.createDataTypeResponseData>({
     url: `data/creat_dataset_type`,
     method: "get",
     params
@@ -63,7 +63,7 @@ export function createDatasetTypeApi(params: Table.IDatasetType) {
 }
 
 export function modifyDatasetApi(params: Table.IModifyDatasetType) {
-  return request<Table.createDataTypeResponseData>({
+  return request2<Table.createDataTypeResponseData>({
     url: `data/modify`,
     method: "get",
     params

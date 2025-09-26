@@ -1,24 +1,24 @@
-import { request } from "@/utils/service"
+import { request2 } from "@/utils/service"
 import type * as Tag from "./types/tag"
 // import { addTagResponseData, ICreateApplicationRequestData, ICreateLocationRequestData } from "./types/tag"
 
 /** 增 */
 export function addTagApi(data: Tag.ICreateTagRequestData) {
-  return request<Tag.addTagResponseData>({
+  return request2<Tag.addTagResponseData>({
     url: `tag/add`,
     method: "post",
     data
   })
 }
 export function addApplicationApi(data: Tag.ICreateApplicationRequestData) {
-  return request<Tag.addTagResponseData>({
+  return request2<Tag.addTagResponseData>({
     url: `camera-manage/creat_application`,
     method: "post",
     data
   })
 }
 export function addLocationApi(data: Tag.ICreateLocationRequestData) {
-  return request<Tag.addTagResponseData>({
+  return request2<Tag.addTagResponseData>({
     url: `camera-manage/creat_location`,
     method: "post",
     data
@@ -27,26 +27,26 @@ export function addLocationApi(data: Tag.ICreateLocationRequestData) {
 
 /** 删 */
 export function deleteTagApi(tag_id: number) {
-  return request<Tag.deleteTagResponseData>({
+  return request2<Tag.deleteTagResponseData>({
     url: `tag/delete/${tag_id}`,
     method: "delete"
   })
 }
 export function deleteLocationApi(id: number) {
-  return request<Tag.deleteTagResponseData>({
+  return request2<Tag.deleteTagResponseData>({
     url: `camera-manage/delete_location/${id}`,
     method: "delete"
   })
 }
 export function deleteApplicationApi(id: number) {
-  return request<Tag.deleteTagResponseData>({
+  return request2<Tag.deleteTagResponseData>({
     url: `camera-manage/delete_application/${id}`,
     method: "delete"
   })
 }
 /** 改 */
 export function updateTagApi(tag_id: number, data: Tag.ICreateTagRequestData) {
-  return request<Tag.updateTagResponseData>({
+  return request2<Tag.updateTagResponseData>({
     url: `tag/update/${tag_id}`,
     method: "post",
     data
@@ -55,7 +55,7 @@ export function updateTagApi(tag_id: number, data: Tag.ICreateTagRequestData) {
 
 /** 查 */
 export function listTagApi() {
-  return request<Tag.getTagResponseData>({
+  return request2<Tag.getTagResponseData>({
     url: `tag/list`,
     method: "get"
   })
@@ -63,7 +63,7 @@ export function listTagApi() {
 
 // 导出yaml
 export function exportTagApi(dataset_id: number) {
-  return request({
+  return request2({
     url: `tag/export/${dataset_id}`,
     method: "get"
   })
@@ -71,7 +71,7 @@ export function exportTagApi(dataset_id: number) {
 
 // 搜索tag
 export function searchTagApi(data: string) {
-  return request<Tag.getTagResponseData>({
+  return request2<Tag.getTagResponseData>({
     url: `tag/search`,
     method: "get",
     params: {
@@ -81,7 +81,7 @@ export function searchTagApi(data: string) {
 }
 
 export function listLocationsApi() {
-  return request<Tag.getTagResponseData>({
+  return request2<Tag.getTagResponseData>({
     url: `camera-manage/get_locations_applications`,
     method: "get"
   })

@@ -1,7 +1,7 @@
 import axios, {type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { ElMessage, ElNotification } from "element-plus"
 import { get } from "lodash-es"
-import { getToken } from "./cache/cookies"
+import { getToken, getToken2 } from "./cache/cookies"  // 修改导入
 
 /** 创建请求实例 */
 function createService(baseURL?: string) {
@@ -113,12 +113,12 @@ function createService(baseURL?: string) {
 }
 
 /** 创建请求方法 */
-function createRequestFunction(service: AxiosInstance) {
+function createRequestFunction(service: AxiosInstance, useSecondToken: boolean = false) {
   return function <T>(config: AxiosRequestConfig): Promise<T> {
     const configDefault = {
       headers: {
-        // 携带 Token
-        Authorization: "Bearer " + getToken(),
+        // 检查是否是登录请求，如果是则不添加Authorization头
+        Authorization: config.url?.includes('login') ? undefined : "Bearer " + (useSecondToken ? getToken2() : getToken()),
         "Content-Type": get(config, "headers.Content-Type", "application/json")
       },
       timeout: get(config, "timeout", 1000000),
@@ -136,4 +136,4 @@ export const request = createRequestFunction(service)
 /** 用于第二个后端网络请求的实例 */
 export const service2 = createService(import.meta.env.VITE_SECOND_API)
 /** 用于第二个后端网络请求的方法 */
-export const request2 = createRequestFunction(service2)
+export const request2 = createRequestFunction(service2, true)  // 指定使用第二个Token

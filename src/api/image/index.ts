@@ -1,8 +1,8 @@
-import { request } from "@/utils/service"
+import { request2 } from "@/utils/service"
 
 /** 查 */
 export function listImageApi(dataset_id: number, page: number, page_size: number, is_train: number, is_label: number) {
-  return request({
+  return request2({
     url: `image/list/${dataset_id}`,
     method: "get",
     params: {
@@ -16,7 +16,7 @@ export function listImageApi(dataset_id: number, page: number, page_size: number
 
 // 更新图片状态
 export function updateImageApi(image_id: number, is_labeled: number) {
-  return request({
+  return request2({
     url: `image/update/${image_id}/${is_labeled}`,
     method: "post"
   })
@@ -24,7 +24,7 @@ export function updateImageApi(image_id: number, is_labeled: number) {
 
 // 数量统计
 export function countImageApi(dataset_id: number) {
-  return request({
+  return request2({
     url: `image/count/${dataset_id}`,
     method: "get"
   })
@@ -32,7 +32,7 @@ export function countImageApi(dataset_id: number) {
 
 // 删除图片
 export function deleteImageApi(image_id: number) {
-  return request({
+  return request2({
     url: `image/delete/${image_id}`,
     method: "delete"
   })

@@ -3,9 +3,8 @@ import store from "@/store"
 import { defineStore } from "pinia"
 import { usePermissionStore } from "./permission"
 import { useTagsViewStore } from "./tags-view"
-import { getToken, removeToken, setToken } from "@/utils/cache/cookies"
 import router, { resetRouter } from "@/router"
-import { loginApi, getUserInfoApi } from "@/api/login"
+import { loginApi, loginApi2, getUserInfoApi } from "@/api/login"  // 添加第二个后端的登录API
 import { type ILoginRequestData } from "@/api/login/types/login"
 import { registerApi } from "@/api/register"
 import { type IRegisterRequestData } from "@/api/register/types/register"
@@ -13,9 +12,13 @@ import { type RouteRecordRaw } from "vue-router"
 import asyncRouteSettings from "@/config/async-route"
 // import { ISwitchRoleRequestData } from "@/api/switch-role/types/switch_role"
 import { switchRoleApi } from "@/api/switch-role"
+import { getToken, removeToken, setToken, getToken2, removeToken2, setToken2 } from "@/utils/cache/cookies"  // 修改导入
+
+
 
 export const useUserStore = defineStore("user", () => {
   const token = ref<string>(getToken() || "")
+  const token2 = ref<string>(getToken2() || "")  // 添加第二个Token
   const roles = ref<string[]>([])
   const username = ref<string>("")
 
@@ -29,14 +32,17 @@ export const useUserStore = defineStore("user", () => {
   /** 登录 */
   const login = (loginData: ILoginRequestData) => {
     return new Promise((resolve, reject) => {
-      loginApi({
-        username: loginData.username,
-        password: loginData.password,
-        //code: loginData.code
-      })
-        .then((res) => {
-          setToken(res.data.access_token)
-          token.value = res.data.access_token
+      // 同时调用两个后端的登录API
+      Promise.all([
+        loginApi(loginData),
+        loginApi2(loginData)
+      ])
+        .then(([res1, res2]) => {
+          // 保存两个后端的Token
+          setToken(res1.data.access_token)
+          setToken2(res2.data.access_token)
+          token.value = res1.data.access_token
+          token2.value = res2.data.access_token
           resolve(true)
         })
         .catch((error) => {
@@ -116,7 +122,9 @@ export const useUserStore = defineStore("user", () => {
   /** 登出 */
   const logout = () => {
     removeToken()
+    removeToken2()  // 同时移除两个Token
     token.value = ""
+    token2.value = ""
     roles.value = []
     resetRouter()
     _resetTagsView()
@@ -124,7 +132,9 @@ export const useUserStore = defineStore("user", () => {
   /** 重置 Token */
   const resetToken = () => {
     removeToken()
+    removeToken2()  // 同时重置两个Token
     token.value = ""
+    token2.value = ""
     roles.value = []
   }
   /** 重置 visited views 和 cached views */
@@ -133,7 +143,7 @@ export const useUserStore = defineStore("user", () => {
     tagsViewStore.delAllCachedViews()
   }
 
-  return { token, roles, username, setRoles, login, register, getInfo, changeRoles, logout, resetToken }
+  return { token, token2, roles, username, setRoles, login, register, getInfo, changeRoles, logout, resetToken }
 })
 
 /** 在 setup 外使用 */

@@ -1,4 +1,4 @@
-import { request } from "@/utils/service"
+import { request, request2 } from "@/utils/service"
 import type * as Login from "./types/login"
 
 // /** 获取登录验证码 */
@@ -15,6 +15,15 @@ export function loginApi(data: Login.ILoginRequestData) {
   return request<Login.LoginResponseData>({
     url: "/api/v1/auth/login",
     // url: "users/login",
+    method: "post",
+    data
+  })
+}
+
+// 创建第二个后端的登录API函数
+export function loginApi2(data: Login.ILoginRequestData) {
+  return request2<Login.LoginResponseData>({
+    url: "/auth/user/login", // 根据实际情况修改第二个后端的登录接口
     method: "post",
     data
   })

@@ -1,9 +1,9 @@
-import { request } from "@/utils/service"
+import { request2 } from "@/utils/service"
 import type * as Table from "./types/data"
 
 /** 增 */
 export function createModelDataApi(params: Table.ICreateModelRequestData) {
-  return request<Table.createModelResponseData>({
+  return request2<Table.createModelResponseData>({
     url: `model/creat`,
     method: "post",
     params
@@ -12,7 +12,7 @@ export function createModelDataApi(params: Table.ICreateModelRequestData) {
 
 /** 增 */
 export function updateModelDataApi(params: Table.IUpdateModelRequestData) {
-  return request<Table.updateModelResponseData>({
+  return request2<Table.updateModelResponseData>({
     url: `model/update`,
     method: "post",
     params
@@ -21,7 +21,7 @@ export function updateModelDataApi(params: Table.IUpdateModelRequestData) {
 
 /** 删 */
 export function deleteModelDataApi(id: string) {
-  return request<Table.deleteModelResponseData>({
+  return request2<Table.deleteModelResponseData>({
     url: `model/delete/${id}`,
     method: "delete"
   })
@@ -29,7 +29,7 @@ export function deleteModelDataApi(id: string) {
 
 /** 查 */
 export function getModelDataApi(params: Table.IGetModelRequestData) {
-  return request<Table.GetModelResponseData>({
+  return request2<Table.GetModelResponseData>({
     url: "model/list",
     method: "get",
     params

@@ -1,9 +1,9 @@
-import { request } from "@/utils/service"
+import { request2 } from "@/utils/service"
 import type * as Label from "./types/label"
 
 // 添加label
 export const addLabelApi = (data: Label.ICreateLabelRequestData) => {
-  return request({
+  return request2({
     url: "/label/add",
     method: "post",
     data
@@ -12,7 +12,7 @@ export const addLabelApi = (data: Label.ICreateLabelRequestData) => {
 
 // 获取给定图片的所有label
 export const listLabelApi = (image_id: number) => {
-  return request({
+  return request2({
     url: `/label/list/${image_id}`,
     method: "get"
   })
@@ -20,7 +20,7 @@ export const listLabelApi = (image_id: number) => {
 
 // 修改label
 export const updateLabelApi = (label_id: number, data: Label.IUpdateLabelRequestData) => {
-  return request({
+  return request2({
     url: `/label/update/${label_id}`,
     method: "post",
     data
@@ -29,7 +29,7 @@ export const updateLabelApi = (label_id: number, data: Label.IUpdateLabelRequest
 
 // 删除label
 export const deleteLabelApi = (label_id: number) => {
-  return request({
+  return request2({
     url: `/label/delete/${label_id}`,
     method: "delete"
   })
@@ -37,7 +37,7 @@ export const deleteLabelApi = (label_id: number) => {
 
 // 导出label到文件
 export const exportLabelApi = (image_id: number) => {
-  return request({
+  return request2({
     url: `/label/export/${image_id}`,
     method: "get"
   })
