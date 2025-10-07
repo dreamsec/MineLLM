@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
 			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">提升机孪生平台</div>
+			<div class="header-title">运输机孪生平台</div>
 		</div>
 
 
@@ -24,7 +24,7 @@
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">提升机运行情况</span>
+            <span class="title-text">运输机运行情况</span>
             <div class="title-line"></div>
           </div>
 
@@ -34,7 +34,7 @@
               <div class="card-icon">🏢</div>
               <div class="card-content">
                 <div class="card-value">130</div>
-                <div class="card-label">提升机总数</div>
+                <div class="card-label">运输机总数</div>
                 <!-- <div class="card-unit">+2
                   <n-icon size="16">
                   <ArrowUpOutlined/>
@@ -76,7 +76,7 @@
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">提升机健康状态</span>
+            <span class="title-text">运输机健康状态</span>
             <div class="title-line"></div>
           </div>
 
@@ -128,10 +128,10 @@
         </div>
 
         <!-- 智慧园区数据展示 - 圆形图表 -->
-         <!-- 提升机运行数据统计 -->
+         <!-- 运输机运行数据统计 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">提升机运行数据统计</span>
+            <span class="title-text">运输机运行数据统计</span>
             <div class="title-line"></div>
           </div>
 
@@ -246,7 +246,7 @@
               <div class="icon-3d">🏢</div>
               <div class="icon-info">
                 <div class="info-left">
-                  <div class="icon-label">主提升机#1</div>
+                  <div class="icon-label">主运输机#1</div>
                   <div class="icon-value">温度：65℃  运行：72h</div>
                 </div>
                 <div class="icon-unit">正常</div>
@@ -256,7 +256,7 @@
               <div class="icon-3d">🏢</div>
               <div class="icon-info">
                 <div class="info-left">
-                  <div class="icon-label">主提升机#2</div>
+                  <div class="icon-label">主运输机#2</div>
                   <div class="icon-value">温度：55℃  运行：12h</div>
                 </div>
                 <div class="icon-unit orange">预警</div>

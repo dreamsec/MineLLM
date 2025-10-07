@@ -35,14 +35,14 @@ export const useUserStore = defineStore("user", () => {
       // 同时调用两个后端的登录API
       Promise.all([
         loginApi(loginData),
-        loginApi2(loginData)
+        //loginApi2(loginData)
       ])
-        .then(([res1, res2]) => {
+        .then(([res1]) => {
           // 保存两个后端的Token
           setToken(res1.data.access_token)
-          setToken2(res2.data.access_token)
+          //setToken2(res2.data.access_token)
           token.value = res1.data.access_token
-          token2.value = res2.data.access_token
+          //token2.value = res2.data.access_token
           resolve(true)
         })
         .catch((error) => {

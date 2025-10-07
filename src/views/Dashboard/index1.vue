@@ -291,7 +291,7 @@ let chart: echarts.ECharts | null = null
 const initChart = () => {
   if (chartRef.value) {
     chart = echarts.init(chartRef.value)
-    const xData = ["提升机", "通风机", "压缩机", "水泵站", "输送机"]
+    const xData = ["运输机", "通风机", "压缩机", "水泵站", "输送机"]
     const percent = [81, 68, 51, 75, 95]
 
     const imgList: Array<{

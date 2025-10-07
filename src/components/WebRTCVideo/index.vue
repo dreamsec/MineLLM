@@ -8,10 +8,25 @@
       <el-icon><Warning /></el-icon>
       <span>视频加载失败</span>
     </div>
-    <div v-else class="video-placeholder">
-      <el-icon size="64"><VideoCamera /></el-icon>
-      <p>视频预览功能开发中...</p>
-      <p>RTSP地址: {{ rtspUrl }}</p>
+    <div v-else class="video-wrapper">
+      <!-- 使用假视频替代开发中状态 -->
+      <video
+        :width="width"
+        :height="height"
+        :controls="showControls"
+        autoplay
+        muted
+        loop
+        playsinline
+        class="fake-video"
+      >
+        <source src="/videos/unity1.mp4" type="video/mp4">
+        您的浏览器不支持HTML5视频播放
+      </video>
+      <!-- RTSP地址信息展示 -->
+      <div class="rtsp-info" v-if="rtspUrl">
+        <strong>RTSP地址:</strong> {{ rtspUrl }}
+      </div>
     </div>
   </div>
 </template>
@@ -55,9 +70,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: #000;
   border-radius: 8px;
   min-height: 200px;
+  position: relative;
+  overflow: hidden;
 }
 
 .loading-container {
@@ -84,27 +101,34 @@ onMounted(() => {
   }
 }
 
-.video-placeholder {
+.video-wrapper {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  color: #909399;
-  text-align: center;
-  
-  .el-icon {
-    color: #c0c4cc;
-  }
-  
-  p {
-    margin: 0;
-    font-size: 14px;
-    
-    &:first-of-type {
-      font-size: 16px;
-      font-weight: 500;
-      color: #606266;
-    }
-  }
+  justify-content: center;
+  position: relative;
+}
+
+.fake-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.rtsp-info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+  max-width: calc(100% - 20px);
+  word-break: break-all;
 }
 </style>

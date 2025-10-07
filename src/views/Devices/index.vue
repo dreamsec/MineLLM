@@ -1,9 +1,11 @@
 <template>
   <div class="device-management">
     <!-- 页面标题 -->
-    <div class="page-title">
-      <h1>设备管理</h1>
-      <p class="subtitle">管理煤矿提升机相关设备，包括摄像头、传感器等设备</p>
+    <div class="page-header">
+      <div class="header-left">
+        <h1>设备管理</h1>
+        <p>管理煤矿提升机相关设备，包括摄像头、传感器等设备</p>
+      </div>
     </div>
 
     <!-- 主要内容区域 -->
@@ -19,6 +21,9 @@
             :class="{ active: selectedType === type.id }"
             @click="selectedType = type.id"
           >
+            <el-icon v-if="type.id === '机械设备'" ><Tools /></el-icon>
+            <el-icon v-else-if="type.id === '摄像头'"><VideoCamera /></el-icon>
+            <el-icon v-else-if="type.id === '传感器'"><DataAnalysis /></el-icon>
             {{ type.name }}
           </div>
         </div>
@@ -65,7 +70,7 @@
           </el-table-column>
           <el-table-column prop="location" label="安装位置" width="150" />
           <el-table-column prop="installDate" label="安装日期" width="120" />
-          <el-table-column label="操作" width="100" fixed="right">
+          <el-table-column label="操作" width="150" fixed="right">
             <template #default="scope">
               <el-button
                 size="small"
@@ -688,7 +693,7 @@ function handleSubmit(): void {
 async function fetchAllDevices(): Promise<void> {
   loading.value = true
   try {
-    // 获取机械设备和传感器数据
+    // 获取机械设备数据（保持不变）
     const mechanicalResponse = await getDevicesApi({
       page: 1,
       page_size: 1000
@@ -697,16 +702,14 @@ async function fetchAllDevices(): Promise<void> {
       mechanicalDevices.value = mechanicalResponse.data.list
     }
 
-    // 获取摄像头数据
+    // 获取摄像头数据（但无论是否获取到，都使用模拟数据）
     const cameraResponse = await getAllCamerasApi()
     if (cameraResponse && cameraResponse.data && cameraResponse.data && cameraResponse.data.list) {
       cameras.value = cameraResponse.data.list
     }
 
-    // 无论API调用是否成功，如果数据为空，都加载模拟数据
-    if (mechanicalDevices.value.length === 0 && cameras.value.length === 0) {
-      provideMockData()
-    }
+    // 提供传感器和摄像头的模拟数据（即使从后端获取了部分数据）
+    provideMockData()
   } catch (error) {
     console.error('获取设备数据失败:', error)
     // 在API调用失败时提供模拟数据
@@ -717,31 +720,15 @@ async function fetchAllDevices(): Promise<void> {
   }
 }
 
-// 提供模拟数据（API调用失败时使用）
+// 提供模拟数据（保持机械设备数据不变，只添加传感器和摄像头数据）
 function provideMockData(): void {
-  // 模拟机械设备和传感器数据 - 使用中文设备类型
-  mechanicalDevices.value = [
+  // 保存原始的机械设备数据，用于后续过滤
+  const originalMechanicalDevices = [...mechanicalDevices.value]
+
+  // 模拟传感器数据 - 使用中文设备类型
+  const sensors = [
     {
-      id: 1,
-      equipment_code: 'YF001',
-      equipment_name: '1号主压风机',
-      equipment_type: '机械设备', // 修改为'机械设备'，与过滤逻辑匹配
-      equipment_model: 'L2-50/8',
-      manufacturer: '沈阳鼓风机集团',
-      install_location: '地面压风机房',
-      install_date: '2021-01-10T00:00:00',
-      rated_power: 630,
-      rated_voltage: 6000,
-      rated_current: 65,
-      equipment_status: '运行',
-      is_online: 1,
-      created_at: '2025-09-06T10:55:50',
-      updated_at: '2025-09-06T10:55:50',
-      remark: '主要压风设备'
-    },
-    // 丰富的传感器数据
-    {
-      id: 2,
+      id: 1001, // 使用较大ID避免冲突
       equipment_code: 'CGQ001',
       equipment_name: '提升机压力传感器',
       equipment_type: '传感器', // 中文类型
@@ -759,7 +746,7 @@ function provideMockData(): void {
       remark: '提升机压力监测'
     },
     {
-      id: 3,
+      id: 1002,
       equipment_code: 'WD001',
       equipment_name: '温度传感器',
       equipment_type: '传感器', // 中文类型
@@ -777,7 +764,7 @@ function provideMockData(): void {
       remark: '电机温度监测'
     },
     {
-      id: 4,
+      id: 1003,
       equipment_code: 'FS001',
       equipment_name: '风速传感器',
       equipment_type: '传感器', // 中文类型
@@ -795,7 +782,7 @@ function provideMockData(): void {
       remark: '通风风速监测'
     },
     {
-      id: 5,
+      id: 1004,
       equipment_code: 'YLD001',
       equipment_name: '振动传感器',
       equipment_type: '传感器', // 中文类型
@@ -813,7 +800,7 @@ function provideMockData(): void {
       remark: '电机振动监测'
     },
     {
-      id: 6,
+      id: 1005,
       equipment_code: 'DCQ001',
       equipment_name: '电流传感器',
       equipment_type: '传感器',
@@ -831,7 +818,7 @@ function provideMockData(): void {
       remark: '供电电流监测'
     },
     {
-      id: 7,
+      id: 1006,
       equipment_code: 'DQY001',
       equipment_name: '电压传感器',
       equipment_type: '传感器',
@@ -849,7 +836,7 @@ function provideMockData(): void {
       remark: '供电电压监测'
     },
     {
-      id: 8,
+      id: 1007,
       equipment_code: 'CO2_001',
       equipment_name: '二氧化碳传感器',
       equipment_type: '传感器',
@@ -867,7 +854,7 @@ function provideMockData(): void {
       remark: '气体浓度监测'
     },
     {
-      id: 9,
+      id: 1008,
       equipment_code: 'CH4_001',
       equipment_name: '甲烷传感器',
       equipment_type: '传感器',
@@ -885,7 +872,7 @@ function provideMockData(): void {
       remark: '瓦斯浓度监测'
     },
     {
-      id: 10,
+      id: 1009,
       equipment_code: 'YSQ001',
       equipment_name: '液位传感器',
       equipment_type: '传感器',
@@ -903,7 +890,7 @@ function provideMockData(): void {
       remark: '水仓水位监测'
     },
     {
-      id: 11,
+      id: 1010,
       equipment_code: 'GZQ001',
       equipment_name: '光照传感器',
       equipment_type: '传感器',
@@ -921,7 +908,7 @@ function provideMockData(): void {
       remark: '环境光照监测'
     },
     {
-      id: 12,
+      id: 1011,
       equipment_code: 'WDQ002',
       equipment_name: '温度传感器',
       equipment_type: '传感器',
@@ -940,7 +927,11 @@ function provideMockData(): void {
     }
   ]
 
-  // 丰富的摄像头数据
+  // 保留原始机械设备数据，只添加传感器数据
+  mechanicalDevices.value = originalMechanicalDevices.filter(device => device.equipment_type !== '传感器')
+  mechanicalDevices.value = [...mechanicalDevices.value, ...sensors]
+,
+
   cameras.value = [
     {
       id: 101,
@@ -1132,6 +1123,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px 20px 10px 20px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.header-left h1 {
+  margin: 0 0 8px 0;
+  color: #333333;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.header-left p {
+  margin: 0;
+  color: #999999;
+  font-size: 14px;
+}
 .device-management {
   padding: 20px;
 }
@@ -1183,6 +1197,13 @@ onMounted(() => {
   border-radius: 4px;
   transition: all 0.3s;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-item .el-icon {
+  font-size: 16px;
 }
 
 .type-item:hover {
