@@ -3,6 +3,7 @@ import { request } from "@/utils/service"
 // 导入设备相关的类型定义
 import type * as Device from "./types/device"
 
+
 /**
  * 获取设备列表（带分页和筛选）
  * @param params 查询参数，包括页码、每页数量、设备类型、设备状态等
@@ -17,5 +18,12 @@ export function getDevicesApi(params: Device.GetDevicesRequestParams) {
   })
 }
 
-
+export function addDeviceApi(data: Device.AddDeviceRequestParams) {
+  return request<Device.AddDeviceResponseData>({
+    // 请替换为实际的新增设备接口URL
+    url: "/api/v1/equipment",
+    method: "post",
+    data // 将传入的参数作为请求体发送
+  })
+}
 
