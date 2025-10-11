@@ -7,6 +7,10 @@
         <p>基于大模型的智能问答与历史记录管理</p>
       </div>
       <div class="header-actions">
+        <button class="action-btn secondary" @click="newChat">
+          <i class="fas fa-trash"></i>
+          新建对话
+        </button>
         <button class="action-btn secondary" @click="clearHistory">
           <i class="fas fa-trash"></i>
           清空对话
@@ -92,12 +96,13 @@
                           @click="toggleSection(message.id, `tool-${part.stepIndex}`)"
                         >
                           <i class="fas fa-server"></i>
-                          <span>{{part.toolName}}</span>
+                          <span>MCP工具调用：{{part.tool_calls?.[0]?.function.name}}</span>
                           <i :class="['fas', isExpanded(message.id, `tool-${part.stepIndex}`) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                         </div>
                         <div v-if="isExpanded(message.id, `tool-${part.stepIndex}`)" class="section-content tool-content">
                           <div class="tool-call">
-                            <pre>{{ part.content }}</pre>
+                            <pre>"content":{{ part.content }}<br>"tool_calls": {{part.tool_calls}}<br>"tool_call_id": {{part.tool_call_id}}
+                            </pre>
                           </div>
                         </div>
                       </div>
@@ -109,7 +114,6 @@
                   </div>
                 </div>
               </div>
-
               <!-- AI回答的操作按钮 -->
               <div v-if="message.type === 'assistant' && !message.loading" class="message-actions">
                 <button class="action-btn small" @click="copyMessage(message.content)">
@@ -249,7 +253,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, onMounted, watch } from 'vue'
+import {nextTick, onMounted, reactive, ref, watch} from 'vue'
+import {getAiResponse, newChatSessionId} from '@/api/ai/index.ts'
+
 
 // 定义组件名称
 defineOptions({
@@ -259,16 +265,28 @@ defineOptions({
 // 定义消息类型
 interface MessagePart {
   id: number
-  type: 'thinking' | 'tool' | 'response' | 'error'
+  session_id: string
+  type: 'thinking' | 'tool' | 'response'
   content: string
-  toolName?: string // 用于tool_response类型
+  tool_calls?:[toolDetail]
+  tool_call_id?:string
+  parent_message_id?:number
   stepIndex?: number // 用于标识思考步骤顺序
   thinkTime?: string // 记录思考时间戳
 }
 
+interface toolDetail {
+  index: number,
+  id: string,
+  function: {
+    name: string,
+    arguments: string
+  },
+}
+
 // 定义类型接口
 interface Message {
-  id: number
+  id: number,
   type: 'user' | 'assistant'
   content: string
   timestamp: number
@@ -302,7 +320,7 @@ interface KnowledgeCategory {
 const messages = ref<Message[]>([])
 const inputText = ref<string>('')
 const isLoading = ref<boolean>(false)
-const currentSessionId = ref<string | null>(null)
+const currentSessionId = ref<string | null>("-1") // 当前对话ID，null表示无对话
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 
@@ -354,12 +372,36 @@ const chatSessions = ref<ChatSession[]>([
     lastMessage: new Date().getTime() - 172800000,
     messageCount: 8,
   },
-  // {
-  //   id: '3',
-  //   title: '故障诊断方法',
-  //   lastMessage: new Date().getTime() - 259200000,
-  //   messageCount: 15,
-  // },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
 ])
 
 // 知识库分类
@@ -442,7 +484,8 @@ const isExpanded = (messageId: number, sectionType: string) => {
 }
 
 
-// 方法
+
+// 提问
 const sendMessage = async () => {
   if (!inputText.value.trim() || isLoading.value) return
 
@@ -464,6 +507,11 @@ const sendMessage = async () => {
     scrollToBottom()
   })
 
+  if (currentSessionId.value === "-1"){
+    await newChatSessionId({model_name:"qwen3:8b"}).then((res) => {
+      currentSessionId.value = res.data.session_id
+    })
+  }
   // 显示AI正在输入
   const aiMessage: Message = {
     id: Date.now() + 1,
@@ -474,7 +522,6 @@ const sendMessage = async () => {
     liked: false,
     parts: []
   }
-
   messages.value.push(aiMessage)
   isLoading.value = true
 
@@ -483,271 +530,105 @@ const sendMessage = async () => {
   nextTick(() => {
     scrollToBottom()
   })
-  // 模拟AI回答
-  try {
-    for (const response of res){
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // 更新AI消息
-      const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
-
-
-      if (aiMessageIndex !== -1) {
-        if (response.includes('<think>')) {
-          startTime.value = Date.now()
-          currentTime.value = Date.now()
-          thinkingTimer =  setInterval(() => {
-            currentTime.value = Date.now()
-          }, 100)
-          // 处理开始标签
-          overThink.value = true
-          currentThinkStepIndex++
-          const thinkingContent = response.replace('<think>', '').trim()
-
-          if (thinkingContent) {
-            addMessagePart(aiMessageIndex, 'thinking', thinkingContent, currentThinkStepIndex)
-          }
-          // const lastPart = messages.value[aiMessageIndex]
-          // const existingThinkPart = lastPart.parts?.find(part =>
-          //   part.type === 'thinking' && part.stepIndex === currentThinkStepIndex
-          // )
-          // if (existingThinkPart) {
-          //   // 更新现有的思考内容
-          //   existingThinkPart.content += response
-          // } else {
-          //   // 创建新的思考部分
-          //   lastPart.parts?.push({
-          //     id: Date.now(),
-          //     type: 'thinking',
-          //     content: response,
-          //     stepIndex: currentThinkStepIndex
-          //   })
-          // }
-          toggleSection(aiMessage.id, `thinking-${currentThinkStepIndex}`) // 默认展开新的思考部分
-        }
-        else if (response.includes('</think>')) {
-          // 处理结束标签前的思考内容
-          if (overThink.value) {
-            // const existingThinkPart = lastPart.parts?.find(part =>
-            //   part.type === 'thinking' && part.stepIndex === currentThinkStepIndex
-            // )
-            const contentBeforeEndTag = response.split('</think>')[0].trim()
-            const finalDuration = (Date.now() - startTime.value) / 1000
-            const finalTime = `${finalDuration.toFixed(1)}s`
-            if (contentBeforeEndTag && overThink.value) {
-              addMessagePart(aiMessageIndex, 'thinking', contentBeforeEndTag, currentThinkStepIndex, undefined, finalTime)
+  //TODO:没加历史
+  getAiResponse({
+    message: {
+      session_id: currentSessionId.value || '',
+      role: 'user',
+      model_type: 'qwen3:8b',
+      content: userMessage.content,
+      is_first: true,
+    }
+  }).then(async (response) => {
+    if (!response.ok || !response.body) {
+      throw new Error('Network response was not ok');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? ''; // 保留未完整的一行
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        try {
+          const result = JSON.parse(line);
+          const response = result.data;
+          console.log(response)
+          const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+          if (aiMessageIndex !== -1) {
+            if (response?.tool_call_id){
+              currentThinkStepIndex++
+              // 处理工具响应
+              addMessagePart(aiMessageIndex, 'tool', response.content,response.session_id,currentThinkStepIndex, undefined, response.tool_calls,response.tool_call_id,response.parent_message_id)
+              toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
             }
-            // if (contentBeforeEndTag && existingThinkPart) {
-            //   existingThinkPart.content += contentBeforeEndTag
-            // }
+            else if (response?.includes('<think>')) {
+              startTime.value = Date.now()
+              currentTime.value = Date.now()
+              thinkingTimer =  setInterval(() => {
+                currentTime.value = Date.now()
+              }, 100)
+              // 处理开始标签
+              overThink.value = true
+              currentThinkStepIndex++
+              const thinkingContent = response.replace('<think>', '').trim()
+              if (thinkingContent) {
+                addMessagePart(aiMessageIndex, 'thinking', thinkingContent,response.session_id, currentThinkStepIndex)
+              }
+              toggleSection(aiMessage.id, `thinking-${currentThinkStepIndex}`) // 默认展开新的思考部分
+            }
+            else if (response?.includes('</think>')) {
+              // 处理结束标签前的思考内容
+              if (overThink.value) {
+                const contentBeforeEndTag = response.split('</think>')[0].trim()
+                const finalDuration = (Date.now() - startTime.value) / 1000
+                const finalTime = `${finalDuration.toFixed(1)}s`
+                if (overThink.value) {
+                  addMessagePart(aiMessageIndex, 'thinking',contentBeforeEndTag,response.session_id,currentThinkStepIndex,finalTime)
+                }
+              }
+              clearInterval(thinkingTimer)
+              overThink.value = false
+              // 处理 </think> 后的回复内容
+              const contentAfterEndTag = response.split('</think>')[1]
+              if (contentAfterEndTag && contentAfterEndTag.trim()) {
+                addMessagePart(aiMessageIndex, 'response', contentAfterEndTag.trim())
+              }
+            }
+            else if (overThink.value) {
+              addMessagePart(aiMessageIndex, 'thinking', response,response.session_id,currentThinkStepIndex)
+            }
+            else {
+              if (response !== '\n\n' && response !== null){
+                addMessagePart(aiMessageIndex, 'response', response)
+              }
+            }
           }
-          clearInterval(thinkingTimer)
-          overThink.value = false
-          // 处理 </think> 后的回复内容
-          const contentAfterEndTag = response.split('</think>')[1]
-          if (contentAfterEndTag && contentAfterEndTag.trim()) {
-            addMessagePart(aiMessageIndex, 'response', contentAfterEndTag.trim())
-          }
-          // if (contentAfterEndTag && contentAfterEndTag.trim()) {
-          //   const existingResponsePart = lastPart.parts?.find(part => part.type === 'response')
-          //   if (existingResponsePart) {
-          //     existingResponsePart.content += contentAfterEndTag
-          //   } else {
-          //     lastPart.parts?.push({
-          //       id: Date.now(),
-          //       type: 'response',
-          //       content: contentAfterEndTag,
-          //     })
-          //   }
-          // }
+        }catch (e) {
+          console.error('JSON解析失败:', e, line);
         }
-        else if (response.includes('<tool_response>')) {
-          currentThinkStepIndex++
-          // 处理工具响应
-          const toolName = response.split('{')[0].replace('<tool_response>','').trim()
-          console.log(toolName)
-          const toolContent = response.substring(response.indexOf('{') + 1).replace('</tool_response>','').trim()
-          addMessagePart(aiMessageIndex, 'tool', toolContent, currentThinkStepIndex, toolName)
-          // const existingThinkPart = lastPart.parts?.find(part =>
-          //   part.type === 'tool'
-          // )
-          // if (existingThinkPart) {
-          //   // 更新现有的思考内容
-          //   existingThinkPart.content += response
-          // } else {
-          //   // 创建新的思考部分
-          //   lastPart.parts?.push({
-          //     id: Date.now(),
-          //     type: 'tool',
-          //     content: response,
-          //     stepIndex: currentThinkStepIndex
-          //   })
-          // }
-          toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
-        }
-        else if (overThink.value) {
-          // 处理思考中的内容
-          // const lastPart = messages.value[aiMessageIndex]
-          // const existingThinkPart = lastPart.parts?.find(part =>
-          //   part.type === 'thinking' && part.stepIndex === currentThinkStepIndex
-          // )
-          // if (existingThinkPart) {
-          //   // 更新现有的思考内容
-          //   existingThinkPart.content += response
-          // } else {
-          //   // 创建新的思考部分
-          //   lastPart.parts?.push({
-          //     id: Date.now(),
-          //     type: 'thinking',
-          //     content: response,
-          //     stepIndex: currentThinkStepIndex
-          //   })
-          // }
-          addMessagePart(aiMessageIndex, 'thinking', response, currentThinkStepIndex)
-        }
-        else {
-          // const lastPart = messages.value[aiMessageIndex]
-          // const existingThinkPart = lastPart.parts?.find(part =>
-          //   part.type === 'response'
-          // )
-          // if (existingThinkPart) {
-          //   // 更新现有的思考内容
-          //   existingThinkPart.content += response
-          // } else {
-          //   // 创建新的思考部分
-          //   lastPart.parts?.push({
-          //     id: Date.now(),
-          //     type: 'response',
-          //     content: response,
-          //     stepIndex: currentThinkStepIndex
-          //   })
-          // }
-          addMessagePart(aiMessageIndex, 'response', response)
-        }
-
-
-        // if (response.includes('<think>')){
-        //   overThink.value = true
-        //   currentThinkStepIndex++ // 用于跟踪思考步骤]
-        // }
-        // if (response.includes('</think>')){
-        //   // 处理结束标签前的思考内容
-        //   if (overThink.value) {
-        //
-        //     const existingThinkPart = lastPart.parts?.find(part =>
-        //       part.type === 'thinking' && part.stepIndex === currentThinkStepIndex
-        //     )
-        //
-        //     const contentBeforeEndTag = response.split('</think>')[0].trim()
-        //     if (contentBeforeEndTag && existingThinkPart) {
-        //       existingThinkPart.content += contentBeforeEndTag
-        //     }
-        //   }
-        //
-        //   overThink.value = false
-        //
-        //   // 处理 </think> 后的回复内容
-        //   const contentAfterEndTag = response.split('</think>')[1]
-        //   if (contentAfterEndTag && contentAfterEndTag.trim()) {
-        //     const existingResponsePart = lastPart.parts?.find(part => part.type === 'response')
-        //     if (existingResponsePart) {
-        //       existingResponsePart.content += contentAfterEndTag
-        //     } else {
-        //       lastPart.parts?.push({
-        //         id: Date.now(),
-        //         type: 'response',
-        //         content: contentAfterEndTag,
-        //       })
-        //     }
-        //   }
-        // }
-        // if (response.includes('<tool_response>')){
-        //   currentThinkStepIndex++
-        // }
-        // //思考
-        // if (overThink.value){
-        //   const lastPart = messages.value[aiMessageIndex]
-        //   const existingThinkPart = lastPart.parts?.find(part =>
-        //     part.type === 'thinking' && part.stepIndex === currentThinkStepIndex
-        //   )
-        //   if (existingThinkPart) {
-        //     // 更新现有的思考内容
-        //     existingThinkPart.content += response
-        //   } else {
-        //     // 创建新的思考部分
-        //     lastPart.parts?.push({
-        //       id: Date.now(),
-        //       type: 'thinking',
-        //       content: response,
-        //       stepIndex: currentThinkStepIndex
-        //     })
-        //   }
-        // }
-        // //工具
-        // if (response.includes('<tool_response>')){
-        //   const lastPart = messages.value[aiMessageIndex]
-        //   const existingThinkPart = lastPart.parts?.find(part =>
-        //     part.type === 'tool'
-        //   )
-        //   if (existingThinkPart) {
-        //     // 更新现有的思考内容
-        //     existingThinkPart.content += response
-        //   } else {
-        //     // 创建新的思考部分
-        //     lastPart.parts?.push({
-        //       id: Date.now(),
-        //       type: 'tool',
-        //       content: response,
-        //     })
-        //   }
-        // }
-        // //回复
-        // if (overThink.value && !response.includes('<tool_response>')){
-        //   const lastPart = messages.value[aiMessageIndex]
-        //   const existingThinkPart = lastPart.parts?.find(part =>
-        //     part.type === 'response'
-        //   )
-        //   console.log(123)
-        //   console.log(existingThinkPart)
-        //   if (existingThinkPart) {
-        //     // 更新现有的思考内容
-        //     existingThinkPart.content += response
-        //   } else {
-        //     // 创建新的思考部分
-        //     lastPart.parts?.push({
-        //       id: Date.now(),
-        //       type: 'response',
-        //       content: response,
-        //     })
-        //   }
-        // }
-      }
-      console.log(messages.value)
-    }
-  } catch (error) {
-    console.error('AI回答失败:', error)
-    const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
-    if (aiMessageIndex !== -1) {
-      messages.value[aiMessageIndex] = {
-        ...aiMessage,
-        content: '抱歉，我暂时无法回答您的问题，请稍后再试。',
-        loading: false,
       }
     }
-  } finally {
-    isLoading.value = false
-    nextTick(() => {
-      scrollToBottom()
-    })
-  }
+  })
+  isLoading.value = false
 }
 
+
+// 添加消息部分（思考、工具调用、响应）
 const addMessagePart = (
   messageIndex: number,
   type: 'thinking' | 'tool' | 'response',
   content: string,
+  session_id: string = currentSessionId.value || '',
   stepIndex?: number,
-  toolName?: string,
-  thinkTime?: string
+  thinkTime?: string,
+  tool_calls?:[toolDetail],
+  tool_call_id?:string,
+  parent_message_id?:number,
 ) => {
   if (messageIndex === -1) return
 
@@ -761,88 +642,30 @@ const addMessagePart = (
     }
     return part.type === type
   })
-
   if (existingPart) {
     // 更新现有内容
     existingPart.content += content
     if (thinkTime) {
       existingPart.thinkTime = thinkTime
     }
+    scrollToBottom()
   } else {
     // 创建新的部分
     lastMessage.parts?.push({
       id: partId,
+      session_id,
       type,
       content,
       stepIndex,
-      toolName,
+      tool_calls,
+      tool_call_id,
+      parent_message_id,
       thinkTime
     })
   }
 }
 
-const res = [`<think> 好的，用户问的是井下发现瓦斯超限怎么处理。首先，我需要回忆相关的煤矿安全规程条款。根据之前学过的知识，瓦斯超限属于重大安全隐患，处理措施应该包括立即停止作业、撤出人员、汇报调度室等步骤。`,
 
-`或者是相关领域的学生，需要准确的处理流程来确保安全。他们可能已经知道一些基本措施，但希望确认正确的程序，或者想了解更详细的步骤。`,
-
-`接下来，我需要调用工具来获取《煤矿安全规程》中的具体条款。首先使用MCP_retrieve_coal_mine_regulations工具，查询“瓦斯超限”相关的条款。然后，根据返回的条款内容，提取具体的处理步骤，比如停止作业、切断电源、撤离人员、报告调度室等。如果有需要，再调用MCP_get_coal_mine_regulation_by_id工具，如果条款有具体条目号的话，比如第三百三十八条，获取更详细的信息。`,
-
-`确保回答符合规程，同时提醒用户严格按照规程操作，避免违规。如果工具返回的信息不够详细，可能需要结合多个条款，或者指出具体条目号，让用户知道去哪里查找详细内容。最后，用简洁明了的语言组织回答，确保用户能快速理解并采取正确措施。`,
-  `</think>`,
-  `<tool_response>MCP服务器：retrieve_coal_mine_regulations {
-  "params": {
-    "query": "瓦斯超限处置措施"
-  },
-  "response": {
-    "content": [
-      {
-        "type": "text",
-        "text": "['第一百九十六条 矿井必须从设计和采掘生产管理上采取措施,防止瓦斯积聚;当发生瓦斯积聚时,必须及时处理.当瓦斯超限达到断电浓度时,班组长、瓦斯检查工、安全检查工、矿调度员有权责令现场作业人员停止作业,停电撤人.\\\\n\\\\n矿井必须有因停电和检修主要通风机停止运转或者通风系统遭到破坏以后恢复通风、排除瓦斯和送电的安全措施.恢复正常通风后,所有受到停风影响的地点,都必须经过通风、瓦斯检查人员检查,证实无危险后,方可恢复工作.所有安装电动机及其开关的地点附近 $2 0 \\\\\\\\mathrm { m }$ 的巷道内,都必须检查瓦斯,只有甲烷浓度符合本规程规定时,方可开启.\\\\n\\\\n临时停工的地点,不得停风;否则必须切断非本质安全型电气设备的电源,设置栅栏、警标,禁止人员进入,并向矿调度室报告.停工区内甲烷或者二氧化碳浓度达到 $3 . 0 \\\\\\\\%$ 或者其他有害气体浓度超过本规程第156条的规定不能立即处理时,必须在内封闭完毕.\\\\n\\\\n恢复已封闭的停工区或者采掘工作接近这些地点时,必须事先排除其中积聚的瓦斯.排除瓦斯工作必须制定安全技术措施.\\\\n\\\\n严禁在停风或者瓦斯超限的区域内作业.', '第二百四十三条 清理突出的煤(岩)时,必须制定防煤尘、片帮、冒顶、瓦斯超限、出现火源,以及防止再次发生突出事故的安全措施.\\\\n\\\\n# 第七章 防灭火\\\\n\\\\n# 第一节 一般规定', '第五百二十二条 电量超过 $2 \\\\\\\\mathbf { k } \\\\\\\\mathbf { W } \\\\\\\\cdot \\\\\\\\mathbf { h }$ 的锂电池动力装置应当符合下列要求:\\\\n\\\\n(一)电池之间具有防止热扩散的措施.\\\\n\\\\n(二)输入、输出端设置断电开关,瓦斯超限应当切断所有非本质安全输出.\\\\n\\\\n(三)具有远程连续监测与安全预警功能.', '第一百九十条 低瓦斯矿井必须建立防止瓦斯异常的制度,并遵守下列规定:\\\\n\\\\n(一)开拓新水平、新采区,揭露新煤层,以及采煤工作面绝对瓦斯涌出量超过 $3 \\\\\\\\mathrm { m } ^ { 3 } / \\\\\\\\mathrm { m i n }$ 或者掘进工作面绝对瓦斯涌出量超过$1 \\\\\\\\mathrm { m } ^ { 3 } / \\\\\\\\mathrm { m i n }$ 时,应当测定煤层瓦斯含量或者瓦斯压力.\\\\n\\\\n(二)启用密闭区、盲巷等区域时,必须制定安全排放 瓦 斯\\\\n\\\\n措施.\\\\n\\\\n(三)开采容易自燃和自燃煤层时,必须加强对采空区瓦斯爆炸风险的分析、制定安全措施.\\\\n\\\\n(四)必须建立健全并实施通风瓦斯定期分析制度、制定防范措施.\\\\n\\\\n(五)瓦斯排放、巷道贯通、揭露煤层、清理煤仓、强制放顶、火 区封闭和启封等重点作业环节必须做好瓦斯监测,强化瓦斯防治.', '第二百二十一条 煤与二氧化碳突出、岩石与二氧化碳突出、岩石与瓦斯突出的管理和防治措施参照本章规定执行.\\\\n\\\\n# 第二节 区域综合防突措施', '第一百九十九条 有瓦斯或者二氧化碳喷出的煤(岩)层,采掘作业前必须采取下列措施:\\\\n\\\\n(一)施工前探钻孔或者瓦斯治理钻孔.(二)加大喷出危险区域的风量.(三)将喷出的瓦斯或者二氧化碳直接引入回风巷或者抽采瓦斯管路.', '第七百七十条 处理瓦斯(煤尘)爆炸事故时,应当遵守下列规定:\\\\n\\\\n(一)立即切断灾区电源.(二)检查灾区内有害气体的浓度、温度及通风设施破坏情况,发现有再次爆炸危险时,必须立即撤离至安全地点.(三)进入灾区行动要谨慎,防止碰撞产生火花,引起爆炸.(四)经探察确认或者分析认定人员已经遇难,并且没有火源时,必须先恢复灾区通风,再进行处理.', '第一百一十六条 采(盘)区结束后、回撤设备时,必须编制专门措施,加强通风、瓦斯、顶板、防火管理.\\\\n\\\\n# 第二节 回采和顶板控制']"
-      }
-    ],
-    "structuredContent": {
-      "result": "['第一百九十六条 矿井必须从设计和采掘生产管理上采取措施,防止瓦斯积聚;当发生瓦斯积聚时,必须及时处理.当瓦斯超限达到断电浓度时,班组长、瓦斯检查工、安全检查工、矿调度员有权责令现场作业人员停止作业,停电撤人.\\\\n\\\\n矿井必须有因停电和检修主要通风机停止运转或者通风系统遭到破坏以后恢复通风、排除瓦斯和送电的安全措施.恢复正常通风后,所有受到停风影响的地点,都必须经过通风、瓦斯检查人员检查,证实无危险后,方可恢复工作.所有安装电动机及其开关的地点附近 $2 0 \\\\\\\\mathrm { m }$ 的巷道内,都必须检查瓦斯,只有甲烷浓度符合本规程规定时,方可开启.\\\\n\\\\n临时停工的地点,不得停风;否则必须切断非本质安全型电气设备的电源,设置栅栏、警标,禁止人员进入,并向矿调度室报告.停工区内甲烷或者二氧化碳浓度达到 $3 . 0 \\\\\\\\%$ 或者其他有害气体浓度超过本规程第156条的规定不能立即处理时,必须在内封闭完毕.\\\\n\\\\n恢复已封闭的停工区或者采掘工作接近这些地点时,必须事先排除其中积聚的瓦斯.排除瓦斯工作必须制定安全技术措施.\\\\n\\\\n严禁在停风或者瓦斯超限的区域内作业.', '第二百四十三条 清理突出的煤(岩)时,必须制定防煤尘、片帮、冒顶、瓦斯超限、出现火源,以及防止再次发生突出事故的安全措施.\\\\n\\\\n# 第七章 防灭火\\\\n\\\\n# 第一节 一般规定', '第五百二十二条 电量超过 $2 \\\\\\\\mathbf { k } \\\\\\\\mathbf { W } \\\\\\\\cdot \\\\\\\\mathbf { h }$ 的锂电池动力装置应当符合下列要求:\\\\n\\\\n(一)电池之间具有防止热扩散的措施.\\\\n\\\\n(二)输入、输出端设置断电开关,瓦斯超限应当切断所有非本质安全输出.\\\\n\\\\n(三)具有远程连续监测与安全预警功能.', '第一百九十条 低瓦斯矿井必须建立防止瓦斯异常的制度,并遵守下列规定:\\\\n\\\\n(一)开拓新水平、新采区,揭露新煤层,以及采煤工作面绝对瓦斯涌出量超过 $3 \\\\\\\\mathrm { m } ^ { 3 } / \\\\\\\\mathrm { m i n }$ 或者掘进工作面绝对瓦斯涌出量超过$1 \\\\\\\\mathrm { m } ^ { 3 } / \\\\\\\\mathrm { m i n }$ 时,应当测定煤层瓦斯含量或者瓦斯压力.\\\\n\\\\n(二)启用密闭区、盲巷等区域时,必须制定安全排放 瓦 斯\\\\n\\\\n措施.\\\\n\\\\n(三)开采容易自燃和自燃煤层时,必须加强对采空区瓦斯爆炸风险的分析、制定安全措施.\\\\n\\\\n(四)必须建立健全并实施通风瓦斯定期分析制度、制定防范措施.\\\\n\\\\n(五)瓦斯排放、巷道贯通、揭露煤层、清理煤仓、强制放顶、火 区封闭和启封等重点作业环节必须做好瓦斯监测,强化瓦斯防治.', '第二百二十一条 煤与二氧化碳突出、岩石与二氧化碳突出、岩石与瓦斯突出的管理和防治措施参照本章规定执行.\\\\n\\\\n# 第二节 区域综合防突措施', '第一百九十九条 有瓦斯或者二氧化碳喷出的煤(岩)层,采掘作业前必须采取下列措施:\\\\n\\\\n(一)施工前探钻孔或者瓦斯治理钻孔.(二)加大喷出危险区域的风量.(三)将喷出的瓦斯或者二氧化碳直接引入回风巷或者抽采瓦斯管路.', '第七百七十条 处理瓦斯(煤尘)爆炸事故时,应当遵守下列规定:\\\\n\\\\n(一)立即切断灾区电源.(二)检查灾区内有害气体的浓度、温度及通风设施破坏情况,发现有再次爆炸危险时,必须立即撤离至安全地点.(三)进入灾区行动要谨慎,防止碰撞产生火花,引起爆炸.(四)经探察确认或者分析认定人员已经遇难,并且没有火源时,必须先恢复灾区通风,再进行处理.', '第一百一十六条 采(盘)区结束后、回撤设备时,必须编制专门措施,加强通风、瓦斯、顶板、防火管理.\\\\n\\\\n# 第二节 回采和顶板控制']"
-    },
-    "isError": false
-  }
-} </tool_response>`,
-  `<think> 好的，用户问的是井下发现瓦斯超限怎么处理。首先我需要调用MCP_retrieve_coal_mine_regulations工具来查找相关条款。根据之前的工具描述，这个工具会在《煤矿安全规程》中检索相关内容。用户可能需要具体的条款和处理步骤，所以我要确保查询的关键词准确，比如“瓦斯超限”和“处理措施”。`,
-
-`在用户提供的工具结果里，有多个条款涉及瓦斯超限的处理。比如第一百九十六条提到当瓦斯超限达到断电浓度时，相关人员有权停止作业并撤离人员。还有第七百七十条处理瓦斯爆炸事故的步骤，虽然用户问的是超限，但可能相关。此外，第二百四十三条和第五百二十二条也提到了防瓦斯超限的措施，比如安全监测和断电开关的要求。`,
-
-`需要将这些信息整理成清晰的处理步骤，确保涵盖应急处理、安全措施和预防方法。同时要注意引用正确的条款，比如第一百九十六条和第七百七十条，可能还需要提到其他相关条款如第二百四十三条和第五百二十二条中的具体要求，比如防煤尘措施和锂电池的安全要求。最后，要提醒用户遵循这些规定，并在必要时联系专业人员，确保处理得当。`,
-
-  `</think>`,
-  `根据《煤矿安全规程》相关条款，井下发现瓦斯超限应按以下程序处理：`,
-
-`**1. 紧急处置（依据第196条）**
-- 立即停止作业，切断电源
-- 瓦斯超限达到断电浓度时，班组长、瓦斯检查工等有权责令停电撤人
-- 作业人员必须第一时间撤离至安全地点
-
-**2. 系统处理要求**
-- 停风区域必须切断非本质安全型电气设备电源，设置栅栏警标（第196条）`,
-`- 恢复通风前需经通风、瓦斯检查人员检查确认安全（第196条）
-- 电动机及开关附近20m巷道内必须检查瓦斯，甲烷浓度符合规程要求方可启动（第196条）
-
-**3. 特殊场景处置**
-- 临时停工地点停风时，必须封闭停工区并设置警标（第196条）
-- 瓦斯浓度≥3.0%或有害气体超标无法立即处理时，必须在24小时内封闭（第196条）
-- 排除停工区瓦斯时需制定专项安全技术措施（第196条）
-
-**4. 防范措施（依据第243条、第522条）**
-- 煤与瓦斯突出区域必须采取区域综合防突措施
-- 锂电池动力装置需设置断电开关，瓦斯超限时切断非本质安全输出`,
-`- 重点作业环节必须加强瓦斯监测，如瓦斯排放、巷道贯通等
-
-**5. 事故处理（第770条）**
-- 爆炸事故处理时应：
-  ① 切断灾区电源
-  ② 检查有害气体浓度及通风设施
-  ③ 防止碰撞产生火花
-  ④ 经确认无火源后恢复通风
-
-**注意事项**：所有处理必须严格遵守《煤矿安全规程》相关条款，现场人员应优先执行第196条的紧急处置程序，特殊情况需联系专业技术人员制定专项措施。`]
 
 
 
@@ -1045,6 +868,15 @@ const regenerateResponse = async (messageId: number) => {
 const clearHistory = () => {
   messages.value = []
 }
+
+// 新建对话
+const newChat = () => {
+  messages.value = []
+  inputText.value = ''
+  currentSessionId.value = '-1'
+}
+
+
 
 const exportChat = () => {
   // 导出对话记录

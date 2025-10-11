@@ -36,6 +36,5 @@ export const useAppStore = defineStore("app", () => {
   const toggleDevice = (value: DeviceType) => {
     device.value = value
   }
-
   return { device, sidebar, toggleSidebar, closeSidebar, toggleDevice }
 })
