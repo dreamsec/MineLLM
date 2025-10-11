@@ -204,6 +204,39 @@ const videoHeight = computed(() => {
   return dialogHeight - 180; // 减去标题、按钮和对话框内边距
 });
 
+// 模型选项数据
+const modelOptions = ref([
+  { value: 'none', label: '无检测' },
+  { value: 'fire', label: '火焰检测' },
+  { value: 'helmet', label: '安全帽检测' },
+  { value: 'person', label: '人员检测' },
+  { value: 'smoke', label: '烟雾检测' }
+]);
+
+// 当前选中的模型
+const selectedModel = ref('none');
+
+// 模型选择变化时的处理函数
+const handleModelChange = (value: string) => {
+  console.log(`选择了模型: ${value} 用于摄像头: ${props.item.name}`);
+  // 这里可以添加实际的模型切换逻辑
+  // 例如：调用API切换摄像头的检测模型
+  if (value !== 'none') {
+    ElMessage.success(`已为 ${props.item.name} 启用 ${getModelLabel(value)}`);
+  } else {
+    ElMessage.info(`已关闭 ${props.item.name} 的AI检测`);
+  }
+};
+
+// 根据value获取模型标签
+const getModelLabel = (value: string): string => {
+  const option = modelOptions.value.find(opt => opt.value === value);
+  return option ? option.label : '';
+};
+
+
+
+
 </script>
 
 <template>
@@ -280,6 +313,23 @@ const videoHeight = computed(() => {
           </span>
         </div>
         <div class="dialog-actions">
+
+          <!-- 添加模型选择下拉框 -->
+          <el-select
+            v-model="selectedModel"
+            placeholder="选择AI检测模型"
+            size="small"
+            style="width: 160px; margin-right: 10px;"
+            @change="handleModelChange"
+          >
+            <el-option
+              v-for="option in modelOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+
           <el-button @click="copyRtspUrl" :disabled="!props.item.rtsp">
             复制RTSP地址
           </el-button>

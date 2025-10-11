@@ -678,28 +678,28 @@ article::-webkit-scrollbar {
 }
 
 .left-panel {
-  background: url('@/assets/img/239.png') left;
-  background-size: cover;
-	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
-	min-width: 250px; /* 减小最小宽度 */
-	max-width: 350px; /* 减小最大宽度 */
-	height: calc(100vh - 190px); /* 使用视口高度 */
-	display: flex;
-	flex-direction: column;
-	gap: 15px;
-	margin: 0;
-	padding: 15px 15px 15px 25px;
-	position: absolute;
-	top: 60px; /* 在标题下方 */
-	left: 15px; /* 减小左边距 */
-	z-index: 10;
-	overflow-y: auto; /* 允许垂直滚动 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
+  background: url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
+  background-size: cover; /* 背景图片覆盖整个面板 */
+  width: min(320px, 22vw); /* 面板宽度，取320px和屏幕宽度22%中的较小值 */
+  min-width: 250px; /* 面板最小宽度为250px */
+  max-width: 350px; /* 面板最大宽度为350px */
+  height: calc(100vh - 190px); /* 面板高度，等于整个屏幕高度减去190px */
+  display: flex; /* 使用弹性布局 */
+  flex-direction: column; /* 弹性布局方向为垂直方向 */
+  gap: 15px; /* 面板内元素之间的间距为15px */
+  margin: 0; /* 外边距为0 */
+  padding: 15px 15px 15px 25px; /* 内边距：上下左右分别为15px、15px、15px、25px */
+  position: absolute; /* 绝对定位 */
+  top: 60px; /* 距离顶部60px */
+  left: 15px; /* 距离左侧15px */
+  z-index: 10; /* 层级为10，确保面板显示在其他元素上方 */
+  overflow-y: auto; /* 当内容超出面板高度时，允许垂直滚动 */
+  scrollbar-width: none; /* Firefox浏览器隐藏滚动条 */
+  -ms-overflow-style: none; /* IE和Edge浏览器隐藏滚动条 */
 }
 
 .left-panel::-webkit-scrollbar {
-	display: none; /* Chrome, Safari and Opera */
+  display: none; /* Chrome、Safari和Opera浏览器隐藏滚动条 */
 }
 
 .right-panel {

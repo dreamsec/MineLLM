@@ -690,42 +690,56 @@ onActivated(() => {
 
 /* 左侧边栏样式 */
 .left-sidebar {
-  position: absolute;
-  top: clamp(80px, 8vh, 120px);
-  left: 0;
-  height: 85%;
-  width: 320px;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(0, 20, 64, 0.95) 0%, rgba(0, 30, 80, 0.95) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(64, 158, 255, 0.3);
-  border-radius: 5px;
-  transition: all 0.3s ease;
+  background: url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
+  background-size: cover; /* 背景图片覆盖整个面板 */
+  width: min(320px, 22vw); /* 面板宽度，取320px和屏幕宽度22%中的较小值 */
+  min-width: 250px; /* 面板最小宽度为250px */
+  max-width: 350px; /* 面板最大宽度为350px */
+  height: calc(100vh - 190px); /* 面板高度，等于整个屏幕高度减去190px */
+  display: flex; /* 使用弹性布局 */
+  flex-direction: column; /* 弹性布局方向为垂直方向 */
+  gap: 1px; /* 面板内元素之间的间距为1px */
+  margin: 0; /* 外边距为0 */
+  padding: 15px 15px 15px 25px; /* 内边距：上下左右分别为15px、15px、15px、25px */
+  position: absolute; /* 绝对定位 */
+  top: 60px; /* 距离顶部60px */
+  left: 15px; /* 距离左侧15px */
+  z-index: 10; /* 层级为10，确保面板显示在其他元素上方 */
+  overflow-y: auto; /* 当内容超出面板高度时，允许垂直滚动 */
+  scrollbar-width: none; /* Firefox浏览器隐藏滚动条 */
+  -ms-overflow-style: none; /* IE和Edge浏览器隐藏滚动条 */
   z-index: 999;
   overflow: hidden;
 
   &.collapsed {
     width: 50px;
+    background-image: none;
   }
 }
 
 .right-sidebar {
-  position: absolute;
-  top: clamp(80px, 8vh, 120px);
-  right: 0;
-  width: 320px;
-  height: 85%;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(0, 20, 64, 0.95) 0%, rgba(0, 30, 80, 0.95) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(64, 158, 255, 0.3);
-  border-radius: 5px;
-  transition: all 0.3s ease;
-  z-index: 999;
-  overflow: hidden;
+  background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
+  background-size: cover;
+	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
+	min-width: 250px; /* 减小最小宽度 */
+	max-width: 350px; /* 减小最大宽度 */
+	height: calc(100vh - 190px); /* 使用视口高度 */
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin: 0;
+	padding: 15px 25px 15px 15px;
+	position: absolute; /* 绝对定位浮层 */
+	top: 60px; /* 在标题下方 */
+	right: 15px; /* 减小右边距 */
+	z-index: 999; /* 确保在3D模型上方 */
+	overflow-y: auto; /* 允许滚动 */
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
 
   &.collapsed {
     width: 50px;
+    background-image: none;
   }
 }
 
@@ -734,11 +748,13 @@ onActivated(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: rgba(0, 40, 100, 0.8);
-  border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+  backdrop-filter: blur(10px);
+  // background: rgba(0, 40, 100, 0.8);
+  // border-bottom: 1px solid rgba(64, 158, 255, 0.2);
   color: #fff;
   font-weight: bold;
   min-height: 50px;
+  margin-top: 15px;
 
   .collapse-btn {
     background: rgba(64, 158, 255, 0.2);
@@ -774,20 +790,24 @@ onActivated(() => {
 }
 
 .panel {
-  background: rgba(0, 40, 100, 0.6);
-  border: 1px solid rgba(64, 158, 255, 0.2);
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0; /* 防止面板被压缩 */
+  backdrop-filter: blur(10px);
+  height: auto;
+  flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 允许flex子元素缩小 */
+  overflow: visible; /* 允许内容正常显示 */
 
   h4 {
-    background: rgba(64, 158, 255, 0.1);
-    color: #409EFF;
-    margin: 0;
-    padding: 8px 12px; /* 减少内边距 */
-    font-size: 14px; /* 统一标题字体大小 */
-    font-weight: bold;
-    border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      position: relative;
+      background: url('@/assets/img/225.png') no-repeat center;
+      background-size: cover;
+      text-align: center;
+      color:#f0f2f5;
   }
 }
 
@@ -841,20 +861,12 @@ onActivated(() => {
   height: 100%; /* 占满父容器高度 */
   padding: 8px 0; /* 添加上下内边距 */
 
-  h4 {
-    flex-shrink: 0; /* 标题不压缩 */
-    padding: 12px 16px; /* 减少标题内边距 */
-    margin: 0;
-    background: rgba(64, 158, 255, 0.15);
-    border-bottom: 2px solid rgba(64, 158, 255, 0.3);
-    font-size: 14px; /* 统一标题字体大小 */
-    font-weight: 600;
-    color: #409EFF;
-  }
-
   .layer-item {
     padding: 12px 16px; /* 减少内边距，保留空间 */
-    border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+    gap: 15px;
+    background: rgba(0, 188, 212, 0.05);
+    border: 1px solid rgba(0, 188, 212, 0.2);
+    border-radius: 6px;
     flex: 1; /* 每个图层项平均分配剩余空间 */
     display: flex;
     align-items: center;
@@ -910,6 +922,18 @@ onActivated(() => {
     color: #fff;
     font-size: 13px; /* 统一字体大小 */
 
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(135deg, transparent, rgba(0, 188, 212, 0.5), transparent);
+    }
+
     .status-dot {
       width: 6px; /* 缩小状态点 */
       height: 6px;
@@ -937,10 +961,12 @@ onActivated(() => {
 .working-face {
   .face-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 6px 12px; /* 减少内边距 */
-    border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+    gap: 15px;
+    background: rgba(0, 188, 212, 0.05);
+    border: 1px solid rgba(0, 188, 212, 0.2);
+    border-radius: 6px;
+    padding: 10px;
 
     &:last-child {
       border-bottom: none;
