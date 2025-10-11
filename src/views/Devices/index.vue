@@ -29,7 +29,7 @@
         </div>
       </div>
 
-      <!-- 中间设备列表 -->
+        <!-- 中间设备列表 -->
       <div class="device-list-container">
         <h2>设备列表</h2>
 
@@ -176,11 +176,12 @@
         :rules="formRules"
         label-width="100px"
       >
-        <el-form-item label="设备类型" prop="equipment_type">
+        <el-form-item  v-if="selectedType === '机械设备'"  label="设备类型" prop="equipment_type">
           <el-select v-model="formData.equipment_type" placeholder="请选择设备类型" @change="onDeviceTypeChange">
-            <el-option label="机械设备" value="机械设备" />
-            <el-option label="摄像头" value="摄像头" />
-            <el-option label="传感器" value="传感器" />
+            <el-option label="提升机" value="提升机" />
+            <el-option label="压风机" value="压风机" />
+            <el-option label="排水机" value="排水机" />
+            <el-option label="运输机" value="运输机" />
           </el-select>
         </el-form-item>
 
@@ -189,44 +190,29 @@
         </el-form-item>
 
         <!-- 通用字段 -->
-        <el-form-item label="安装位置" prop="installation_location">
-          <el-input v-model="formData.installation_location" placeholder="请输入安装位置" />
+        <el-form-item label="安装位置" prop="install_location">
+          <el-input v-model="formData.install_location" placeholder="请输入安装位置" />
         </el-form-item>
 
-        <el-form-item label="安装日期" prop="installation_date">
+        <el-form-item label="安装日期" prop="install_date">
           <el-date-picker
-            v-model="formData.installation_date"
+            v-model="formData.install_date"
             type="date"
             placeholder="选择日期"
             style="width: 100%"
           />
-        </el-form-item>
-
-        <!-- 新增字段：投产日期 -->
-        <el-form-item label="投产日期" prop="commissioning_date">
-          <el-date-picker
-            v-model="formData.commissioning_date"
-            type="date"
-            placeholder="选择日期"
-            style="width: 100%"
-          />
-        </el-form-item>
-
-        <!-- 新增字段：责任人 -->
-        <el-form-item label="责任人" prop="responsible_person">
-          <el-input v-model="formData.responsible_person" placeholder="请输入责任人" />
         </el-form-item>
 
         <!-- 修改状态字段 -->
-        <el-form-item label="设备状态" prop="status">
-          <el-select v-model="formData.status" placeholder="请选择设备状态">
+        <el-form-item label="设备状态" prop="equipment_status">
+          <el-select v-model="formData.equipment_status" placeholder="请选择设备状态">
             <el-option label="运行" value="运行" />
             <el-option label="停用" value="停用" />
           </el-select>
         </el-form-item>
 
         <!-- 摄像头特有字段 -->
-        <template v-if="formData.equipment_type === '摄像头'">
+        <template v-if="selectedType === '摄像头'">
           <el-form-item label="IP地址" prop="ip">
             <el-input v-model="formData.ip" placeholder="请输入IP地址" />
           </el-form-item>
@@ -246,19 +232,19 @@
           <el-form-item label="设备编码" prop="equipment_code">
             <el-input v-model="formData.equipment_code" placeholder="请输入设备编码" />
           </el-form-item>
-          <el-form-item label="规格型号" prop="model_specification">
-            <el-input v-model="formData.model_specification" placeholder="请输入规格型号" />
+          <el-form-item label="规格型号" prop="equipment_model">
+            <el-input v-model="formData.equipment_model" placeholder="请输入规格型号" />
           </el-form-item>
           <el-form-item label="制造商" prop="manufacturer">
             <el-input v-model="formData.manufacturer" placeholder="请输入制造商" />
           </el-form-item>
-          <el-form-item label="额定功率(kW)" prop="power">
+          <el-form-item label="额定功率(kW)" prop="rated_power">
             <el-input-number v-model="formData.rated_power" :min="0" />
           </el-form-item>
-          <el-form-item label="额定电压(V)" prop="voltage">
+          <el-form-item label="额定电压(V)" prop="rated_voltage">
             <el-input-number v-model="formData.rated_voltage" :min="0" />
           </el-form-item>
-          <el-form-item label="额定电流(A)" prop="current">
+          <el-form-item label="额定电流(A)" prop="rated_current">
             <el-input-number v-model="formData.rated_current" :min="0" />
           </el-form-item>
           <el-form-item label="备注" prop="remark">
@@ -323,19 +309,17 @@ const pagination = reactive({
 // 表单数据
 const formData = reactive({
   id: null,
-  equipment_type: '机械设备',
+  equipment_type: '',
   equipment_name: '',
   equipment_code: '',
-  model_specification: '',
+  equipment_model: '',
   manufacturer: '',
-  installation_location: '',
-  installation_date: '',
-  commissioning_date: '',
+  install_location: '',
+  install_date: '',
   rated_power: 0,
   rated_voltage: 0,
   rated_current: 0,
-  responsible_person: '',
-  status: '运行',
+  equipment_status: '运行',
   // 摄像头特有字段
   ip: '',
   rtsp: '',
@@ -352,13 +336,11 @@ const formRules = {
     { required: true, message: '请输入设备编码', trigger: 'blur' },
     { min: 2, max: 20, message: '编码长度在 2 到 20 个字符', trigger: 'blur' }
   ],
-  model_specification: [{ required: true, message: '请输入规格型号', trigger: 'blur' }],
+  equipment_model: [{ required: true, message: '请输入设备型号', trigger: 'blur' }], // 修改字段名和提示
   manufacturer: [{ required: true, message: '请输入制造商', trigger: 'blur' }],
-  installation_location: [{ required: true, message: '请输入安装位置', trigger: 'blur' }],
-  installation_date: [{ required: true, message: '请选择安装日期', trigger: 'change' }],
-  commissioning_date: [{ required: true, message: '请选择投产日期', trigger: 'change' }],
-  responsible_person: [{ required: true, message: '请输入责任人', trigger: 'blur' }],
-  status: [{ required: true, message: '请选择设备状态', trigger: 'change' }],
+  install_location: [{ required: true, message: '请输入安装位置', trigger: 'blur' }], // 修改字段名
+  install_date: [{ required: true, message: '请选择安装日期', trigger: 'change' }], // 修改字段名
+  equipment_status: [{ required: true, message: '请选择设备状态', trigger: 'change' }], // 修改字段名
   // 摄像头相关验证规则
   ip: [
     { required: true, message: '请输入IP地址', trigger: 'blur' },
@@ -367,7 +349,10 @@ const formRules = {
       trigger: 'blur'
     }
   ],
-  rtsp: [{ required: true, message: '请输入RTSP地址', trigger: 'blur' }]
+  rtsp: [{ required: true, message: '请输入RTSP地址', trigger: 'blur' }],
+  rated_power: [{ required: true,type: 'number', min: 0, message: '功率不能为负数', trigger: 'blur' }],
+  rated_voltage: [{ required: true,type: 'number', min: 0, message: '电压不能为负数', trigger: 'blur' }],
+  rated_current: [{ required: true,type: 'number', min: 0, message: '电流不能为负数', trigger: 'blur' }]
 }
 
 // 引用
@@ -409,7 +394,7 @@ const filteredDevices = computed(() => {
       voltage: device.rated_voltage,
       current: device.rated_current,
       status: device.is_online === 0 ? 'offline' : 'online',
-      createTime: formatDate(device.created_at),
+      createTime: formatDate(device.create_time),
       remark: device.remark
     }))
 
@@ -485,21 +470,22 @@ function openAddDeviceDialog(): void {
   // 重置表单数据
   Object.assign(formData, {
     id: null,
-    type: '设备',
-    name: '',
-    code: '',
-    model: '',
+    equipment_type: '',
+    equipment_name: '',
+    equipment_code: '',
+    equipment_model: '',
     manufacturer: '',
-    location: '',
-    installDate: '',
-    power: 0,
-    voltage: 0,
-    current: 0,
+    install_location: '',
+    install_date: '',
+    rated_power: 0,
+    rated_voltage: 0,
+    rated_current: 0,
+    equipment_status: '运行',
+    // 摄像头特有字段
     ip: '',
     rtsp: '',
     username: '',
     password: '',
-    status: 'offline',
     remark: ''
   })
   dialogVisible.value = true
@@ -530,16 +516,14 @@ function editDevice(device: DeviceData | CameraData, type: string): void {
     formData.equipment_type = deviceData.equipment_type
     formData.equipment_name = deviceData.equipment_name
     formData.equipment_code = deviceData.equipment_code
-    formData.model_specification = deviceData.equipment_model
+    formData.equipment_model = deviceData.equipment_model
     formData.manufacturer = deviceData.manufacturer
-    formData.installation_location = deviceData.install_location
-    formData.installation_date = deviceData.install_date
-    formData.commissioning_date = deviceData.commissioning_date || ''
+    formData.install_location = deviceData.install_location
+    formData.install_date = deviceData.install_date
     formData.rated_power = deviceData.rated_power
     formData.rated_voltage = deviceData.rated_voltage
     formData.rated_current = deviceData.rated_current
-    formData.responsible_person = deviceData.responsible_person || ''
-    formData.status = deviceData.equipment_status || '运行'
+    formData.equipment_status = deviceData.equipment_status || '运行'
     formData.remark = deviceData.remark || ''
   }
 
@@ -618,7 +602,7 @@ function handleSubmit(): void {
   deviceFormRef.value?.validate((valid) => {
     if (valid) {
       // 根据设备类型进行不同的API调用
-      if (formData.equipment_type === '摄像头') {
+      if (selectedType.value === '摄像头') {
         // // 摄像头处理逻辑
         // const cameraData = {
         //   name: formData.equipment_name,
@@ -653,23 +637,21 @@ function handleSubmit(): void {
         //     })
         // }
       }
-      else if (formData.equipment_type === '机械设备' || formData.equipment_type === '传感器') {
+      else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
         // 机械设备和传感器处理逻辑
         const deviceData = {
           equipment_code: formData.equipment_code,
           equipment_name: formData.equipment_name,
           equipment_type: formData.equipment_type,
-          model_specification: formData.model_specification,
+          equipment_model: formData.equipment_model,
           manufacturer: formData.manufacturer,
-          installation_location: formData.installation_location,
+          install_location: formData.install_location,
           // 日期格式转换为ISO格式
-          installation_date: formData.installation_date ? new Date(formData.installation_date).toISOString() : '',
-          commissioning_date: formData.commissioning_date ? new Date(formData.commissioning_date).toISOString() : '',
+          install_date: formData.install_date ? new Date(formData.install_date).toISOString() : '',
           rated_power: formData.rated_power,
           rated_voltage: formData.rated_voltage,
           rated_current: formData.rated_current,
-          responsible_person: formData.responsible_person,
-          status: formData.status,
+          equipment_status: formData.equipment_status,
           remark: formData.remark
         }
 
@@ -706,6 +688,9 @@ function handleSubmit(): void {
       // 重置表单引用
       deviceFormRef.value?.resetFields()
     }
+    else {
+      console.error('错误')
+    }
   })
 }
 
@@ -714,7 +699,7 @@ async function fetchAllDevices(): Promise<void> {
   loading.value = true
   try {
     // 获取机械设备数据（保持不变）
-    const mechanicalResponse = await getDevicesApi({
+      const mechanicalResponse = await getDevicesApi({
       page: 1,
       page_size: 1000
     })

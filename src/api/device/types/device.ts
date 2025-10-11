@@ -30,9 +30,9 @@ export interface DeviceData {
   // 在线状态 - 0表示离线，非0表示在线
   is_online: number
   // 创建时间 - 记录创建的时间戳
-  created_at: string
+  create_time: string
   // 更新时间 - 记录最后更新的时间戳
-  updated_at: string
+  update_time: string
   // 备注信息 - 关于设备的其他说明
   remark: string
 }
@@ -67,38 +67,6 @@ export interface AddDeviceRequestParams {
   equipment_name: string
   // 设备类型
   equipment_type: string
-  // 型号规格
-  model_specification: string
-  // 制造商
-  manufacturer: string
-  // 安装位置
-  installation_location: string
-  // 安装日期
-  installation_date: string
-  // 投用日期
-  commissioning_date: string
-  // 额定功率
-  rated_power: number
-  // 额定电压
-  rated_voltage: number
-  // 额定电流
-  rated_current: number
-  // 负责人
-  responsible_person: string
-  // 状态
-  status: string
-}
-
-// 新增设备响应数据类型
-export type AddDeviceResponseData = IApiResponseData<{
-  // 设备唯一标识ID
-  id: number
-  // 设备编码
-  equipment_code: string
-  // 设备名称
-  equipment_name: string
-  // 设备类型
-  equipment_type: string
   // 设备型号
   equipment_model: string
   // 制造商
@@ -115,12 +83,34 @@ export type AddDeviceResponseData = IApiResponseData<{
   rated_current: number
   // 设备状态
   equipment_status: string
-  // 在线状态
-  is_online: number
-  // 创建时间
-  created_at: string
-  // 更新时间
-  updated_at: string
   // 备注信息
   remark: string
+}
+
+// 新增设备响应数据类型
+export type AddDeviceResponseData = IApiResponseData<{
+    // 设备编码
+    equipment_code: string
+    // 设备名称
+    equipment_name: string
+    // 设备类型
+    equipment_type: string
+    // 设备型号
+    equipment_model: string
+    // 制造商
+    manufacturer: string
+    // 安装位置
+    install_location: string
+    // 安装日期
+    install_date: string
+    // 额定功率
+    rated_power: number
+    // 额定电压
+    rated_voltage: number
+    // 额定电流
+    rated_current: number
+    // 设备状态
+    equipment_status: string
+    // 备注信息
+    remark: string
 }>
