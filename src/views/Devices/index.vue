@@ -350,9 +350,9 @@ const formRules = {
     }
   ],
   rtsp: [{ required: true, message: '请输入RTSP地址', trigger: 'blur' }],
-  rated_power: [{ required: true,type: 'number', min: 0, message: '功率不能为负数', trigger: 'blur' }],
-  rated_voltage: [{ required: true,type: 'number', min: 0, message: '电压不能为负数', trigger: 'blur' }],
-  rated_current: [{ required: true,type: 'number', min: 0, message: '电流不能为负数', trigger: 'blur' }]
+  rated_power: [{ type: 'number', min: 0, message: '功率不能为负数', trigger: 'blur' }],
+  rated_voltage: [{ type: 'number', min: 0, message: '电压不能为负数', trigger: 'blur' }],
+  rated_current: [{ type: 'number', min: 0, message: '电流不能为负数', trigger: 'blur' }]
 }
 
 // 引用
