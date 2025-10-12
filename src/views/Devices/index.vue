@@ -58,13 +58,13 @@
               <el-tag :type="getTagType(scope.row.type)">{{ scope.row.type }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="80">
+          <el-table-column prop="is_online" label="状态" width="80">
             <template #default="scope">
               <el-tag
                 class="status-tag"
-                :type="scope.row.status === 'online' ? 'success' : 'danger'"
+                :type="scope.row.is_online === 1 ? 'success' : 'danger'"
               >
-                {{ scope.row.status === 'online' ? '在线' : '离线' }}
+                {{ scope.row.is_online === 1 ? '在线' : '离线' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -82,7 +82,7 @@
               <el-button
                 size="small"
                 class="delete-btn"
-                @click.stop="deleteDevice(scope.row.id, scope.row.type)"
+                @click.stop="deleteDevice(scope.row)"
               >
                 删除
               </el-button>
@@ -152,7 +152,7 @@
               <p><strong>额定功率：</strong>{{ selectedDevice.power }} kW</p>
               <p><strong>额定电压：</strong>{{ selectedDevice.voltage }} V</p>
               <p><strong>额定电流：</strong>{{ selectedDevice.current }} A</p>
-              <p><strong>状态：</strong>{{ selectedDevice.status === 'online' ? '在线' : '离线' }}</p>
+              <p><strong>状态：</strong>{{ selectedDevice.is_online === 1 ? '在线' : '离线' }}</p>
               <p><strong>创建时间：</strong>{{ selectedDevice.createTime }}</p>
               <p><strong>备注：</strong>{{ selectedDevice.remark }}</p>
             </div>
@@ -164,20 +164,20 @@
       </div>
     </div>
 
-    <!-- 新增/编辑设备弹窗 -->
+    <!-- 新增设备弹窗 -->
     <el-dialog
-      v-model="dialogVisible"
-      :title="isEditMode ? '编辑设备' : '新增设备'"
+      v-model="addDialogVisible"
+      title="新增设备"
       width="600px"
     >
       <el-form
-        ref="deviceFormRef"
-        :model="formData"
+        ref="addDeviceFormRef"
+        :model="addFormData"
         :rules="formRules"
         label-width="100px"
       >
         <el-form-item  v-if="selectedType === '机械设备'"  label="设备类型" prop="equipment_type">
-          <el-select v-model="formData.equipment_type" placeholder="请选择设备类型" @change="onDeviceTypeChange">
+          <el-select v-model="addFormData.equipment_type" placeholder="请选择设备类型" @change="onAddDeviceTypeChange">
             <el-option label="提升机" value="提升机" />
             <el-option label="压风机" value="压风机" />
             <el-option label="排水机" value="排水机" />
@@ -186,17 +186,17 @@
         </el-form-item>
 
         <el-form-item label="设备名称" prop="equipment_name">
-          <el-input v-model="formData.equipment_name" placeholder="请输入设备名称" />
+          <el-input v-model="addFormData.equipment_name" placeholder="请输入设备名称" />
         </el-form-item>
 
         <!-- 通用字段 -->
         <el-form-item label="安装位置" prop="install_location">
-          <el-input v-model="formData.install_location" placeholder="请输入安装位置" />
+          <el-input v-model="addFormData.install_location" placeholder="请输入安装位置" />
         </el-form-item>
 
         <el-form-item label="安装日期" prop="install_date">
           <el-date-picker
-            v-model="formData.install_date"
+            v-model="addFormData.install_date"
             type="date"
             placeholder="选择日期"
             style="width: 100%"
@@ -205,51 +205,52 @@
 
         <!-- 修改状态字段 -->
         <el-form-item label="设备状态" prop="equipment_status">
-          <el-select v-model="formData.equipment_status" placeholder="请选择设备状态">
+          <el-select v-model="addFormData.equipment_status" placeholder="请选择设备状态">
             <el-option label="运行" value="运行" />
             <el-option label="停用" value="停用" />
           </el-select>
         </el-form-item>
 
+
         <!-- 摄像头特有字段 -->
         <template v-if="selectedType === '摄像头'">
           <el-form-item label="IP地址" prop="ip">
-            <el-input v-model="formData.ip" placeholder="请输入IP地址" />
+            <el-input v-model="addFormData.ip" placeholder="请输入IP地址" />
           </el-form-item>
           <el-form-item label="RTSP地址" prop="rtsp">
-            <el-input v-model="formData.rtsp" placeholder="请输入RTSP地址" />
+            <el-input v-model="addFormData.rtsp" placeholder="请输入RTSP地址" />
           </el-form-item>
           <el-form-item label="用户名" prop="username">
-            <el-input v-model="formData.username" placeholder="请输入用户名" />
+            <el-input v-model="addFormData.username" placeholder="请输入用户名" />
           </el-form-item>
           <el-form-item label="密码" prop="password">
-            <el-input v-model="formData.password" type="password" placeholder="请输入密码" />
+            <el-input v-model="addFormData.password" type="password" placeholder="请输入密码" />
           </el-form-item>
         </template>
 
         <!-- 设备和传感器特有字段 -->
         <template v-else>
           <el-form-item label="设备编码" prop="equipment_code">
-            <el-input v-model="formData.equipment_code" placeholder="请输入设备编码" />
+            <el-input v-model="addFormData.equipment_code" placeholder="请输入设备编码" />
           </el-form-item>
           <el-form-item label="规格型号" prop="equipment_model">
-            <el-input v-model="formData.equipment_model" placeholder="请输入规格型号" />
+            <el-input v-model="addFormData.equipment_model" placeholder="请输入规格型号" />
           </el-form-item>
           <el-form-item label="制造商" prop="manufacturer">
-            <el-input v-model="formData.manufacturer" placeholder="请输入制造商" />
+            <el-input v-model="addFormData.manufacturer" placeholder="请输入制造商" />
           </el-form-item>
           <el-form-item label="额定功率(kW)" prop="rated_power">
-            <el-input-number v-model="formData.rated_power" :min="0" />
+            <el-input-number v-model="addFormData.rated_power" :min="0" />
           </el-form-item>
           <el-form-item label="额定电压(V)" prop="rated_voltage">
-            <el-input-number v-model="formData.rated_voltage" :min="0" />
+            <el-input-number v-model="addFormData.rated_voltage" :min="0" />
           </el-form-item>
           <el-form-item label="额定电流(A)" prop="rated_current">
-            <el-input-number v-model="formData.rated_current" :min="0" />
+            <el-input-number v-model="addFormData.rated_current" :min="0" />
           </el-form-item>
           <el-form-item label="备注" prop="remark">
             <el-input
-              v-model="formData.remark"
+              v-model="addFormData.remark"
               type="textarea"
               placeholder="请输入备注信息"
             />
@@ -258,11 +259,124 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
+          <el-button @click="addDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleAddSubmit">确定</el-button>
         </span>
       </template>
     </el-dialog>
+
+    <!-- 编辑设备弹窗 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑设备"
+      width="600px"
+    >
+      <el-form
+        ref="editDeviceFormRef"
+        :model="editFormData"
+        :rules="formRules"
+        label-width="100px"
+      >
+        <el-form-item  v-if="selectedType === '机械设备'"  label="设备类型" prop="equipment_type">
+          <el-select v-model="editFormData.equipment_type" placeholder="请选择设备类型" >
+            <el-option label="提升机" value="提升机" />
+            <el-option label="压风机" value="压风机" />
+            <el-option label="排水机" value="排水机" />
+            <el-option label="运输机" value="运输机" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="设备名称" prop="equipment_name">
+          <el-input v-model="editFormData.equipment_name" placeholder="请输入设备名称" />
+        </el-form-item>
+
+        <!-- 通用字段 -->
+        <el-form-item label="安装位置" prop="install_location">
+          <el-input v-model="editFormData.install_location" placeholder="请输入安装位置" />
+        </el-form-item>
+
+        <el-form-item label="安装日期" prop="install_date">
+          <el-date-picker
+            v-model="editFormData.install_date"
+            type="date"
+            placeholder="选择日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+
+        <!-- 修改状态字段 -->
+        <el-form-item label="设备状态" prop="equipment_status">
+          <el-select v-model="editFormData.equipment_status" placeholder="请选择设备状态">
+            <el-option label="运行" value="运行" />
+            <el-option label="停机" value="停机" />
+            <el-option label="故障" value="故障" />
+            <el-option label="维护" value="停机" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 添加在线状态字段 -->
+        <el-form-item label="在线状态" prop="is_online">
+          <el-select v-model="editFormData.is_online" placeholder="请选择在线状态">
+            <el-option label="离线" value= 0 />
+            <el-option label="在线" value= 1 />
+          </el-select>
+        </el-form-item>
+
+
+        <!-- 摄像头特有字段 -->
+        <template v-if="selectedType === '摄像头'">
+          <el-form-item label="IP地址" prop="ip">
+            <el-input v-model="editFormData.ip" placeholder="请输入IP地址" />
+          </el-form-item>
+          <el-form-item label="RTSP地址" prop="rtsp">
+            <el-input v-model="editFormData.rtsp" placeholder="请输入RTSP地址" />
+          </el-form-item>
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="editFormData.username" placeholder="请输入用户名" />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="editFormData.password" type="password" placeholder="请输入密码" />
+          </el-form-item>
+        </template>
+
+        <!-- 设备和传感器特有字段 -->
+        <template v-else>
+          <el-form-item label="设备编码" prop="equipment_code">
+            <el-input v-model="editFormData.equipment_code" placeholder="请输入设备编码" />
+          </el-form-item>
+          <el-form-item label="规格型号" prop="equipment_model">
+            <el-input v-model="editFormData.equipment_model" placeholder="请输入规格型号" />
+          </el-form-item>
+          <el-form-item label="制造商" prop="manufacturer">
+            <el-input v-model="editFormData.manufacturer" placeholder="请输入制造商" />
+          </el-form-item>
+          <el-form-item label="额定功率(kW)" prop="rated_power">
+            <el-input-number v-model="editFormData.rated_power" :min="0" />
+          </el-form-item>
+          <el-form-item label="额定电压(V)" prop="rated_voltage">
+            <el-input-number v-model="editFormData.rated_voltage" :min="0" />
+          </el-form-item>
+          <el-form-item label="额定电流(A)" prop="rated_current">
+            <el-input-number v-model="editFormData.rated_current" :min="0" />
+          </el-form-item>
+          <el-form-item label="备注" prop="remark">
+            <el-input
+              v-model="editFormData.remark"
+              type="textarea"
+              placeholder="请输入备注信息"
+            />
+          </el-form-item>
+        </template>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleEditSubmit">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+
   </div>
 </template>
 
@@ -272,7 +386,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ElForm } from 'element-plus'
 
 // 导入API和类型
-import { getDevicesApi , addDeviceApi} from '@/api/device'
+import { getDevicesApi , addDeviceApi,updateDeviceApi,deleteDeviceApi} from '@/api/device'
 import { getAllCamerasApi } from '@/api/camera'
 import type { DeviceData } from '@/api/device/types/device'
 import type { CameraData } from '@/api/camera/types/camera'
@@ -288,8 +402,8 @@ const deviceTypes = [
 const selectedType = ref<string>('机械设备')
 const searchQuery = ref<string>('')
 const loading = ref<boolean>(false)
-const dialogVisible = ref<boolean>(false)
-const isEditMode = ref<boolean>(false)
+const addDialogVisible = ref<boolean>(false)
+const editDialogVisible = ref<boolean>(false)
 const currentEditId = ref<number | null>(null)
 const currentEditType = ref<string>('')
 const selectedDevice = ref<any>(null)
@@ -306,8 +420,8 @@ const pagination = reactive({
   pageSize: 10
 })
 
-// 表单数据
-const formData = reactive({
+// 独立的表单数据
+const addFormData = reactive({
   id: null,
   equipment_type: '',
   equipment_name: '',
@@ -328,6 +442,31 @@ const formData = reactive({
   remark: ''
 })
 
+const editFormData = reactive({
+  id: null,
+  equipment_type: '',
+  equipment_name: '',
+  equipment_code: '',
+  equipment_model: '',
+  manufacturer: '',
+  install_location: '',
+  install_date: '',
+  rated_power: 0,
+  rated_voltage: 0,
+  rated_current: 0,
+  equipment_status: '运行',
+  is_online: 0,
+  // 摄像头特有字段
+  ip: '',
+  rtsp: '',
+  username: '',
+  password: '',
+  remark: ''
+})
+
+// 独立的表单引用
+const addDeviceFormRef = ref<InstanceType<typeof ElForm> | null>(null)
+const editDeviceFormRef = ref<InstanceType<typeof ElForm> | null>(null)
 // 表单验证规则
 const formRules = {
   equipment_type: [{ required: true, message: '请选择设备类型', trigger: 'change' }],
@@ -355,8 +494,6 @@ const formRules = {
   rated_current: [{ type: 'number', min: 0, message: '电流不能为负数', trigger: 'blur' }]
 }
 
-// 引用
-const deviceFormRef = ref<InstanceType<typeof ElForm>>()
 
 // 工具函数：格式化日期
 function formatDate(dateString: string): string {
@@ -393,9 +530,10 @@ const filteredDevices = computed(() => {
       power: device.rated_power,
       voltage: device.rated_voltage,
       current: device.rated_current,
-      status: device.is_online === 0 ? 'offline' : 'online',
+      status: device.equipment_status,
       createTime: formatDate(device.create_time),
-      remark: device.remark
+      remark: device.remark,
+      is_online: device.is_online
     }))
 
   // 添加摄像头数据
@@ -464,11 +602,10 @@ function handleRowClick(row: any): void {
 
 // 打开新增设备对话框
 function openAddDeviceDialog(): void {
-  isEditMode.value = false
   currentEditId.value = null
   currentEditType.value = ''
   // 重置表单数据
-  Object.assign(formData, {
+  Object.assign(addFormData, {
     id: null,
     equipment_type: '',
     equipment_name: '',
@@ -488,46 +625,49 @@ function openAddDeviceDialog(): void {
     password: '',
     remark: ''
   })
-  dialogVisible.value = true
+  addDialogVisible.value = true
 }
 
 // 编辑设备
-function editDevice(device: DeviceData | CameraData, type: string): void {
-  isEditMode.value = true
-  currentEditType.value = type
+function editDevice(device: any ): void {
+  currentEditId.value = device.id
+  currentEditType.value = device.type
 
-  if (type === '摄像头') {
-    const camera = device as CameraData
-    currentEditId.value = camera.id
-    // 重置摄像头表单字段
-    resetCameraFields()
+  if (selectedType.value === '摄像头') {
+    const camera = device
     // 填充摄像头数据
-    formData.equipment_type = '摄像头'
-    formData.equipment_name = camera.name
-    formData.ip = camera.ip || ''
-    formData.rtsp = camera.rtsp || ''
-    formData.username = camera.username || ''
-    formData.password = camera.password || ''
-    formData.status = camera.status === 1 ? '运行' : '停用'
+    Object.assign(editFormData, {
+      id: camera.id,
+      equipment_type: '摄像头',
+      equipment_name: camera.name,
+      ip: camera.ip || '',
+      rtsp: camera.rtsp || '',
+      username: camera.username || '',
+      password: camera.password || '',
+      status: camera.status === 1 ? '运行' : '停用'
+    })
   } else {
-    const deviceData = device as DeviceData
-    currentEditId.value = deviceData.id
+    const deviceData = device
     // 填充设备数据
-    formData.equipment_type = deviceData.equipment_type
-    formData.equipment_name = deviceData.equipment_name
-    formData.equipment_code = deviceData.equipment_code
-    formData.equipment_model = deviceData.equipment_model
-    formData.manufacturer = deviceData.manufacturer
-    formData.install_location = deviceData.install_location
-    formData.install_date = deviceData.install_date
-    formData.rated_power = deviceData.rated_power
-    formData.rated_voltage = deviceData.rated_voltage
-    formData.rated_current = deviceData.rated_current
-    formData.equipment_status = deviceData.equipment_status || '运行'
-    formData.remark = deviceData.remark || ''
+    Object.assign(editFormData, {
+      id: deviceData.id,
+      equipment_type: deviceData.type,
+      equipment_name: deviceData.name,
+      equipment_code: deviceData.code,
+      equipment_model: deviceData.model,
+      manufacturer: deviceData.manufacturer,
+      install_location: deviceData.location,
+      install_date: deviceData.installDate,
+      rated_power: deviceData.power,
+      rated_voltage: deviceData.voltage,
+      rated_current: deviceData.current,
+      equipment_status: deviceData.status || '运行',
+      is_online: deviceData.is_online,
+      remark: deviceData.remark || ''
+    })
   }
+  editDialogVisible.value = true
 
-  dialogVisible.value = true
 }
 
 // 重置摄像头字段
@@ -541,7 +681,7 @@ function resetCameraFields(): void {
 }
 
 // 删除设备
-function deleteDevice(id: number, type: string): void {
+function deleteDevice(device: any): void {
   ElMessageBox.confirm(
     '确定要删除该设备吗？',
     '删除确认',
@@ -552,21 +692,27 @@ function deleteDevice(id: number, type: string): void {
     }
   ).then(() => {
     // 这里应该调用删除API，现在仅做本地模拟
-    if (type === '摄像头') {
+    if (device.type === '摄像头' || selectedType.value === '摄像头') {
       const index = cameras.value.findIndex(camera => camera.id === id)
       if (index !== -1) {
         cameras.value.splice(index, 1)
         ElMessage.success('摄像头删除成功')
       }
     } else {
-      const index = mechanicalDevices.value.findIndex(device => device.id === id)
-      if (index !== -1) {
-        mechanicalDevices.value.splice(index, 1)
-        ElMessage.success('设备删除成功')
-      }
+
+      deleteDeviceApi(device.code).then(() => {
+        // const index = mechanicalDevices.value.findIndex(device => device.id === id)
+        // if (index !== -1) {
+        //   mechanicalDevices.value.splice(index, 1)
+        //   ElMessage.success('设备删除成功')
+        // }
+        fetchAllDevices() // 重新获取数据
+      }).catch(() => {
+        ElMessage.error('删除设备失败')
+      })
     }
     // 如果删除的是当前选中的设备，清除选中状态
-    if (selectedDevice.value && selectedDevice.value.id === id) {
+    if (selectedDevice.value && selectedDevice.value.code === device.code) {
       selectedDevice.value = null
     }
   }).catch(() => {
@@ -574,122 +720,125 @@ function deleteDevice(id: number, type: string): void {
   })
 }
 
-// 设备类型变更
-function onDeviceTypeChange(value: string): void {
+// 新增设备类型变更
+function onAddDeviceTypeChange(value: string): void {
   if (value === '摄像头') {
     // 清空设备和传感器特有字段
-    formData.equipment_code = ''
-    formData.model_specification = ''
-    formData.manufacturer = ''
-    formData.installation_location = ''
-    formData.installation_date = ''
-    formData.commissioning_date = ''
-    formData.rated_power = 0
-    formData.rated_voltage = 0
-    formData.rated_current = 0
-    formData.responsible_person = ''
+    addFormData.equipment_code = ''
+    addFormData.equipment_model = ''
+    addFormData.manufacturer = ''
+    addFormData.install_location = ''
+    addFormData.install_date = ''
+    addFormData.rated_power = 0
+    addFormData.rated_voltage = 0
+    addFormData.rated_current = 0
   } else {
     // 清空摄像头特有字段
-    formData.ip = ''
-    formData.rtsp = ''
-    formData.username = ''
-    formData.password = ''
+    addFormData.ip = ''
+    addFormData.rtsp = ''
+    addFormData.username = ''
+    addFormData.password = ''
   }
 }
 
-// 提交表单
-function handleSubmit(): void {
-  deviceFormRef.value?.validate((valid) => {
+// 编辑设备类型变更
+// function onEditDeviceTypeChange(value: string): void {
+//   // 编辑模式下可能需要更严格的控制，这里仅作参考
+//   if (value === '摄像头') {
+//     // 清空设备和传感器特有字段
+//     editFormData.equipment_code = ''
+//     editFormData.equipment_model = ''
+//     editFormData.manufacturer = ''
+//     editFormData.install_location = ''
+//     editFormData.install_date = ''
+//     editFormData.rated_power = 0
+//     editFormData.rated_voltage = 0
+//     editFormData.rated_current = 0
+//   } else {
+//     // 清空摄像头特有字段
+//     editFormData.ip = ''
+//     editFormData.rtsp = ''
+//     editFormData.username = ''
+//     editFormData.password = ''
+//   }
+// }
+
+// 新增设备表单提交
+function handleAddSubmit(): void {
+  addDeviceFormRef.value?.validate((valid) => {
     if (valid) {
       // 根据设备类型进行不同的API调用
       if (selectedType.value === '摄像头') {
-        // // 摄像头处理逻辑
-        // const cameraData = {
-        //   name: formData.equipment_name,
-        //   ip: formData.ip,
-        //   username: formData.username,
-        //   password: formData.password,
-        //   rtsp: formData.rtsp,
-        //   status: formData.status === '运行' ? 1 : 0
-        // }
-
-        // if (isEditMode.value) {
-        //   // 编辑摄像头
-        //   editCameraApi(currentEditId.value!, cameraData)
-        //     .then(() => {
-        //       ElMessage.success('摄像头更新成功')
-        //       fetchAllDevices() // 重新获取数据
-        //     })
-        //     .catch(error => {
-        //       ElMessage.error('摄像头更新失败')
-        //       console.error(error)
-        //     })
-        // } else {
-        //   // 新增摄像头
-        //   addCameraApi(cameraData)
-        //     .then(() => {
-        //       ElMessage.success('摄像头添加成功')
-        //       fetchAllDevices() // 重新获取数据
-        //     })
-        //     .catch(error => {
-        //       ElMessage.error('摄像头添加失败')
-        //       console.error(error)
-        //     })
-        // }
-      }
-      else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
-        // 机械设备和传感器处理逻辑
-        const deviceData = {
-          equipment_code: formData.equipment_code,
-          equipment_name: formData.equipment_name,
-          equipment_type: formData.equipment_type,
-          equipment_model: formData.equipment_model,
-          manufacturer: formData.manufacturer,
-          install_location: formData.install_location,
-          // 日期格式转换为ISO格式
-          install_date: formData.install_date ? new Date(formData.install_date).toISOString() : '',
-          rated_power: formData.rated_power,
-          rated_voltage: formData.rated_voltage,
-          rated_current: formData.rated_current,
-          equipment_status: formData.equipment_status,
-          remark: formData.remark
+        // 摄像头新增逻辑
+      } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
+        // 机械设备和传感器新增逻辑
+        const add_deviceData = {
+          equipment_code: addFormData.equipment_code,
+          equipment_name: addFormData.equipment_name,
+          equipment_type: addFormData.equipment_type,
+          equipment_model: addFormData.equipment_model,
+          manufacturer: addFormData.manufacturer,
+          install_location: addFormData.install_location,
+          install_date: addFormData.install_date ? new Date(addFormData.install_date).toISOString() : '',
+          rated_power: addFormData.rated_power,
+          rated_voltage: addFormData.rated_voltage,
+          rated_current: addFormData.rated_current,
+          equipment_status: addFormData.equipment_status,
+          remark: addFormData.remark
         }
 
-        if (isEditMode.value) {
-          // 编辑设备
-          // 注意：这里需要根据实际情况实现editDeviceApi
-          // editDeviceApi(currentEditId.value!, deviceData)
-          //   .then(() => {
-          //     ElMessage.success('设备更新成功')
-          //     fetchAllDevices()
-          //   })
-          //   .catch(error => {
-          //     ElMessage.error('设备更新失败')
-          //     console.error(error)
-          //   })
-
-          // 暂时使用模拟数据
-          ElMessage.success('设备更新成功')
-        } else {
-          // 新增设备
-          addDeviceApi(deviceData)
-            .then(() => {
-              ElMessage.success('设备添加成功')
-              fetchAllDevices() // 重新获取数据
-            })
-            .catch(error => {
-              ElMessage.error('设备添加失败')
-              console.error(error)
-            })
-        }
+        addDeviceApi(add_deviceData)
+          .then(() => {
+            ElMessage.success('设备添加成功')
+            fetchAllDevices() // 重新获取数据
+            addDialogVisible.value = false
+          })
+          .catch(error => {
+            ElMessage.error('设备添加失败')
+            console.error(error)
+          })
       }
-
-      dialogVisible.value = false
-      // 重置表单引用
-      deviceFormRef.value?.resetFields()
     }
-    else {
-      console.error('错误')
+
+  })
+}
+
+// 编辑设备表单提交
+function handleEditSubmit(): void {
+  editDeviceFormRef.value?.validate((valid) => {
+    if (valid) {
+      // 根据设备类型进行不同的API调用
+      if (selectedType.value === '摄像头') {
+        // 摄像头编辑逻辑
+      } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
+        // 机械设备和传感器编辑逻辑
+        const edit_deviceData = {
+          equipment_code: editFormData.equipment_code,
+          equipment_name: editFormData.equipment_name,
+          equipment_type: editFormData.equipment_type,
+          equipment_model: editFormData.equipment_model,
+          manufacturer: editFormData.manufacturer,
+          install_location: editFormData.install_location,
+          install_date: editFormData.install_date ? new Date(editFormData.install_date).toISOString() : '',
+          rated_power: editFormData.rated_power,
+          rated_voltage: editFormData.rated_voltage,
+          rated_current: editFormData.rated_current,
+          equipment_status: editFormData.equipment_status,
+          is_online: editFormData.is_online,
+          remark: editFormData.remark
+        }
+
+        updateDeviceApi(editFormData.equipment_code, edit_deviceData)
+          .then(() => {
+            ElMessage.success('设备更新成功')
+            fetchAllDevices()
+            editDialogVisible.value = false
+          })
+          .catch(error => {
+            ElMessage.error('设备更新失败')
+            console.error(error)
+          })
+      }
     }
   })
 }

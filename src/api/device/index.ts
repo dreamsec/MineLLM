@@ -27,3 +27,17 @@ export function addDeviceApi(data: Device.AddDeviceRequestParams) {
   })
 }
 
+export function updateDeviceApi(equipmentCode: string, data: Device.UpdateDeviceRequestParams) {
+  return request<Device.UpdateDeviceResponseData>({
+    url: `/api/v1/equipment/${equipmentCode}`,
+    method: "put",
+    data
+  })
+}
+
+export function deleteDeviceApi(equipmentCode: string) {
+  return request<Device.DeleteDeviceResponseData>({
+    url: `/api/v1/equipment/${equipmentCode}`,
+    method: "delete"
+  })
+}

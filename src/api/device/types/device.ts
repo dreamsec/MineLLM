@@ -114,3 +114,26 @@ export type AddDeviceResponseData = IApiResponseData<{
     // 备注信息
     remark: string
 }>
+
+//修改设备请求参数接口
+export interface UpdateDeviceRequestParams {
+  equipment_code: string
+  equipment_name: string
+  equipment_type: string
+  manufacturer: string
+  install_location: string
+  install_date: string
+  rated_power: number
+  rated_voltage: number
+  rated_current: number
+  equipment_status: string
+  is_online: number
+  remark: string
+}
+
+// 修改设备响应数据类型
+export type UpdateDeviceResponseData = IApiResponseData<DeviceData>;
+
+// 删除设备响应数据类型
+export type DeleteDeviceResponseData = IApiResponseData<string>;
+
