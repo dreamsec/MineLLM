@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
 			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">煤矿井下自供能安全监测系统</div>
+			<div class="header-title">智慧矿山监控系统</div>
 		</div>
 
 

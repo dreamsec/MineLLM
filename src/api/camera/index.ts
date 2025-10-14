@@ -28,3 +28,31 @@ export function getAllCamerasApi() {
 
   return getCamerasApi(params)
 }
+
+export function addCameraApi(params: Camera.AddCameraRequestParams) {
+  return request<Camera.AddCameraResponseData>({
+    url: "/api/v1/camera", // 请根据实际接口地址修改
+    method: "post",
+    data: params // 将参数从params改为data，作为请求体发送
+  })
+}
+
+export function updateCameraApi(params: Camera.UpdateCameraRequestParams) {
+  // 从参数中提取id
+  const { id, ...updateData } = params;
+  return request<Camera.UpdateCameraResponseData>({
+    url: `/api/v1/camera/${id}`,
+    method: "put",
+    data: updateData
+  })
+}
+
+// 删除摄像头
+export function deleteCameraApi(params: Camera.DeleteCameraRequestParams) {
+  // 从参数中提取id
+  const { id } = params;
+  return request<Camera.DeleteCameraResponseData>({
+    url: `/api/v1/camera/${id}`,
+    method: "delete"
+  })
+}

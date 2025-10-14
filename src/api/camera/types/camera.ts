@@ -18,10 +18,6 @@ export interface CameraData {
   x: number
   // Y坐标
   y: number
-  // 视图X坐标
-  vx: number
-  // 视图Y坐标
-  vy: number
   // 创建时间
   create_time: string
   // 更新时间
@@ -49,7 +45,105 @@ export interface GetCamerasResponseData {
   // 摄像头列表数组
   list: CameraData[]
 }
-
 // 摄像头响应数据包装接口
 export type CameraApiResponse = IApiResponseData<GetCamerasResponseData>
 
+// 新增摄像头请求参数接口
+export interface AddCameraRequestParams {
+  // 摄像头名称
+  name: string
+  // IP地址
+  ip: string
+  // 用户名
+  username: string
+  // 密码
+  password: string
+  // RTSP地址
+  rtsp: string
+  // X坐标
+  x: number
+  // Y坐标
+  y: number
+}
+
+// 新增摄像头响应数据类型
+export type AddCameraResponseData = IApiResponseData<{
+  // 摄像头唯一标识ID
+  id: number
+  // 摄像头名称
+  name: string
+  // IP地址
+  ip: string
+  // 用户名
+  username: string
+  // 密码
+  password: string
+  // RTSP地址
+  rtsp: string
+  // 状态 - 0表示离线，1表示在线
+  status: number
+  // X坐标
+  x: number
+  // Y坐标
+  y: number
+  // 创建时间
+  create_time: string
+  // 更新时间
+  update_time: string
+}>
+
+// 修改摄像头请求参数接口
+export interface UpdateCameraRequestParams {
+  // 摄像头唯一标识ID
+  id: number
+  // 摄像头名称
+  name: string
+  // IP地址
+  ip: string
+  // 用户名
+  username: string
+  // 密码
+  password: string
+  // RTSP地址
+  rtsp: string
+  // 状态 - 0表示离线，1表示在线
+  status: number
+  // X坐标
+  x: number
+  // Y坐标
+  y: number
+}
+
+// 修改摄像头响应数据类型
+export type UpdateCameraResponseData = IApiResponseData<{
+  // 摄像头唯一标识ID
+  id: number
+  // 摄像头名称
+  name: string
+  // IP地址
+  ip: string
+  // 用户名
+  username: string
+  // 密码
+  password: string
+  // RTSP地址
+  rtsp: string
+  // 状态 - 0表示离线，1表示在线
+  status: number
+  // X坐标
+  x: number
+  // Y坐标
+  y: number
+  // 创建时间
+  create_time: string
+  // 更新时间
+  update_time: string
+}>
+
+//删除摄像头请求参数接口
+export interface DeleteCameraRequestParams {
+  // 摄像头唯一标识ID
+  id: number
+}
+// 删除摄像头响应数据类型
+export type DeleteCameraResponseData = IApiResponseData<string>

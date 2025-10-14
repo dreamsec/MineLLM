@@ -58,7 +58,8 @@
               <el-tag :type="getTagType(scope.row.type)">{{ scope.row.type }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="is_online" label="状态" width="80">
+
+          <el-table-column v-if="selectedType === '机械设备'" prop="is_online" label="状态" width="80">
             <template #default="scope">
               <el-tag
                 class="status-tag"
@@ -68,8 +69,25 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="location" label="安装位置" width="150" />
-          <el-table-column prop="installDate" label="安装日期" width="120" />
+
+          <el-table-column v-if="selectedType === '摄像头'" prop="status" label="状态" width="80">
+            <template #default="scope">
+              <el-tag
+                class="status-tag"
+                :type="scope.row.status === '运行' ? 'success' : 'danger'"
+              >
+                {{ scope.row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+
+          <el-table-column v-if="selectedType === '机械设备'" prop="location" label="安装位置" width="150" />
+          <el-table-column v-if="selectedType === '机械设备'" prop="installDate" label="安装日期" width="120" />
+          <el-table-column v-if="selectedType === '摄像头'" prop="createTime" label="创建时间" width="150" />
+          <el-table-column v-if="selectedType === '摄像头'" prop="updateTime" label="更新时间" width="150" />
+
+
           <el-table-column label="操作" width="150" fixed="right">
             <template #default="scope">
               <el-button
@@ -117,9 +135,7 @@
               <p><strong>设备类型：</strong>{{ selectedDevice.type }}</p>
               <p><strong>IP地址：</strong>{{ selectedDevice.ip }}</p>
               <p><strong>RTSP地址：</strong>{{ selectedDevice.rtsp }}</p>
-              <p><strong>状态：</strong>{{ selectedDevice.status === 'online' ? '在线' : '离线' }}</p>
-              <p><strong>安装位置：</strong>{{ selectedDevice.location }}</p>
-              <p><strong>安装日期：</strong>{{ selectedDevice.installDate }}</p>
+              <p><strong>状态：</strong>{{ selectedDevice.status  }}</p>
               <p><strong>创建时间：</strong>{{ selectedDevice.createTime }}</p>
             </div>
           </div>
@@ -177,7 +193,7 @@
         label-width="100px"
       >
         <el-form-item  v-if="selectedType === '机械设备'"  label="设备类型" prop="equipment_type">
-          <el-select v-model="addFormData.equipment_type" placeholder="请选择设备类型" @change="onAddDeviceTypeChange">
+          <el-select v-model="addFormData.equipment_type" placeholder="请选择设备类型" >
             <el-option label="提升机" value="提升机" />
             <el-option label="压风机" value="压风机" />
             <el-option label="排水机" value="排水机" />
@@ -185,16 +201,16 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="设备名称" prop="equipment_name">
+        <el-form-item  label="设备名称" prop="equipment_name">
           <el-input v-model="addFormData.equipment_name" placeholder="请输入设备名称" />
         </el-form-item>
 
         <!-- 通用字段 -->
-        <el-form-item label="安装位置" prop="install_location">
+        <el-form-item v-if="selectedType === '机械设备'" label="安装位置" prop="install_location">
           <el-input v-model="addFormData.install_location" placeholder="请输入安装位置" />
         </el-form-item>
 
-        <el-form-item label="安装日期" prop="install_date">
+        <el-form-item v-if="selectedType === '机械设备'" label="安装日期" prop="install_date">
           <el-date-picker
             v-model="addFormData.install_date"
             type="date"
@@ -204,10 +220,12 @@
         </el-form-item>
 
         <!-- 修改状态字段 -->
-        <el-form-item label="设备状态" prop="equipment_status">
+        <el-form-item  v-if="selectedType === '机械设备'" label="设备状态" prop="equipment_status">
           <el-select v-model="addFormData.equipment_status" placeholder="请选择设备状态">
             <el-option label="运行" value="运行" />
-            <el-option label="停用" value="停用" />
+            <el-option label="停机" value="停机" />
+            <el-option label="故障" value="故障" />
+            <el-option label="维护" value="维护" />
           </el-select>
         </el-form-item>
 
@@ -225,6 +243,13 @@
           </el-form-item>
           <el-form-item label="密码" prop="password">
             <el-input v-model="addFormData.password" type="password" placeholder="请输入密码" />
+          </el-form-item>
+          <!-- 新增坐标输入框 -->
+          <el-form-item label="X坐标" prop="x">
+            <el-input-number v-model="addFormData.x" :min="0" :step="0.01" :precision="2" placeholder="请输入X坐标" />
+          </el-form-item>
+          <el-form-item label="Y坐标" prop="y">
+            <el-input-number v-model="addFormData.y" :min="0" :step="0.01" :precision="2" placeholder="请输入Y坐标" />
           </el-form-item>
         </template>
 
@@ -291,11 +316,11 @@
         </el-form-item>
 
         <!-- 通用字段 -->
-        <el-form-item label="安装位置" prop="install_location">
+        <el-form-item  v-if="selectedType === '机械设备'" label="安装位置" prop="install_location">
           <el-input v-model="editFormData.install_location" placeholder="请输入安装位置" />
         </el-form-item>
 
-        <el-form-item label="安装日期" prop="install_date">
+        <el-form-item  v-if="selectedType === '机械设备'" label="安装日期" prop="install_date">
           <el-date-picker
             v-model="editFormData.install_date"
             type="date"
@@ -305,17 +330,17 @@
         </el-form-item>
 
         <!-- 修改状态字段 -->
-        <el-form-item label="设备状态" prop="equipment_status">
+        <el-form-item  v-if="selectedType === '机械设备'" label="设备状态" prop="equipment_status">
           <el-select v-model="editFormData.equipment_status" placeholder="请选择设备状态">
             <el-option label="运行" value="运行" />
             <el-option label="停机" value="停机" />
             <el-option label="故障" value="故障" />
-            <el-option label="维护" value="停机" />
+            <el-option label="维护" value="维护" />
           </el-select>
         </el-form-item>
 
         <!-- 添加在线状态字段 -->
-        <el-form-item label="在线状态" prop="is_online">
+        <el-form-item v-if="selectedType === '机械设备'" label="在线状态" prop="is_online">
           <el-select v-model="editFormData.is_online" placeholder="请选择在线状态">
             <el-option label="离线" value= 0 />
             <el-option label="在线" value= 1 />
@@ -331,6 +356,12 @@
           <el-form-item label="RTSP地址" prop="rtsp">
             <el-input v-model="editFormData.rtsp" placeholder="请输入RTSP地址" />
           </el-form-item>
+          <el-form-item label="状态" prop="status">
+          <el-select v-model="editFormData.status" placeholder="请选择状态">
+            <el-option label="停用" value="停用" />
+            <el-option label="运行" value="运行" />
+          </el-select>
+        </el-form-item>
           <el-form-item label="用户名" prop="username">
             <el-input v-model="editFormData.username" placeholder="请输入用户名" />
           </el-form-item>
@@ -387,7 +418,7 @@ import type { ElForm } from 'element-plus'
 
 // 导入API和类型
 import { getDevicesApi , addDeviceApi,updateDeviceApi,deleteDeviceApi} from '@/api/device'
-import { getAllCamerasApi } from '@/api/camera'
+import { getAllCamerasApi, addCameraApi, updateCameraApi, deleteCameraApi } from '@/api/camera'
 import type { DeviceData } from '@/api/device/types/device'
 import type { CameraData } from '@/api/camera/types/camera'
 
@@ -439,9 +470,13 @@ const addFormData = reactive({
   rtsp: '',
   username: '',
   password: '',
-  remark: ''
+  remark: '',
+    // 新增坐标字段
+  x: 0,
+  y: 0
 })
 
+// 编辑表单数据
 const editFormData = reactive({
   id: null,
   equipment_type: '',
@@ -461,7 +496,11 @@ const editFormData = reactive({
   rtsp: '',
   username: '',
   password: '',
-  remark: ''
+  remark: '',
+  status: '',
+    // 新增坐标字段
+  x: 0,
+  y: 0
 })
 
 // 独立的表单引用
@@ -546,10 +585,12 @@ const filteredDevices = computed(() => {
       ip: camera.ip,
       rtsp: camera.rtsp,
       username: camera.username,
+      password: camera.password,
       location: '',
       installDate: '',
-      status: camera.status === 0 ? 'offline' : 'online',
-      createTime: formatDate(camera.create_time)
+      status: camera.status === 0 ? '停用' : '运行',
+      createTime: formatDate(camera.create_time),
+      updateTime: formatDate(camera.update_time)
     }))
 
   // 根据选择的类型组合数据
@@ -617,7 +658,7 @@ function openAddDeviceDialog(): void {
     rated_power: 0,
     rated_voltage: 0,
     rated_current: 0,
-    equipment_status: '运行',
+    equipment_status: '',
     // 摄像头特有字段
     ip: '',
     rtsp: '',
@@ -644,7 +685,7 @@ function editDevice(device: any ): void {
       rtsp: camera.rtsp || '',
       username: camera.username || '',
       password: camera.password || '',
-      status: camera.status === 1 ? '运行' : '停用'
+      status: camera.status
     })
   } else {
     const deviceData = device
@@ -670,15 +711,6 @@ function editDevice(device: any ): void {
 
 }
 
-// 重置摄像头字段
-function resetCameraFields(): void {
-  formData.equipment_name = ''
-  formData.ip = ''
-  formData.rtsp = ''
-  formData.username = ''
-  formData.password = ''
-  formData.status = '运行'
-}
 
 // 删除设备
 function deleteDevice(device: any): void {
@@ -693,11 +725,11 @@ function deleteDevice(device: any): void {
   ).then(() => {
     // 这里应该调用删除API，现在仅做本地模拟
     if (device.type === '摄像头' || selectedType.value === '摄像头') {
-      const index = cameras.value.findIndex(camera => camera.id === id)
-      if (index !== -1) {
-        cameras.value.splice(index, 1)
-        ElMessage.success('摄像头删除成功')
-      }
+      deleteCameraApi({ id: device.id }).then(() => {
+        fetchAllDevices() // 重新获取数据
+      }).catch(() => {
+        ElMessage.error('删除设备失败')
+      })
     } else {
 
       deleteDeviceApi(device.code).then(() => {
@@ -721,25 +753,25 @@ function deleteDevice(device: any): void {
 }
 
 // 新增设备类型变更
-function onAddDeviceTypeChange(value: string): void {
-  if (value === '摄像头') {
-    // 清空设备和传感器特有字段
-    addFormData.equipment_code = ''
-    addFormData.equipment_model = ''
-    addFormData.manufacturer = ''
-    addFormData.install_location = ''
-    addFormData.install_date = ''
-    addFormData.rated_power = 0
-    addFormData.rated_voltage = 0
-    addFormData.rated_current = 0
-  } else {
-    // 清空摄像头特有字段
-    addFormData.ip = ''
-    addFormData.rtsp = ''
-    addFormData.username = ''
-    addFormData.password = ''
-  }
-}
+// function onAddDeviceTypeChange(value: string): void {
+//   if (value === '摄像头') {
+//     // 清空设备和传感器特有字段
+//     addFormData.equipment_code = ''
+//     addFormData.equipment_model = ''
+//     addFormData.manufacturer = ''
+//     addFormData.install_location = ''
+//     addFormData.install_date = ''
+//     addFormData.rated_power = 0
+//     addFormData.rated_voltage = 0
+//     addFormData.rated_current = 0
+//   } else {
+//     // 清空摄像头特有字段
+//     addFormData.ip = ''
+//     addFormData.rtsp = ''
+//     addFormData.username = ''
+//     addFormData.password = ''
+//   }
+// }
 
 // 编辑设备类型变更
 // function onEditDeviceTypeChange(value: string): void {
@@ -770,6 +802,27 @@ function handleAddSubmit(): void {
       // 根据设备类型进行不同的API调用
       if (selectedType.value === '摄像头') {
         // 摄像头新增逻辑
+        const add_cameraData = {
+          name: addFormData.equipment_name,
+          ip: addFormData.ip,
+          rtsp: addFormData.rtsp,
+          username: addFormData.username,
+          password: addFormData.password,
+          // 新增坐标字段
+          x: addFormData.x,
+          y: addFormData.y
+        }
+
+        addCameraApi(add_cameraData)
+          .then(() => {
+            ElMessage.success('摄像头添加成功')
+            fetchAllDevices() // 重新获取数据
+            addDialogVisible.value = false
+          })
+          .catch(error => {
+            ElMessage.error('摄像头添加失败')
+            console.error(error)
+          })
       } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
         // 机械设备和传感器新增逻辑
         const add_deviceData = {
@@ -810,6 +863,30 @@ function handleEditSubmit(): void {
       // 根据设备类型进行不同的API调用
       if (selectedType.value === '摄像头') {
         // 摄像头编辑逻辑
+        const edit_cameraData = {
+          id: currentEditId.value,
+          name: editFormData.equipment_name,
+          ip: editFormData.ip,
+          rtsp: editFormData.rtsp,
+          username: editFormData.username,
+          password: editFormData.password,
+          // 新增状态字段
+          status: editFormData.status === '停用' ? 0 : 1,
+          // 新增坐标字段
+          x: editFormData.x,
+          y: editFormData.y
+        }
+
+        updateCameraApi(edit_cameraData)
+          .then(() => {
+            ElMessage.success('摄像头更新成功')
+            fetchAllDevices() // 重新获取数据
+            editDialogVisible.value = false
+          })
+          .catch(error => {
+            ElMessage.error('摄像头更新失败')
+            console.error(error)
+          })
       } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
         // 机械设备和传感器编辑逻辑
         const edit_deviceData = {
@@ -856,14 +933,12 @@ async function fetchAllDevices(): Promise<void> {
       mechanicalDevices.value = mechanicalResponse.data.list
     }
 
-    // 获取摄像头数据（但无论是否获取到，都使用模拟数据）
-    // const cameraResponse = await getAllCamerasApi()
-    // if (cameraResponse && cameraResponse.data && cameraResponse.data && cameraResponse.data.list) {
-    //   cameras.value = cameraResponse.data.list
-    // }
+    //获取摄像头数据（但无论是否获取到，都使用模拟数据）
+    const cameraResponse = await getAllCamerasApi()
+    if (cameraResponse && cameraResponse.data && cameraResponse.data && cameraResponse.data.list) {
+      cameras.value = cameraResponse.data.list
+    }
 
-    // 提供传感器和摄像头的模拟数据（即使从后端获取了部分数据）
-    //provideMockData()
   } catch (error) {
     console.error('获取设备数据失败:', error)
     // 在API调用失败时提供模拟数据
