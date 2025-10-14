@@ -368,6 +368,13 @@
           <el-form-item label="密码" prop="password">
             <el-input v-model="editFormData.password" type="password" placeholder="请输入密码" />
           </el-form-item>
+          <!-- 添加坐标输入框 -->
+          <el-form-item label="X坐标" prop="x">
+            <el-input-number v-model="editFormData.x" :min="0" :step="0.01" :precision="2" placeholder="请输入X坐标" />
+          </el-form-item>
+          <el-form-item label="Y坐标" prop="y">
+            <el-input-number v-model="editFormData.y" :min="0" :step="0.01" :precision="2" placeholder="请输入Y坐标" />
+          </el-form-item>
         </template>
 
         <!-- 设备和传感器特有字段 -->
@@ -471,7 +478,6 @@ const addFormData = reactive({
   username: '',
   password: '',
   remark: '',
-    // 新增坐标字段
   x: 0,
   y: 0
 })
@@ -498,7 +504,6 @@ const editFormData = reactive({
   password: '',
   remark: '',
   status: '',
-    // 新增坐标字段
   x: 0,
   y: 0
 })
@@ -590,7 +595,9 @@ const filteredDevices = computed(() => {
       installDate: '',
       status: camera.status === 0 ? '停用' : '运行',
       createTime: formatDate(camera.create_time),
-      updateTime: formatDate(camera.update_time)
+      updateTime: formatDate(camera.update_time),
+      x: camera.x,
+      y: camera.y
     }))
 
   // 根据选择的类型组合数据
@@ -664,7 +671,9 @@ function openAddDeviceDialog(): void {
     rtsp: '',
     username: '',
     password: '',
-    remark: ''
+    remark: '',
+    x: 0,
+    y: 0
   })
   addDialogVisible.value = true
 }
@@ -685,7 +694,9 @@ function editDevice(device: any ): void {
       rtsp: camera.rtsp || '',
       username: camera.username || '',
       password: camera.password || '',
-      status: camera.status
+      status: camera.status,
+      x: camera.x,
+      y: camera.y
     })
   } else {
     const deviceData = device
@@ -794,6 +805,9 @@ function deleteDevice(device: any): void {
 //     editFormData.password = ''
 //   }
 // }
+
+
+
 
 // 新增设备表单提交
 function handleAddSubmit(): void {

@@ -5,6 +5,8 @@ import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图�
 import {throttle} from "lodash";
 import svgPanZoom from 'svg-pan-zoom';
 import CameraItem from './component/CameraItem/index.vue';
+import { getAllCamerasApi } from '@/api/camera';
+import { ElMessage } from 'element-plus';
 
 interface Camera {
   id: number;
@@ -16,8 +18,6 @@ interface Camera {
   status: number;
   vx: number;
   vy: number;
-  x: number;
-  y: number;
   create_time: string;
   update_time: string;
   show?: boolean;
@@ -46,6 +46,7 @@ const handleResize = () => {
 };
 
 onMounted(() => {
+  fetchCameraData();
   window.addEventListener('resize', handleResize);
 });
 
@@ -54,62 +55,98 @@ onBeforeUnmount(() => {
 });
 
 // 摄像头列表 - 煤矿GIS监控点位
-const CameraList = ref<Camera[]>([
-  {
-    id: 1,
-    name: '主井口监控',
-    ip: '192.168.1.101',
-    username: 'admin',
-    password: '123456',
-    rtsp: 'rtsp://192.168.1.101:554/main_shaft',
-    status: 1,
-    vx: 120,
-    vy: 222,
-    x: 0,
-    y: 0,
-    create_time: '2024-01-01',
-    update_time: '2024-01-01',
-    show: true
-  },
-  {
-    id: 2,
-    name: '副井口监控',
-    ip: '192.168.1.102',
-    username: 'admin',
-    password: '123456',
-    rtsp: 'rtsp://192.168.1.102:554/sub_shaft',
-    status: 1,
-    vx: 200,
-    vy: 95,
-    x: 0,
-    y: 0,
-    create_time: '2024-01-01',
-    update_time: '2024-01-01',
-    show: true
-  },
-  {
-    id: 3,
-    name: '1301工作面',
-    ip: '192.168.1.103',
-    username: 'admin',
-    password: '123456',
-    rtsp: 'rtsp://192.168.1.103:554/workface_1301',
-    status: 1,
-    vx: 503,
-    vy: 252,
-    x: 0,
-    y: 0,
-    create_time: '2024-01-01',
-    update_time: '2024-01-01',
-    show: true
-  }
-]);
+// const CameraList = ref<Camera[]>([
+//   {
+//     id: 1,
+//     name: '主井口监控',
+//     ip: '192.168.1.101',
+//     username: 'admin',
+//     password: '123456',
+//     rtsp: 'rtsp://192.168.1.101:554/main_shaft',
+//     status: 1,
+//     vx: 120,
+//     vy: 222,
+//     create_time: '2024-01-01',
+//     update_time: '2024-01-01',
+//     show: true
+//   },
+//   {
+//     id: 2,
+//     name: '副井口监控',
+//     ip: '192.168.1.102',
+//     username: 'admin',
+//     password: '123456',
+//     rtsp: 'rtsp://192.168.1.102:554/sub_shaft',
+//     status: 1,
+//     vx: 200,
+//     vy: 95,
+//     x: 0,
+//     y: 0,
+//     create_time: '2024-01-01',
+//     update_time: '2024-01-01',
+//     show: true
+//   },
+//   {
+//     id: 3,
+//     name: '1301工作面',
+//     ip: '192.168.1.103',
+//     username: 'admin',
+//     password: '123456',
+//     rtsp: 'rtsp://192.168.1.103:554/workface_1301',
+//     status: 1,
+//     vx: 503,
+//     vy: 252,
+//     x: 0,
+//     y: 0,
+//     create_time: '2024-01-01',
+//     update_time: '2024-01-01',
+//     show: true
+//   }
+// ]);
+// 摄像头列表 - 现在使用空数组初始化
+const CameraList = ref<Camera[]>([]);
 
 // 定义缩放比例
 const scale = ref(1);
 // 定义偏移量
 const offsetX = ref(0);
 const offsetY = ref(0);
+
+
+
+// 获取摄像头列表数据的函数
+const fetchCameraData = async () => {
+  try {
+    const response = await getAllCamerasApi();
+    // 检查响应数据格式并适配
+    if (response.data && response.data.list) {
+      // 将后端返回的数据适配到当前所需的格式
+      CameraList.value = response.data.list.map((camera: any) => ({
+        id: camera.id,
+        name: camera.name,
+        ip: camera.ip,
+        username: camera.username || 'admin',
+        password: camera.password || '123456',
+        rtsp: camera.rtsp,
+        status: camera.status || 0,
+        vx: camera.vx || (camera.x || 0), // 如果没有vx，使用x或默认0
+        vy: camera.vy || (camera.y || 0), // 如果没有vy，使用y或默认0
+        create_time: camera.create_time || new Date().toISOString().split('T')[0],
+        update_time: camera.update_time || new Date().toISOString().split('T')[0],
+        show: camera.status === 1 ? true : false // 默认显示
+      }));
+    } else {
+      ElMessage.error('获取摄像头数据失败');
+      console.error('摄像头数据格式不正确:', response);
+    }
+  } catch (error) {
+    ElMessage.error('获取摄像头数据时发生错误');
+    console.error('获取摄像头数据失败:', error);
+  }
+  // finally {
+  //   loading.value = false;
+  // }
+};
 
 // 图层状态接口定义
 interface LayerVisibilityState {
@@ -381,6 +418,8 @@ onActivated(() => {
   offsetX.value = 0;
   offsetY.value = 0;
   scale.value = 1;
+  // 获取摄像头数据
+  fetchCameraData();
 });
 </script>
 
@@ -467,16 +506,16 @@ onActivated(() => {
 
       <!-- 摄像头图标层 - 独立的覆盖层 -->
       <div class="camera-overlay">
-        <CameraItem
-          class="icon-box"
-          v-for="item in CameraList"
-          :key="item.id"
-          v-if="isCameraVisible"
-          :item="item"
-          :scale="scale"
-          :offsetX="offsetX"
-          :offsetY="offsetY"
-          :svg-pan-zoom-instance="svgTiger"/>
+        <template v-for="item in CameraList" :key="item.id">
+          <CameraItem
+            v-if="isCameraVisible && item.show"
+            class="icon-box"
+            :item="item"
+            :scale="scale"
+            :offsetX="offsetX"
+            :offsetY="offsetY"
+            :svg-pan-zoom-instance="svgTiger"/>
+        </template>
       </div>
     </div>
 
