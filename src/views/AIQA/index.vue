@@ -47,6 +47,8 @@
           </div>
 
           <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
+
+            <!-- 消息头像 -->
             <div class="message-avatar">
               <div v-if="message.type === 'user'" class="user-avatar">
                 <i class="fas fa-user"></i>

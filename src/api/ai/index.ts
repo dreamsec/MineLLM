@@ -5,10 +5,10 @@ import type {GetNewChatSessionIdResponseData, newChatSessionIdRequestData} from 
 
 /** 获取AI回复 */
 export function getAiResponse(data: AI.RequestData) {
-  return fetch(`${import.meta.env.VITE_BASE_API}/chat/stream`,{
+  return fetch(`${import.meta.env.VITE_BASE_API}/api/v1/chat/stream`,{
     method: "post",
     headers:{ "Content-Type": "application/json" ,
-      'Authorization': "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc1ODE5MDMyMn0.WDtXOzy8zGKNuCdhNsYTmw8silMcLXnspHlCwJDbYTU",
+      'Authorization': "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc2MTM5NDc5Nn0.428TAO5aYkfQa9bhuSAsQRMqyueI12N6pFyKENj_6jM",
     },
     body:JSON.stringify(data),
   })
@@ -16,7 +16,7 @@ export function getAiResponse(data: AI.RequestData) {
 
 export function newChatSessionId(params:newChatSessionIdRequestData) {
   return request<AI.GetNewChatSessionIdResponseData>({
-    url: `chat/new`,
+    url: `/api/v1/chat/new`,
     method: "post",
     data:params
   })
