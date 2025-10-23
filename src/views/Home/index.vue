@@ -744,7 +744,7 @@ article::-webkit-scrollbar {
 
 .panel-section1 {
   /* padding: 5px; */
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(80px);
   height: auto;
   flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
   display: flex;

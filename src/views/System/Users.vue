@@ -7,7 +7,7 @@
         <p class="page-subtitle">管理系统用户账户、权限分配和登录状态</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" @click="showAddUserModal = true">
+        <button class="btn btn-primary" @click="openAddUserDialog">
           <span class="btn-icon">➕</span>
           添加用户
         </button>
@@ -98,7 +98,7 @@
               <th>用户信息</th>
               <th>角色</th>
               <th>状态</th>
-              <th>最后登录</th>
+              <th>联系电话</th>
               <th>创建时间</th>
               <th>操作</th>
             </tr>
@@ -110,20 +110,22 @@
                   <div class="status-indicator" :class="user.status"></div>
                 </div>
                 <div class="user-details">
-                  <div class="user-name">{{ user.name }}</div>
+                  <div class="user-name">{{ user.username }}</div>
                   <div class="user-email">{{ user.email }}</div>
                 </div>
               </td>
+
               <td class="user-role">
                 <span class="role-badge" :class="user.role">{{ user.roleName }}</span>
               </td>
+
               <td class="user-status">
                 <span class="status-badge" :class="user.status">
                   {{ getStatusText(user.status) }}
                 </span>
               </td>
-              <td class="last-login">{{ formatDate(user.lastLogin) }}</td>
-              <td class="created-time">{{ formatDate(user.createdAt) }}</td>
+              <td class="last-login">{{ user.phone }}</td>
+              <td class="created-time">{{ formatDate(user.create_time) }}</td>
               <td class="user-actions">
                 <button class="action-btn edit" @click="editUser(user)" title="编辑">
                   ✏️
@@ -167,150 +169,253 @@
       </div>
     </div>
 
-    <!-- 添加/编辑用户模态框 -->
-    <div v-if="showAddUserModal || showEditUserModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ showEditUserModal ? '编辑用户' : '添加用户' }}</h3>
-          <button class="modal-close" @click="closeModal">✕</button>
-        </div>
-        <form @submit.prevent="saveUser" class="modal-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label>用户名</label>
-              <input v-model="userForm.username" type="text" required />
-            </div>
-            <div class="form-group">
-              <label>姓名</label>
-              <input v-model="userForm.name" type="text" required />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>邮箱</label>
-              <input v-model="userForm.email" type="email" required />
-            </div>
-            <div class="form-group">
-              <label>手机号</label>
-              <input v-model="userForm.phone" type="tel" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>角色</label>
-              <select v-model="userForm.role" required>
-                <option value="admin">管理员</option>
-                <option value="operator">操作员</option>
-                <option value="viewer">观察员</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>状态</label>
-              <select v-model="userForm.status" required>
-                <option value="active">启用</option>
-                <option value="disabled">禁用</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group" v-if="!showEditUserModal">
-            <label>密码</label>
-            <input v-model="userForm.password" type="password" required />
-          </div>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" @click="closeModal">
-              取消
-            </button>
-            <button type="submit" class="btn btn-primary">
-              {{ showEditUserModal ? '保存' : '添加' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- 新增用户对话框 -->
+    <el-dialog
+      v-model="addDialogVisible"
+      title="新增用户"
+      width="500px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <el-form
+        ref="createFormRef"
+        :model="addFormData"
+        :rules="formRules"
+        label-width="80px"
+        class="form-container"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="addFormData.username" placeholder="请输入用户名" />
+        </el-form-item>
+
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="addFormData.name" placeholder="请输入姓名" />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="addFormData.email" type="email" placeholder="请输入邮箱" />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="addFormData.phone" placeholder="请输入手机号" />
+        </el-form-item>
+
+        <el-form-item label="角色" prop="roles">
+          <el-select
+            v-model="addFormData.roles[0]"
+            placeholder="请选择角色"
+            style="width: 100%"
+          >
+            <el-option label="管理员" value="admin" />
+            <el-option label="操作员" value="operator" />
+            <el-option label="观察员" value="viewer" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态" prop="status">
+          <el-select
+            v-model="addFormData.status"
+            placeholder="请选择状态"
+            style="width: 100%"
+          >
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="addFormData.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="addDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitCreateForm">添加</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑用户弹窗 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑用户"
+      width="500px"
+      destroy-on-close
+    >
+      <el-form
+        ref="editFormRef"
+        :model="editFormData"
+        :rules="formRules"
+        label-width="100px"
+        class="demo-ruleForm"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="editFormData.username" placeholder="请输入用户名" disabled />
+        </el-form-item>
+
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="editFormData.name" placeholder="请输入姓名" />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="editFormData.email" placeholder="请输入邮箱" />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="editFormData.phone" placeholder="请输入手机号" />
+        </el-form-item>
+
+        <el-form-item label="角色" prop="roles[0]">
+          <el-select v-model="editFormData.roles[0]" placeholder="请选择角色" style="width: 100%;">
+            <el-option label="管理员" value="admin" />
+            <el-option label="操作员" value="operator" />
+            <el-option label="观察员" value="viewer" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="editFormData.status" placeholder="请选择状态" style="width: 100%;">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditForm">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
+import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
+import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '@/api/user'
 
 // 响应式数据
 const searchQuery = ref('')
 const statusFilter = ref('')
 const roleFilter = ref('')
 const currentPage = ref(1)
-const showAddUserModal = ref(false)
-const showEditUserModal = ref(false)
+
 const editingUser = ref<any>(null)
 const currentUserId = ref(1) // 当前登录用户ID
-
-// 用户表单
-const userForm = ref({
+const loading = ref(false)
+const totalSize = ref(0)
+const pageSize = ref(10)
+const addDialogVisible = ref<boolean>(false)
+const editDialogVisible = ref<boolean>(false)
+// 独立的表单数据
+const addFormData = reactive({
   username: '',
   name: '',
   email: '',
   phone: '',
-  role: 'viewer',
-  status: 'active',
+  roles: ['观察员'], // 使用roles数组
+  status: 1, // 1: 启用, 0: 禁用
   password: ''
 })
 
-// 模拟用户数据
-const users = ref([
-  {
-    id: 1,
-    username: 'admin',
-    name: '系统管理员',
-    email: 'admin@example.com',
-    phone: '13800138000',
-    role: 'admin',
-    roleName: '管理员',
-    status: 'active',
-    avatar: 'https://via.placeholder.com/40',
-    lastLogin: new Date('2024-01-15T10:30:00'),
-    createdAt: new Date('2024-01-01T00:00:00')
-  },
-  {
-    id: 2,
-    username: 'operator1',
-    name: '张工程师',
-    email: 'zhang@example.com',
-    phone: '13800138001',
-    role: 'operator',
-    roleName: '操作员',
-    status: 'active',
-    avatar: 'https://via.placeholder.com/40',
-    lastLogin: new Date('2024-01-15T09:15:00'),
-    createdAt: new Date('2024-01-05T00:00:00')
-  },
-  {
-    id: 3,
-    username: 'viewer1',
-    name: '李观察员',
-    email: 'li@example.com',
-    phone: '13800138002',
-    role: 'viewer',
-    roleName: '观察员',
-    status: 'offline',
-    avatar: 'https://via.placeholder.com/40',
-    lastLogin: new Date('2024-01-14T16:45:00'),
-    createdAt: new Date('2024-01-10T00:00:00')
-  },
-  {
-    id: 4,
-    username: 'operator2',
-    name: '王技术员',
-    email: 'wang@example.com',
-    phone: '13800138003',
-    role: 'operator',
-    roleName: '操作员',
-    status: 'disabled',
-    avatar: 'https://via.placeholder.com/40',
-    lastLogin: new Date('2024-01-10T14:20:00'),
-    createdAt: new Date('2024-01-08T00:00:00')
-  }
-])
+// 编辑表单数据
+const editFormData = reactive({
+  id: null,
+  username: '',
+  name: '',
+  email: '',
+  phone: '',
+  roles: ['观察员'], // 使用roles数组
+  status: 1, // 1: 启用, 0: 禁用
+  password: ''
+})
 
-// 计算属性
+// 独立的表单引用
+const createFormRef = ref<InstanceType<typeof ElForm> | null>(null)
+const editFormRef = ref<InstanceType<typeof ElForm> | null>(null)
+
+// 表单验证规则
+const formRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' },
+    { min: 1, max: 10, message: '姓名长度在 1 到 10 个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' }
+  ],
+  roles: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6个字符', trigger: 'blur' }
+  ]
+}
+
+// 用户数据 - 从API获取
+const users = ref<any[]>([])
+
+//打开添加用户弹窗
+const openAddUserDialog = () => {
+  // 清空表单数据
+  Object.assign(addFormData, {
+    username: '',
+    name: '',
+    email: '',
+    phone: '',
+    roles: [''],
+    status: 1,
+    password: ''
+  })
+  addDialogVisible.value = true
+}
+
+
+// 获取用户列表
+const fetchUsers = async () => {
+  loading.value = true
+  try {
+    const response = await getUsersApi({
+      page: currentPage.value,
+      size: pageSize.value
+    })
+
+    if (response.code === 1) {
+      // 转换用户数据以适应前端展示
+      users.value = response.data.items.map((user: any) => ({
+        ...user,
+        roleName: user.roles?.[0] || '观察员', // 取第一个角色作为主要角色
+        role: getRole(user.roles?.[0] || '观察员'),
+        status: user.status === 1 ? 'active' : 'disabled'
+      }))
+      totalSize.value = response.data.total
+    } else {
+      ElMessage.error(response.msg || '获取用户列表失败')
+    }
+  } catch (error) {
+    console.error('获取用户列表错误:', error)
+    ElMessage.error('获取用户列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 计算属性 - 注：在真实项目中，过滤应该由后端API处理
 const filteredUsers = computed(() => {
   let filtered = users.value
 
@@ -318,8 +423,8 @@ const filteredUsers = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(user =>
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
       user.username.toLowerCase().includes(query)
     )
   }
@@ -337,18 +442,18 @@ const filteredUsers = computed(() => {
   return filtered
 })
 
-const totalUsers = computed(() => users.value.length)
+const totalUsers = computed(() => totalSize.value)
 const onlineUsers = computed(() => users.value.filter(u => u.status === 'active').length)
 const disabledUsers = computed(() => users.value.filter(u => u.status === 'disabled').length)
 const newUsersToday = computed(() => {
-  const today = new Date()
+  const today = new Date().toDateString()
   return users.value.filter(u => {
-    const createdDate = new Date(u.createdAt)
-    return createdDate.toDateString() === today.toDateString()
+    const createdDate = new Date(u.create_time)
+    return createdDate.toDateString() === today
   }).length
 })
 
-const totalPages = computed(() => Math.ceil(filteredUsers.value.length / 10))
+const totalPages = computed(() => Math.ceil(totalSize.value / pageSize.value))
 
 // 方法
 const getStatusText = (status: string) => {
@@ -360,19 +465,23 @@ const getStatusText = (status: string) => {
   return statusMap[status] || status
 }
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date)
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date)
+  } catch (error) {
+    return dateString
+  }
 }
 
 const refreshUsers = () => {
-  // 模拟刷新数据
-  console.log('刷新用户数据')
+  fetchUsers()
 }
 
 const exportUsers = () => {
@@ -382,70 +491,136 @@ const exportUsers = () => {
 
 const editUser = (user: any) => {
   editingUser.value = user
-  userForm.value = { ...user }
-  showEditUserModal.value = true
+  // 使用editFormData替代userForm
+  editFormData.id = user.id
+  editFormData.username = user.username
+  editFormData.name = user.name
+  editFormData.email = user.email
+  editFormData.phone = user.phone || ''
+
+  // 正确处理角色值转换
+  if (user.roleName === '超级管理员') {
+    editFormData.roles = ['超级管理员']
+  } else if (user.roleName === '操作员') {
+    editFormData.roles = ['操作员']
+  } else {
+    editFormData.roles = ['观察员']
+  }
+
+  editFormData.status = user.status === 'active' ? 1 : 0
+  editFormData.password = '' // 编辑时密码可选
+
+  editDialogVisible.value = true
 }
 
 const viewUser = (user: any) => {
-  console.log('查看用户详情:', user)
+  ElMessage.info(`查看用户 ${user.name} 的详情`)
 }
 
-const deleteUser = (user: any) => {
-  if (confirm(`确定要删除用户 "${user.name}" 吗？`)) {
-    users.value = users.value.filter(u => u.id !== user.id)
-  }
-}
-
-const saveUser = () => {
-  if (showEditUserModal.value && editingUser.value) {
-    // 编辑用户
-    const index = users.value.findIndex(u => u.id === editingUser.value.id)
-    if (index !== -1) {
-      users.value[index] = { ...users.value[index], ...userForm.value }
+// 删除用户
+function deleteUser(user: any): void {
+  ElMessageBox.confirm(
+    `确定要删除用户 "${user.name}" 吗？`,
+    '警告',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     }
-  } else {
-    // 添加用户
-    const newUser = {
-      id: Date.now(),
-      ...userForm.value,
-      roleName: getRoleName(userForm.value.role),
-      avatar: 'https://via.placeholder.com/40',
-      lastLogin: new Date(),
-      createdAt: new Date()
-    }
-    users.value.push(newUser)
-  }
+  ).then(() => {
+    // 确保userId是数字类型
+    const userId = parseInt(user.id) || 0
 
-  closeModal()
+    if (userId === 0) {
+      ElMessage.error('无效的用户ID')
+      return
+    }
+
+    deleteUserApi(userId).then((response) => {
+      if (response.code === 1) {
+        ElMessage.success('删除用户成功')
+        fetchUsers() // 重新获取用户列表
+      } else {
+        ElMessage.error(response.msg || '删除用户失败')
+      }
+    }).catch(() => {
+      ElMessage.error('删除用户失败')
+    })
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
 }
 
-const getRoleName = (role: string) => {
+// 提交创建表单
+function submitCreateForm(): void {
+  createFormRef.value?.validate((valid) => {
+    if (valid) {
+      // const userData = {
+      //   ...addFormData,
+      //   // 确保status是数字类型
+      //   status: Number(addFormData.status),
+      //   // 确保roles是数组类型
+      //   roles: Array.isArray(addFormData.roles) ? addFormData.roles : [addFormData.roles]
+      // }
+
+      createUserApi(addFormData)
+        .then((response) => {
+          if (response.code === 1) {
+            ElMessage.success('创建用户成功')
+            fetchUsers() // 重新获取用户列表
+            addDialogVisible.value = false
+          } else {
+            ElMessage.error(response.msg || '创建用户失败')
+          }
+        })
+        .catch(error => {
+          ElMessage.error('创建用户失败')
+          console.error('创建用户错误:', error)
+        })
+    }
+  })
+}
+
+// 提交编辑表单
+function submitEditForm(): void {
+  editFormRef.value?.validate((valid) => {
+    if (valid) {
+      const userData = {
+        ...editFormData,
+      }
+
+      updateUserApi(editFormData.id, userData)
+        .then((response) => {
+          if (response.code === 1) {
+            ElMessage.success('更新用户成功')
+            fetchUsers() // 重新获取用户列表
+            editDialogVisible.value = false
+          } else {
+            ElMessage.error(response.msg || '更新用户失败')
+          }
+        })
+        .catch(error => {
+          ElMessage.error('更新用户失败')
+          console.error('更新用户错误:', error)
+        })
+    }
+  })
+}
+
+const getRole = (role: string) => {
   const roleMap: Record<string, string> = {
-    admin: '管理员',
-    operator: '操作员',
-    viewer: '观察员'
+    '超级管理员':'admin',
+    '操作员':'operator',
+    '观察员':'viewer',
   }
   return roleMap[role] || role
 }
 
-const closeModal = () => {
-  showAddUserModal.value = false
-  showEditUserModal.value = false
-  editingUser.value = null
-  userForm.value = {
-    username: '',
-    name: '',
-    email: '',
-    phone: '',
-    role: 'viewer',
-    status: 'active',
-    password: ''
-  }
-}
+
 
 onMounted(() => {
-  // 页面加载时的初始化
-  console.log('用户管理页面已加载')
+  // 页面加载时获取用户数据
+  fetchUsers()
 })
 </script>
 

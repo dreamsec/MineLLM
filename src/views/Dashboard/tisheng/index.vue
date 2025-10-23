@@ -17,10 +17,20 @@
           allowfullscreen
           scrolling="no"
         ></iframe>
+        <!-- 全屏按钮 -->
+        <button class="fullscreen-btn" @click="toggleFullScreen" title="切换全屏">
+          <!-- 根据全屏状态显示不同图标 -->
+          <svg v-if="!isFullScreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+          </svg>
+        </button>
       </div>
 
-      <!-- 左侧数据区 - 透明浮层 -->
-      <div class="left-panel">
+      <!-- 左侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
+      <div v-if="!isFullScreen" class="left-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
@@ -174,8 +184,8 @@
 
       </div>
 
-      <!-- 右侧数据区 - 透明浮层 -->
-      <div class="right-panel">
+      <!-- 右侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
+      <div v-if="!isFullScreen" class="right-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
@@ -292,6 +302,56 @@ defineOptions({
 
 import {ref, onMounted, onUnmounted} from 'vue'
 import * as echarts from 'echarts'
+
+const isFullScreen = ref(false)
+
+const toggleFullScreen = () => {
+  // 切换全屏状态
+  isFullScreen.value = !isFullScreen.value;
+
+  if (isFullScreen.value) {
+    // 进入全屏模式
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen();
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    } else if (docEl.mozRequestFullScreen) {
+      docEl.mozRequestFullScreen();
+    } else if (docEl.msRequestFullscreen) {
+      docEl.msRequestFullscreen();
+    }
+    // 添加全屏样式类
+    document.body.classList.add('fullscreen-mode');
+    document.documentElement.classList.add('fullscreen-mode');
+  } else {
+    // 退出全屏模式
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    // 移除全屏样式类
+    document.body.classList.remove('fullscreen-mode');
+    document.documentElement.classList.remove('fullscreen-mode');
+  }
+};
+
+// 监听全屏状态变化（用户可能通过ESC键或其他方式退出全屏）
+const handleFullscreenChange = () => {
+  // 检测实际的全屏状态
+  const isActuallyFullscreen = !!(document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement);
+
+  // 更新我们的状态变量，确保与实际状态同步
+  isFullScreen.value = isActuallyFullscreen;
+};
 
 const chartRef = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
@@ -569,11 +629,36 @@ const resizeChart = () => {
 onMounted(() => {
   initChart()
   window.addEventListener('resize', resizeChart)
+
+  // 添加全屏事件监听
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 })
 
 onUnmounted(() => {
   chart?.dispose()
   window.removeEventListener('resize', resizeChart)
+
+  // 移除全屏事件监听
+  document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+
+  // 如果组件卸载时仍处于全屏状态，尝试退出全屏
+  if (isFullScreen.value) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
 })
 </script>
 
@@ -678,7 +763,7 @@ article::-webkit-scrollbar {
 }
 
 .left-panel {
-  background: url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
+  background: #001440  url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
   background-size: cover; /* 背景图片覆盖整个面板 */
   width: min(320px, 22vw); /* 面板宽度，取320px和屏幕宽度22%中的较小值 */
   min-width: 250px; /* 面板最小宽度为250px */
@@ -728,7 +813,7 @@ article::-webkit-scrollbar {
 }
 
 .center-panel {
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%; /* 使用100%宽度自适应父容器 */
@@ -737,11 +822,80 @@ article::-webkit-scrollbar {
   overflow: hidden;
 }
 
+.fullscreen-btn {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+/* 全屏模式样式 - 隐藏布局组件 */
+.fullscreen-mode .layout-container .header,
+.fullscreen-mode .layout-container .sidebar {
+  display: none !important;
+}
+
+/* 全屏模式下主内容区占满屏幕 */
+.fullscreen-mode .layout-container .main-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100vh !important;
+  overflow: hidden;
+}
+
+/* 确保全屏模式下#app元素高度正确 */
+.fullscreen-mode #app {
+  height: 100vh !important;
+  overflow: hidden;
+}
+
+.fullscreen-btn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+.fullscreen-btn:active {
+  transform: scale(0.95);
+}
+
+/* 全屏状态下的样式 */
+:fullscreen .center-panel,
+:-webkit-full-screen .center-panel,
+:-moz-full-screen .center-panel,
+:-ms-fullscreen .center-panel {
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+:fullscreen .center-panel iframe,
+:-webkit-full-screen .center-panel iframe,
+:-moz-full-screen .center-panel iframe,
+:-ms-fullscreen .center-panel iframe {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+.fullscreen-btn svg {
+  transition: transform 0.3s ease;
+}
+
 /* 面板区域 */
 
 .panel-section1 {
   /* padding: 5px; */
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(90px);
   height: auto;
   flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
   display: flex;
