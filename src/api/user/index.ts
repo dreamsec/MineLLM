@@ -2,7 +2,7 @@ import { request } from "@/utils/service"
 import type * as User from "./types/user"
 
 // 获取用户列表
-export function getUsersApi(params?: User.GetUsersRequestParams) {
+export function getUsersApi(params: User.GetUsersRequestParams) {
   return request<User.GetUsersResponseData>({
     url: "/api/v1/auth/user/list",
     method: "GET",

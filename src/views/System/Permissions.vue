@@ -340,6 +340,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useSystemStore } from '@/store/modules/systemStore'
+
+//状态库
+const systemStore = useSystemStore()
 
 // 响应式数据
 const showAddPermissionModal = ref(false)
@@ -500,7 +504,7 @@ const permissions = ref([
 ])
 
 // 计算属性
-const totalPermissions = computed(() => permissions.value.length)
+const totalPermissions = computed(() => systemStore.permissionTotal)
 const totalCategories = computed(() => categories.value.length)
 const activePermissions = computed(() => permissions.value.filter(p => p.status === 'active').length)
 const systemPermissions = computed(() => permissions.value.filter(p => p.type === 'system').length)
@@ -620,7 +624,7 @@ const closeModal = () => {
 }
 
 onMounted(() => {
-  console.log('权限管理页面已加载')
+  systemStore.fetchPermissionList()
 })
 </script>
 

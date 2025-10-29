@@ -62,7 +62,7 @@
               <h3 class="role-name">{{ role.name }}</h3>
               <p class="role-description">{{ role.description }}</p>
             </div>
-            <div class="role-status" :class="role.status">
+            <div class="role-status" :class="role.status === 1 ? 'active' : 'disabled'">
               {{ getStatusText(role.status) }}
             </div>
           </div>
@@ -137,7 +137,7 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">状态</span>
-              <span class="detail-value status-badge" :class="selectedRole.status">
+              <span class="detail-value status-badge" :class="selectedRole.status === 1 ? 'active' : 'disabled'">
                 {{ getStatusText(selectedRole.status) }}
               </span>
             </div>
@@ -189,30 +189,28 @@
           <h3>{{ showEditRoleModal ? '编辑角色' : '添加角色' }}</h3>
           <button class="modal-close" @click="closeModal">✕</button>
         </div>
+
         <form @submit.prevent="saveRole" class="modal-form">
           <div class="form-group">
             <label>角色名称</label>
-            <input v-model="roleForm.name" type="text" required />
+            <select v-model="roleForm.name" required>
+              <option value="管理员">👑 管理员</option>
+              <option value="操作员">⚙️ 操作员</option>
+              <option value="观察员">👁️ 观察员</option>
+              <option value="技术员">🔧 技术员</option>
+              <option value="分析师">📊 分析师</option>
+            </select>
           </div>
           <div class="form-group">
             <label>角色描述</label>
             <textarea v-model="roleForm.description" rows="3" required></textarea>
           </div>
-          <div class="form-group">
-            <label>角色图标</label>
-            <select v-model="roleForm.icon" required>
-              <option value="👑">👑 管理员</option>
-              <option value="⚙️">⚙️ 操作员</option>
-              <option value="👁️">👁️ 观察员</option>
-              <option value="🔧">🔧 技术员</option>
-              <option value="📊">📊 分析师</option>
-            </select>
-          </div>
+
           <div class="form-group">
             <label>状态</label>
             <select v-model="roleForm.status" required>
-              <option value="active">启用</option>
-              <option value="disabled">禁用</option>
+              <option :value="1">启用</option>
+              <option :value="0">禁用</option>
             </select>
           </div>
           <div class="form-group">
@@ -236,11 +234,11 @@
             </div>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" @click="closeModal">
+            <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="loading">
               取消
             </button>
-            <button type="submit" class="btn btn-primary">
-              {{ showEditRoleModal ? '保存' : '添加' }}
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+              {{ loading ? '处理中...' : (showEditRoleModal ? '保存' : '添加') }}
             </button>
           </div>
         </form>
@@ -250,109 +248,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
+import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '@/api/user'
+import { ElMessage } from 'element-plus'
+import {
+  getRoleList,
+  getRoleDetail,
+  createRole,
+  updateRole,
+  deleteRole as deleteRoleApi
+} from '@/api/permission'
+import type * as PermissionTypes from '@/api/permission/types/permission'
+import { useSystemStore } from '@/store/modules/systemStore'
 
+//状态库
+const systemStore = useSystemStore()
 // 响应式数据
 const showAddRoleModal = ref(false)
 const showEditRoleModal = ref(false)
 const editingRole = ref<any>(null)
 const selectedRole = ref<any>(null)
+const loading = ref(false)
+
+//角色统计卡片数据
+const totalRoles = computed(() => systemStore.roleTotal)
+const totalUsers = computed(() => systemStore.userTotal)
+const totalPermissions = computed(() => systemStore.permissionTotal)
+const activeRoles = computed(() => systemStore.activeRoleTotal)
+
+
+//获取角色列表参数
+const currentPage = ref(1)
+const pageSize = ref(20)
 
 // 角色表单
-const roleForm = ref({
+const roleForm = ref<PermissionTypes.RoleRequest>({
   name: '',
   description: '',
-  icon: '👁️',
-  status: 'active',
-  permissions: [] as number[]
+  status: 1, // 1: 启用, 0: 禁用
+  permissions: []
 })
 
-// 可用权限列表
-const availablePermissions = ref([
-  { id: 1, name: '用户管理' },
-  { id: 2, name: '角色管理' },
-  { id: 3, name: '权限管理' },
-  { id: 4, name: '系统设置' },
-  { id: 5, name: '设备监控' },
-  { id: 6, name: '故障诊断' },
-  { id: 7, name: '知识库管理' },
-  { id: 8, name: '数据导出' },
-  { id: 9, name: '日志查看' },
-  { id: 10, name: '备份恢复' }
-])
-
-// 模拟角色数据
-const roles = ref([
-  {
-    id: 1,
-    name: '系统管理员',
-    description: '拥有系统所有权限，可以管理用户、角色和系统设置',
-    icon: '👑',
-    status: 'active',
-    userCount: 2,
-    permissionCount: 10,
-    permissions: ['用户管理', '角色管理', '权限管理', '系统设置', '设备监控', '故障诊断', '知识库管理', '数据导出', '日志查看', '备份恢复'],
-    createdAt: new Date('2024-01-01T00:00:00'),
-    users: [
-      { id: 1, name: '系统管理员', email: 'admin@example.com', avatar: 'https://via.placeholder.com/40', status: 'active' }
-    ]
-  },
-  {
-    id: 2,
-    name: '操作员',
-    description: '负责日常设备监控和故障处理',
-    icon: '⚙️',
-    status: 'active',
-    userCount: 5,
-    permissionCount: 6,
-    permissions: ['设备监控', '故障诊断', '知识库管理', '数据导出', '日志查看'],
-    createdAt: new Date('2024-01-05T00:00:00'),
-    users: [
-      { id: 2, name: '张工程师', email: 'zhang@example.com', avatar: 'https://via.placeholder.com/40', status: 'active' },
-      { id: 3, name: '李技术员', email: 'li@example.com', avatar: 'https://via.placeholder.com/40', status: 'offline' }
-    ]
-  },
-  {
-    id: 3,
-    name: '观察员',
-    description: '只能查看系统状态和监控数据',
-    icon: '👁️',
-    status: 'active',
-    userCount: 3,
-    permissionCount: 3,
-    permissions: ['设备监控', '日志查看'],
-    createdAt: new Date('2024-01-10T00:00:00'),
-    users: [
-      { id: 4, name: '王观察员', email: 'wang@example.com', avatar: 'https://via.placeholder.com/40', status: 'active' }
-    ]
-  },
-  {
-    id: 4,
-    name: '技术员',
-    description: '负责设备维护和技术支持',
-    icon: '🔧',
-    status: 'active',
-    userCount: 2,
-    permissionCount: 5,
-    permissions: ['设备监控', '故障诊断', '知识库管理', '日志查看'],
-    createdAt: new Date('2024-01-15T00:00:00'),
-    users: []
+// 可用权限列表 - 从store中获取并筛选id和name
+const availablePermissions = computed(() => {
+  if (!systemStore.permissions || systemStore.permissions.length === 0) {
+    return []
   }
-])
+  return systemStore.permissions.map(permission => ({
+    id: permission.id,
+    name: permission.name
+  }))
+})
 
-// 计算属性
-const totalRoles = computed(() => roles.value.length)
-const totalUsers = computed(() => roles.value.reduce((sum, role) => sum + role.userCount, 0))
-const totalPermissions = computed(() => availablePermissions.value.length)
-const activeRoles = computed(() => roles.value.filter(role => role.status === 'active').length)
+// 角色数据
+const roles = ref<any[]>([])
+
 
 // 方法
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    active: '启用',
-    disabled: '禁用'
+const getStatusText = (status: number) => {
+  const statusMap: Record<number, string> = {
+    1: '启用',
+    0: '禁用'
   }
-  return statusMap[status] || status
+  return statusMap[status] || status.toString()
 }
 
 const formatDate = (date: Date) => {
@@ -367,68 +325,99 @@ const selectRole = (role: any) => {
   selectedRole.value = role
 }
 
-const editRole = (role: any) => {
-  editingRole.value = role
-  roleForm.value = {
-    name: role.name,
-    description: role.description,
-    icon: role.icon,
-    status: role.status,
-    permissions: role.permissions.map((p: string) =>
-      availablePermissions.value.find(ap => ap.name === p)?.id
-    ).filter(Boolean)
+const editRole = async (role: any) => {
+  try {
+    loading.value = true
+    editingRole.value = role
+    const roleData = editingRole.value
+    roleForm.value = {
+      name: roleData.name,
+      description: roleData.description || '',
+      icon: role.icon || '👁️',
+      status: roleData.status || 1,
+      permissions: roleData.permissions
+    }
+    showEditRoleModal.value = true
+  } catch (error) {
+    ElMessage.error('获取角色详情失败')
+    console.error('获取角色详情失败:', error)
+  } finally {
+    loading.value = false
   }
-  showEditRoleModal.value = true
 }
 
 const viewRole = (role: any) => {
   console.log('查看角色详情:', role)
 }
 
-const deleteRole = (role: any) => {
+const deleteRole = async (role: any) => {
   if (confirm(`确定要删除角色 "${role.name}" 吗？`)) {
-    roles.value = roles.value.filter(r => r.id !== role.id)
-    if (selectedRole.value?.id === role.id) {
-      selectedRole.value = null
+    try {
+      loading.value = true
+      await systemStore.removeRole(role.id)
+      await fetchRoles()
+    } catch (error) {
+      ElMessage.error('角色删除失败')
+      console.error('角色删除失败:', error)
+    } finally {
+      loading.value = false
     }
   }
 }
 
-const saveRole = () => {
-  if (showEditRoleModal.value && editingRole.value) {
-    // 编辑角色
-    const index = roles.value.findIndex(r => r.id === editingRole.value.id)
-    if (index !== -1) {
-      const selectedPermissions = availablePermissions.value
-        .filter(p => roleForm.value.permissions.includes(p.id))
-        .map(p => p.name)
+const saveRole = async () => {
+  try {
+    loading.value = true
 
-      roles.value[index] = {
-        ...roles.value[index],
-        ...roleForm.value,
-        permissions: selectedPermissions,
-        permissionCount: selectedPermissions.length
+    // 分离表单数据，将permissions单独处理
+    const { permissions, ...roleData } = roleForm.value
+
+    // 准备角色数据（不含permissions）
+    const formData = {
+      ...roleData,
+      // 确保状态是数字类型
+      status: roleForm.value.status === 'active' ? 1 :
+              roleForm.value.status === 'disabled' ? 0 :
+              Number(roleForm.value.status)
+    }
+
+    let roleId: number
+
+    if (showEditRoleModal.value && editingRole.value) {
+      // 编辑角色
+      roleId = editingRole.value.id
+      await systemStore.modifyRole(roleId, formData)
+
+      // 为角色分配权限
+      await systemStore.assignRolePermissions(roleId, permissions)
+      ElMessage.success('角色更新成功')
+    } else {
+      // 添加角色（先创建角色，不含权限）
+      const result = await systemStore.addRole(formData)
+      roleId = result.data.id  // 获取创建的角色ID
+
+      console.log('创建的角色ID:', roleId)
+      console.log('选择的权限:', permissions)
+      // 如果有选择权限，为角色分配权限
+      if (roleId && permissions && permissions.length > 0) {
+        // 为角色分配权限
+        await systemStore.assignRolePermissions(roleId, permissions)
       }
+      ElMessage.success('角色创建成功')
     }
-  } else {
-    // 添加角色
-    const selectedPermissions = availablePermissions.value
-      .filter(p => roleForm.value.permissions.includes(p.id))
-      .map(p => p.name)
 
-    const newRole = {
-      id: Date.now(),
-      ...roleForm.value,
-      permissions: selectedPermissions,
-      permissionCount: selectedPermissions.length,
-      userCount: 0,
-      createdAt: new Date(),
-      users: []
-    }
-    roles.value.push(newRole)
+
+
+    // 重新获取角色列表
+    await fetchRoles()
+    closeModal()
+  } catch (error) {
+    const message = showEditRoleModal.value ? '角色更新失败' : '角色创建失败'
+    ElMessage.error(message)
+    console.error(message, error)
+  } finally {
+    loading.value = false
   }
-
-  closeModal()
 }
 
 const closeModal = () => {
@@ -438,15 +427,49 @@ const closeModal = () => {
   roleForm.value = {
     name: '',
     description: '',
-    icon: '👁️',
-    status: 'active',
+    role: '',
+    status: 1,
     permissions: []
   }
 }
 
+
+// 获取角色列表
+const fetchRoles = async () => {
+  try {
+    loading.value = true
+    const params: PermissionTypes.RoleListParams = {
+      page: currentPage.value,
+      size: pageSize.value
+    }
+
+    // 通过store获取角色列表
+    const roleData = await systemStore.fetchRoleList(params)
+
+    if (roleData && roleData.data.items) {
+      // 转换数据格式，适配前端展示
+      roles.value = roleData.data.items.map((role: any) => ({
+        ...role,
+        // 处理权限显示
+        permissions: role.permissions || [],
+        permissionCount: role.permissions ? role.permissions.length : 0,
+        createdAt: new Date(role.createTime || Date.now())
+      }))
+    }
+  } catch (error) {
+    // 错误处理已在store中完成
+    console.error('获取角色列表失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  console.log('角色管理页面已加载')
+  fetchRoles()
+  systemStore.fetchUsers()
+  systemStore.fetchPermissionList()
 })
+
 </script>
 
 <style scoped>
@@ -497,8 +520,9 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #1890ff, var(--primary-hover));
-  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  color: #666666;
+  border: 1px solid #e8e8e8;
 }
 
 .btn-primary:hover {

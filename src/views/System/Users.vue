@@ -285,6 +285,15 @@
             <el-option label="禁用" :value="0" />
           </el-select>
         </el-form-item>
+
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="editFormData.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+          />
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -301,18 +310,23 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
 import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '@/api/user'
+import { useSystemStore } from '@/store/modules/systemStore'
+
+//状态库
+const systemStore = useSystemStore()
 
 // 响应式数据
 const searchQuery = ref('')
 const statusFilter = ref('')
 const roleFilter = ref('')
 const currentPage = ref(1)
+const pageSize = ref(1000)
 
 const editingUser = ref<any>(null)
 const currentUserId = ref(1) // 当前登录用户ID
 const loading = ref(false)
 const totalSize = ref(0)
-const pageSize = ref(10)
+
 const addDialogVisible = ref<boolean>(false)
 const editDialogVisible = ref<boolean>(false)
 // 独立的表单数据
@@ -389,30 +403,24 @@ const openAddUserDialog = () => {
 // 获取用户列表
 const fetchUsers = async () => {
   loading.value = true
-  try {
-    const response = await getUsersApi({
-      page: currentPage.value,
-      size: pageSize.value
-    })
+  // 直接调用store的fetchUsers，错误处理由store负责
+  const response = await systemStore.fetchUsers({
+    page: currentPage.value,
+    size: pageSize.value
+  })
 
-    if (response.code === 1) {
-      // 转换用户数据以适应前端展示
-      users.value = response.data.items.map((user: any) => ({
-        ...user,
-        roleName: user.roles?.[0] || '观察员', // 取第一个角色作为主要角色
-        role: getRole(user.roles?.[0] || '观察员'),
-        status: user.status === 1 ? 'active' : 'disabled'
-      }))
-      totalSize.value = response.data.total
-    } else {
-      ElMessage.error(response.msg || '获取用户列表失败')
-    }
-  } catch (error) {
-    console.error('获取用户列表错误:', error)
-    ElMessage.error('获取用户列表失败')
-  } finally {
-    loading.value = false
+  // 检查响应结构
+  if (response && response.data && response.data.items) {
+    users.value = response.data.items.map((user: any) => ({
+      ...user,
+      roleName: user.roles?.[0] || '观察员', // 取第一个角色作为主要角色
+      role: getRole(user.roles?.[0] || '观察员'),
+      status: user.status === 1 ? 'active' : 'disabled'
+    }))
+    // 更新总数
+    totalSize.value = response.data.total || 0
   }
+  loading.value = false
 }
 
 // 计算属性 - 注：在真实项目中，过滤应该由后端API处理
@@ -442,7 +450,7 @@ const filteredUsers = computed(() => {
   return filtered
 })
 
-const totalUsers = computed(() => totalSize.value)
+const totalUsers = computed(() => systemStore.userTotal)
 const onlineUsers = computed(() => users.value.filter(u => u.status === 'active').length)
 const disabledUsers = computed(() => users.value.filter(u => u.status === 'disabled').length)
 const newUsersToday = computed(() => {
@@ -508,7 +516,7 @@ const editUser = (user: any) => {
   }
 
   editFormData.status = user.status === 'active' ? 1 : 0
-  editFormData.password = '' // 编辑时密码可选
+  editFormData.password = user.password // 编辑时密码可选
 
   editDialogVisible.value = true
 }
@@ -517,92 +525,83 @@ const viewUser = (user: any) => {
   ElMessage.info(`查看用户 ${user.name} 的详情`)
 }
 
-// 删除用户
-function deleteUser(user: any): void {
-  ElMessageBox.confirm(
-    `确定要删除用户 "${user.name}" 吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    // 确保userId是数字类型
-    const userId = parseInt(user.id) || 0
-
-    if (userId === 0) {
-      ElMessage.error('无效的用户ID')
-      return
-    }
-
-    deleteUserApi(userId).then((response) => {
-      if (response.code === 1) {
-        ElMessage.success('删除用户成功')
-        fetchUsers() // 重新获取用户列表
-      } else {
-        ElMessage.error(response.msg || '删除用户失败')
+const deleteUser = async (user: any): Promise<void> => {
+  console.log('开始删除用户操作:', user)
+  // 处理确认对话框
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除用户 "${user.name}" 吗？`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }
-    }).catch(() => {
-      ElMessage.error('删除用户失败')
-    })
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
+    )
+  } catch (error) {
+    // 用户取消确认对话框不算错误，直接返回
+    return
+  }
+
+  // 确保userId是数字类型
+  const userId = parseInt(user.id) || 0
+  console.log('处理后的用户ID:', userId)
+
+  if (userId === 0) {
+    ElMessage.error('无效的用户ID')
+    return
+  }
+
+  console.log('准备调用删除API')
+  // 调用store中的deleteUser，其中已包含错误处理和列表刷新
+  await systemStore.deleteUser(userId)
+  fetchUsers() // 重新获取用户列表
 }
 
 // 提交创建表单
-function submitCreateForm(): void {
-  createFormRef.value?.validate((valid) => {
+async function submitCreateForm(): Promise<void> {
+  createFormRef.value?.validate(async (valid) => {
     if (valid) {
-      // const userData = {
-      //   ...addFormData,
-      //   // 确保status是数字类型
-      //   status: Number(addFormData.status),
-      //   // 确保roles是数组类型
-      //   roles: Array.isArray(addFormData.roles) ? addFormData.roles : [addFormData.roles]
-      // }
-
-      createUserApi(addFormData)
-        .then((response) => {
-          if (response.code === 1) {
-            ElMessage.success('创建用户成功')
-            fetchUsers() // 重新获取用户列表
-            addDialogVisible.value = false
-          } else {
-            ElMessage.error(response.msg || '创建用户失败')
-          }
-        })
-        .catch(error => {
-          ElMessage.error('创建用户失败')
-          console.error('创建用户错误:', error)
-        })
+      try {
+        // 等待创建用户完成
+        await systemStore.createUser(addFormData)
+        // 创建成功后重新获取列表
+        fetchUsers()
+        // 关闭对话框
+        addDialogVisible.value = false
+      } catch (error) {
+        // 错误已在store中处理，这里可以不处理或添加额外逻辑
+      }
     }
   })
 }
 
 // 提交编辑表单
-function submitEditForm(): void {
-  editFormRef.value?.validate((valid) => {
+async function submitEditForm(): Promise<void> {
+  editFormRef.value?.validate(async (valid) => {
     if (valid) {
-      const userData = {
-        ...editFormData,
-      }
+      try {
+        // 确保userId是数字类型
+        const userId = parseInt(editFormData.id) || 0
 
-      updateUserApi(editFormData.id, userData)
-        .then((response) => {
-          if (response.code === 1) {
-            ElMessage.success('更新用户成功')
-            fetchUsers() // 重新获取用户列表
-            editDialogVisible.value = false
-          } else {
-            ElMessage.error(response.msg || '更新用户失败')
-          }
-        })
-        .catch(error => {
-          ElMessage.error('更新用户失败')
-          console.error('更新用户错误:', error)
-        })
+        if (userId === 0) {
+          ElMessage.error('无效的用户ID')
+          return
+        }
+
+        const userData = {
+          ...editFormData,
+        }
+
+        // 通过store更新用户信息
+        await systemStore.updateUser(userId, userData)
+        // 更新成功后重新获取列表
+        fetchUsers()
+        // 关闭对话框
+        editDialogVisible.value = false
+      } catch (error) {
+        // 错误已在store中处理，这里可以不处理或添加额外逻辑
+      }
     }
   })
 }
