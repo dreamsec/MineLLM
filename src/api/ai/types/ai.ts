@@ -2,15 +2,17 @@
 import type {IGetTableData} from "@/api/data/types/data.ts";
 
 export interface RequestData {
-  message:  message
+  session_id: string
+  content: string
+  message?:  message
   history?: [HistoryMessage]
 }
 interface message {
   session_id: string
-  role: string
-  model_type: string
+  role?: string
+  model_type?: string
   content: string
-  is_first: boolean
+  is_first?: boolean
   tool_calls?:  [additionalProp1]
   tool_call_id?: string
   parent_message_id?:  number
@@ -41,6 +43,7 @@ export interface ResponseData {
 // 新建会话请求参数
 export interface newChatSessionIdRequestData {
   model_name: string
+  title: string
 }
 
 // 新建会话返回参数
@@ -54,4 +57,25 @@ export interface newChatSessionIdResponseData {
   updated_at:string
 }
 
+//历史会话响应参数
+export interface GetChatSessionListResponseData {
+  id: number
+  session_id: string
+  title: string
+  model_name: string
+  status: number
+  created_at: string
+  updated_at: string
+}
+export type GetChatSessionListResponse = IApiResponseData<GetChatSessionListResponseData>
+
 export type GetNewChatSessionIdResponseData = IApiResponseData<newChatSessionIdResponseData>
+
+// 会话消息响应参数
+export interface ChatMessageData {
+  session_id: string;
+  role: string;
+  content: string;
+}
+
+export type GetChatSessionMessagesResponse = IApiResponseData<ChatMessageData[]>

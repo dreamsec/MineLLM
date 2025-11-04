@@ -195,17 +195,17 @@
           <div class="history-list">
             <div
               v-for="session in chatSessions"
-              :key="session.session_id"
-              :class="['history-item', { active: currentSessionId === session.session_id }]"
-              @click="loadSession(session.session_id)"
+              :key="session.id"
+              :class="['history-item', { active: currentSessionId === session.id }]"
+              @click="loadSession(session.id)"
             >
               <div class="session-info">
                 <h4>{{ session.title }}</h4>
-                <p>{{ formatDate(new Date(session.updated_at).getTime()) }}</p>
-                <span class="message-count">{{ session.model_name }}</span>
+                <p>{{ formatDate(session.lastMessage) }}</p>
+                <span class="message-count">{{ session.messageCount }} 条消息</span>
               </div>
               <div class="session-actions">
-                <button class="action-btn small" @click.stop="deleteSession(session.session_id)">
+                <button class="action-btn small" @click.stop="deleteSession(session.id)">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -256,8 +256,7 @@
 
 <script setup lang="ts">
 import {nextTick, onMounted, reactive, ref, watch} from 'vue'
-import { ElMessage } from 'element-plus'
-import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession} from '@/api/ai/index.ts'
+import {getAiResponse, newChatSessionId} from '@/api/ai/index.ts'
 
 
 // 定义组件名称
@@ -292,7 +291,7 @@ interface Message {
   id: number,
   type: 'user' | 'assistant'
   content: string
-  timestamp?: number
+  timestamp: number
   loading?: boolean
   liked?: boolean
   parts?: MessagePart[]
@@ -306,12 +305,10 @@ interface QuickQuestion {
 }
 
 interface ChatSession {
-  session_id: string
+  id: string
   title: string
-  model_name: string
-  status: number
-  created_at: string
-  updated_at: string
+  lastMessage: number
+  messageCount: number
 }
 
 interface KnowledgeCategory {
@@ -364,7 +361,50 @@ const quickQuestions = ref<QuickQuestion[]>([
 ])
 
 // 对话历史
-const chatSessions = ref<ChatSession[]>([])
+const chatSessions = ref<ChatSession[]>([
+  {
+    id: '1',
+    title: '主提升机维护咨询',
+    lastMessage: new Date().getTime() - 86400000,
+    messageCount: 12,
+  },
+  {
+    id: '2',
+    title: '安全操作规程询问',
+    lastMessage: new Date().getTime() - 172800000,
+    messageCount: 8,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+  {
+    id: '3',
+    title: '故障诊断方法',
+    lastMessage: new Date().getTime() - 259200000,
+    messageCount: 15,
+  },
+])
 
 // 知识库分类
 const knowledgeCategories = ref<KnowledgeCategory[]>([
@@ -474,7 +514,6 @@ const sendMessage = async () => {
       currentSessionId.value = res.data.session_id
     })
   }
-  console.log(currentSessionId.value)
   // 显示AI正在输入
   const aiMessage: Message = {
     id: Date.now() + 1,
@@ -494,18 +533,14 @@ const sendMessage = async () => {
     scrollToBottom()
   })
   //TODO:没加历史
-
-  console.log(userMessage.content)
   getAiResponse({
-    session_id: currentSessionId.value || '',
-    content: userMessage.content,
-    // message: {
-    //   session_id: currentSessionId.value || '',
-    //   role: 'user',
-    //   model_type: 'qwen3:8b',
-    //   content: userMessage.content,
-    //   is_first: true,
-    // }
+    message: {
+      session_id: currentSessionId.value || '',
+      role: 'user',
+      model_type: 'qwen3:8b',
+      content: userMessage.content,
+      is_first: true,
+    }
   }).then(async (response) => {
     if (!response.ok || !response.body) {
       throw new Error('Network response was not ok');
@@ -519,10 +554,7 @@ const sendMessage = async () => {
       buffer += decoder.decode(value, {stream: true});
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? ''; // 保留未完整的一行
-      let a=1
       for (const line of lines) {
-        console.log(a)
-        a++
         if (line.trim() === '') continue;
         try {
           const result = JSON.parse(line);
@@ -614,23 +646,11 @@ const addMessagePart = (
   })
   if (existingPart) {
     // 更新现有内容
-    if (type === 'response') {
-      // 对于响应内容，添加延迟实现流式效果
-      setTimeout(() => {
-        existingPart.content += content;
-        if (thinkTime) {
-          existingPart.thinkTime = thinkTime
-        }
-        scrollToBottom();
-      }, 50); // 50ms延迟，可根据需要调整
-    } else {
-      // 其他类型内容正常处理
-      existingPart.content += content
-      if (thinkTime) {
-        existingPart.thinkTime = thinkTime
-      }
-      scrollToBottom()
+    existingPart.content += content
+    if (thinkTime) {
+      existingPart.thinkTime = thinkTime
     }
+    scrollToBottom()
   } else {
     // 创建新的部分
     lastMessage.parts?.push({
@@ -875,95 +895,22 @@ const exportChat = () => {
   URL.revokeObjectURL(url)
 }
 
-const loadSession = async (sessionId: string) => {
+const loadSession = (sessionId: string) => {
   // 加载历史对话
   currentSessionId.value = sessionId
-  messages.value = [] // 清空当前消息列表
-
-  try {
-    const response = await getChatSessionMessages(sessionId)
-    if (response.code === 1 && Array.isArray(response.data)) {
-      // 将后端返回的消息转换为前端消息格式
-      response.data.forEach((msg, index) => {
-
-
-        // 确保正确识别用户和助手消息
-        const messageType = msg.role === 'user' ? 'user' : 'assistant'
-
-        const messageData: any = {
-          id: index + 1,
-          type: messageType,
-          content: msg.content || '',
-
-        }
-
-        // 对于助手消息，需要创建parts数组结构以便正确渲染
-        if (messageType === 'assistant') {
-          messageData.parts = [{
-            id: msg.id || `part-${index}`,
-            type: 'response' as const,
-            content: msg.content || '',
-            stepIndex: 0
-          }]
-        }
-
-        messages.value.push(messageData)
-      })
-    }
-
-    // 滚动到底部
-    await nextTick()
-    if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-    }
-  } catch (error) {
-    console.error('加载会话消息失败:', error)
-  }
+  // 这里应该从后端加载对应的对话记录
 }
 
-const deleteSession = async (sessionId: string) => {
-  // 显示确认对话框
-  if (!confirm('确定要删除这个对话吗？删除后无法恢复。')) {
-    return
-  }
-
-  try {
-    // 调用后端API删除会话
-    const response = await deleteChatSession(sessionId)
-
-    if (response.code === 1) {
-      // 后端删除成功后，更新本地状态
-      const index = chatSessions.value.findIndex((session) => session.session_id === sessionId)
-      if (index !== -1) {
-        chatSessions.value.splice(index, 1)
-      }
-
-      // 如果当前正在查看的是被删除的会话，清空当前消息
-      if (currentSessionId.value === sessionId) {
-        messages.value = []
-        currentSessionId.value = '-1'
-      }
-
-      ElMessage.success('会话删除成功')
-    } else {
-      ElMessage.error(response.message || '删除会话失败')
-    }
-  } catch (error) {
-    console.error('删除会话失败:', error)
-    ElMessage.error('网络错误，请稍后重试')
+const deleteSession = (sessionId: string) => {
+  const index = chatSessions.value.findIndex((session) => session.id === sessionId)
+  if (index !== -1) {
+    chatSessions.value.splice(index, 1)
   }
 }
 
 // 生命周期
-onMounted(async () => {
-  try {
-    const response = await getChatSessionList()
-    if (response.code === 1 && response.data) {
-      chatSessions.value = response.data
-    }
-  } catch (error) {
-    console.error('获取会话列表失败:', error)
-  }
+onMounted(() => {
+  // 初始化
 })
 
 // 监听输入文本变化

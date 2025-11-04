@@ -8,7 +8,7 @@ export function getAiResponse(data: AI.RequestData) {
   return fetch(`${import.meta.env.VITE_BASE_API}/api/v1/chat/stream`,{
     method: "post",
     headers:{ "Content-Type": "application/json" ,
-      'Authorization': "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc2MTM5NDc5Nn0.428TAO5aYkfQa9bhuSAsQRMqyueI12N6pFyKENj_6jM",
+      'Authorization': "Bearer "+getToken(),
     },
     body:JSON.stringify(data),
   })
@@ -16,8 +16,33 @@ export function getAiResponse(data: AI.RequestData) {
 
 export function newChatSessionId(params:newChatSessionIdRequestData) {
   return request<AI.GetNewChatSessionIdResponseData>({
-    url: `/api/v1/chat/new`,
+    url: `/api/v1/chat/new_session`,
     method: "post",
     data:params
+  })
+}
+
+export function getChatSessionList() {
+  return request<AI.GetChatSessionListResponse>({
+    url: `/api/v1/chat/list_sessions`,
+    method: "get",
+  })
+}
+
+/** 获取会话消息 */
+export function getChatSessionMessages(sessionId: string) {
+  return request<AI.GetChatSessionMessagesResponse>({
+    url: `/api/v1/chat/get_session_history`,
+    method: "get",
+    params: { session_id: sessionId }
+  })
+}
+
+/** 删除会话 */
+export function deleteChatSession(sessionId: string) {
+  return request({
+    url: `/api/v1/chat/delete_session`,
+    method: "delete",
+    params:  { session_id: sessionId }
   })
 }

@@ -193,7 +193,15 @@
         <form @submit.prevent="saveRole" class="modal-form">
           <div class="form-group">
             <label>角色名称</label>
-            <select v-model="roleForm.name" required>
+            <input v-model="roleForm.name" type="text" required />
+          </div>
+          <div class="form-group">
+            <label>角色描述</label>
+            <textarea v-model="roleForm.description" rows="3" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>角色图标</label>
+            <select v-model="roleForm.icon" required>
               <option value="管理员">👑 管理员</option>
               <option value="操作员">⚙️ 操作员</option>
               <option value="观察员">👁️ 观察员</option>
@@ -201,11 +209,6 @@
               <option value="分析师">📊 分析师</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>角色描述</label>
-            <textarea v-model="roleForm.description" rows="3" required></textarea>
-          </div>
-
           <div class="form-group">
             <label>状态</label>
             <select v-model="roleForm.status" required>
@@ -285,6 +288,7 @@ const pageSize = ref(20)
 const roleForm = ref<PermissionTypes.RoleRequest>({
   name: '',
   description: '',
+  role: '',
   status: 1, // 1: 启用, 0: 禁用
   permissions: []
 })
@@ -329,15 +333,21 @@ const editRole = async (role: any) => {
   try {
     loading.value = true
     editingRole.value = role
-    const roleData = editingRole.value
-    roleForm.value = {
-      name: roleData.name,
-      description: roleData.description || '',
-      icon: role.icon || '👁️',
-      status: roleData.status || 1,
-      permissions: roleData.permissions
+    const response = await getRoleDetail(role.id)
+
+    if (response.data) {
+      const roleData = response.data.data
+      roleForm.value = {
+        name: roleData.name,
+        description: roleData.description || '',
+        icon: role.icon || '👁️',
+        status: roleData.status || 1,
+        permissions: roleData.permissions?.map((p: any) =>
+          availablePermissions.value.find(ap => ap.name === p)?.id
+        ).filter(Boolean) || []
+      }
+      showEditRoleModal.value = true
     }
-    showEditRoleModal.value = true
   } catch (error) {
     ElMessage.error('获取角色详情失败')
     console.error('获取角色详情失败:', error)
@@ -354,7 +364,12 @@ const deleteRole = async (role: any) => {
   if (confirm(`确定要删除角色 "${role.name}" 吗？`)) {
     try {
       loading.value = true
-      await systemStore.removeRole(role.id)
+      await deleteRoleApi(role.id)
+      ElMessage.success('角色删除成功')
+      roles.value = roles.value.filter(r => r.id !== role.id)
+      if (selectedRole.value?.id === role.id) {
+        selectedRole.value = null
+      }
       await fetchRoles()
     } catch (error) {
       ElMessage.error('角色删除失败')
@@ -369,44 +384,24 @@ const saveRole = async () => {
   try {
     loading.value = true
 
-    // 分离表单数据，将permissions单独处理
-    const { permissions, ...roleData } = roleForm.value
-
-    // 准备角色数据（不含permissions）
+    // 准备表单数据
     const formData = {
-      ...roleData,
+      ...roleForm.value,
       // 确保状态是数字类型
       status: roleForm.value.status === 'active' ? 1 :
               roleForm.value.status === 'disabled' ? 0 :
               Number(roleForm.value.status)
     }
 
-    let roleId: number
-
     if (showEditRoleModal.value && editingRole.value) {
       // 编辑角色
-      roleId = editingRole.value.id
-      await systemStore.modifyRole(roleId, formData)
-
-      // 为角色分配权限
-      await systemStore.assignRolePermissions(roleId, permissions)
+      await updateRole(editingRole.value.id, formData)
       ElMessage.success('角色更新成功')
     } else {
-      // 添加角色（先创建角色，不含权限）
-      const result = await systemStore.addRole(formData)
-      roleId = result.data.id  // 获取创建的角色ID
-
-      console.log('创建的角色ID:', roleId)
-      console.log('选择的权限:', permissions)
-      // 如果有选择权限，为角色分配权限
-      if (roleId && permissions && permissions.length > 0) {
-        // 为角色分配权限
-        await systemStore.assignRolePermissions(roleId, permissions)
-      }
+      // 添加角色
+      await createRole(formData)
       ElMessage.success('角色创建成功')
     }
-
-
 
     // 重新获取角色列表
     await fetchRoles()
@@ -453,6 +448,7 @@ const fetchRoles = async () => {
         // 处理权限显示
         permissions: role.permissions || [],
         permissionCount: role.permissions ? role.permissions.length : 0,
+        userCount: role.userCount || 0,
         createdAt: new Date(role.createTime || Date.now())
       }))
     }
