@@ -70,11 +70,11 @@
           <div class="role-stats">
             <div class="stat-item">
               <span class="stat-label">用户数</span>
-              <span class="stat-value">{{ role.userCount }}</span>
+              <span class="stat-value">{{ role.users.length }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">权限数</span>
-              <span class="stat-value">{{ role.permissionCount }}</span>
+              <span class="stat-value">{{ role.permissions.length }}</span>
             </div>
           </div>
 
@@ -133,7 +133,7 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">创建时间</span>
-              <span class="detail-value">{{ formatDate(selectedRole.createdAt) }}</span>
+              <span class="detail-value">{{ formatDate(selectedRole.createTime) }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">状态</span>
@@ -169,7 +169,7 @@
                   <img :src="user.avatar" :alt="user.name" />
                 </div>
                 <div class="user-info">
-                  <div class="user-name">{{ user.name }}</div>
+                  <div class="user-name">{{ user.username }}</div>
                   <div class="user-email">{{ user.email }}</div>
                 </div>
                 <div class="user-status" :class="user.status">
@@ -314,7 +314,7 @@ const getStatusText = (status: number) => {
     1: '启用',
     0: '禁用'
   }
-  return statusMap[status] || status.toString()
+  return statusMap[status]
 }
 
 const formatDate = (date: Date) => {
@@ -327,6 +327,7 @@ const formatDate = (date: Date) => {
 
 const selectRole = (role: any) => {
   selectedRole.value = role
+  console.log('出发了', role)
 }
 
 const editRole = async (role: any) => {
@@ -336,7 +337,7 @@ const editRole = async (role: any) => {
     const response = await getRoleDetail(role.id)
 
     if (response.data) {
-      const roleData = response.data.data
+      const roleData = response.data
       roleForm.value = {
         name: roleData.name,
         description: roleData.description || '',
@@ -365,12 +366,13 @@ const deleteRole = async (role: any) => {
     try {
       loading.value = true
       await deleteRoleApi(role.id)
-      ElMessage.success('角色删除成功')
+
       roles.value = roles.value.filter(r => r.id !== role.id)
       if (selectedRole.value?.id === role.id) {
         selectedRole.value = null
       }
       await fetchRoles()
+      ElMessage.success('角色删除成功')
     } catch (error) {
       ElMessage.error('角色删除失败')
       console.error('角色删除失败:', error)
@@ -396,10 +398,12 @@ const saveRole = async () => {
     if (showEditRoleModal.value && editingRole.value) {
       // 编辑角色
       await updateRole(editingRole.value.id, formData)
+      await systemStore.assignRolePermissions(editingRole.value.id, formData.permissions)
       ElMessage.success('角色更新成功')
     } else {
       // 添加角色
       await createRole(formData)
+      await systemStore.assignRolePermissions(editingRole.value.id, formData.permissions)
       ElMessage.success('角色创建成功')
     }
 
@@ -446,10 +450,10 @@ const fetchRoles = async () => {
       roles.value = roleData.data.items.map((role: any) => ({
         ...role,
         // 处理权限显示
-        permissions: role.permissions || [],
-        permissionCount: role.permissions ? role.permissions.length : 0,
-        userCount: role.userCount || 0,
-        createdAt: new Date(role.createTime || Date.now())
+        // permissions: role.permissions || [],
+        // permissionCount: role.permissions ? role.permissions.length : 0,
+        // userCount: role.userCount || 0,
+        // createdAt: new Date(role.createTime || Date.now())
       }))
     }
   } catch (error) {

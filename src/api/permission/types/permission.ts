@@ -1,4 +1,11 @@
-
+//用户
+export interface User {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+}
 // 角色数据类型定义
 export interface Role {
   id: number;
@@ -7,6 +14,7 @@ export interface Role {
   description: string;
   status: number;
   permissions: string[];
+  users: User[];
   createTime: string;
   updateTime?: string;
 }
