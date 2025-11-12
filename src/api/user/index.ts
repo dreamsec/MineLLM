@@ -12,7 +12,7 @@ export function getUsersApi(params: User.GetUsersRequestParams) {
 
 // 创建用户
 export function createUserApi(data: User.CreateUserRequestData) {
-  return request<IApiResponseData<string>>({
+  return request<IApiResponseData<{ id: number ,username:string}>>({
     url: "/api/v1/auth/user",
     method: "POST",
     data

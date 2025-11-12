@@ -206,9 +206,7 @@
             placeholder="请选择角色"
             style="width: 100%"
           >
-            <el-option label="管理员" value="admin" />
-            <el-option label="操作员" value="operator" />
-            <el-option label="观察员" value="viewer" />
+            <el-option v-for="role in availableRoles" :key="role.id" :label="role.name" :value="role.id" />
           </el-select>
         </el-form-item>
 
@@ -273,9 +271,7 @@
 
         <el-form-item label="角色" prop="roles[0]">
           <el-select v-model="editFormData.roles[0]" placeholder="请选择角色" style="width: 100%;">
-            <el-option label="管理员" value="admin" />
-            <el-option label="操作员" value="operator" />
-            <el-option label="观察员" value="viewer" />
+            <el-option v-for="role in availableRoles" :key="role.id" :label="role.name" :value="role.name" />
           </el-select>
         </el-form-item>
 
@@ -335,7 +331,7 @@ const addFormData = reactive({
   name: '',
   email: '',
   phone: '',
-  roles: ['观察员'], // 使用roles数组
+  roles: [], // 使用roles数组
   status: 1, // 1: 启用, 0: 禁用
   password: ''
 })
@@ -347,7 +343,7 @@ const editFormData = reactive({
   name: '',
   email: '',
   phone: '',
-  roles: ['观察员'], // 使用roles数组
+  roles: [], // 使用roles数组
   status: 1, // 1: 启用, 0: 禁用
   password: ''
 })
@@ -384,6 +380,13 @@ const formRules = {
 // 用户数据 - 从API获取
 const users = ref<any[]>([])
 
+const availableRoles = computed(() =>
+  systemStore.roles.map(role => ({
+    id: role.id,
+    name: role.name
+  }))
+)
+
 //打开添加用户弹窗
 const openAddUserDialog = () => {
   // 清空表单数据
@@ -392,7 +395,7 @@ const openAddUserDialog = () => {
     name: '',
     email: '',
     phone: '',
-    roles: [''],
+    roles: [],
     status: 1,
     password: ''
   })
@@ -405,6 +408,10 @@ const fetchUsers = async () => {
   loading.value = true
   // 直接调用store的fetchUsers，错误处理由store负责
   const response = await systemStore.fetchUsers({
+    page: currentPage.value,
+    size: pageSize.value
+  })
+  await systemStore.fetchRoleList({
     page: currentPage.value,
     size: pageSize.value
   })
@@ -564,11 +571,14 @@ async function submitCreateForm(): Promise<void> {
     if (valid) {
       try {
         // 等待创建用户完成
-        await systemStore.createUser(addFormData)
-        // 创建成功后重新获取列表
-        fetchUsers()
-        // 关闭对话框
-        addDialogVisible.value = false
+          const response = await systemStore.createUser(addFormData)
+          // 直接传递角色ID数组，而不是对象
+          console.log('分配角色ID:', addFormData.roles)
+          await systemStore.assignUserRole(response.data.id, addFormData.roles)
+          // 创建成功后重新获取列表
+          fetchUsers()
+          // 关闭对话框
+          addDialogVisible.value = false
       } catch (error) {
         // 错误已在store中处理，这里可以不处理或添加额外逻辑
       }

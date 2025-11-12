@@ -118,3 +118,7 @@ export type GetPermissionListResponse = IApiResponseData<{
 export interface AssignRolePermissionRequest {
   permission_ids: number[];
 }
+// 为用户分配角色请求参数
+export interface AssignUserRoleRequest {
+  role_ids: number[];
+}

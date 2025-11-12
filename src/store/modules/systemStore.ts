@@ -8,7 +8,8 @@ import {
   updateRole,
   deleteRole,
   getPermissionList,
-  assignRolePermissionsapi
+  assignRolePermissionsapi,
+  assignUserRoleapi,
 } from '@/api/permission'
 import type * as PermissionTypes from '@/api/permission/types/permission'
 import {
@@ -122,6 +123,24 @@ export const useSystemStore = defineStore('system', () => {
     } catch (error) {
       ElMessage.error('删除用户失败')
       console.error('删除用户失败:', error)
+      throw error
+    } finally {
+      loading.value.users = false
+    }
+  }
+
+  //为用户分配角色
+  async function assignUserRole(userId: number, roleIds: number[]) {
+    try {
+      loading.value.users = true
+      const response = await assignUserRoleapi(userId, { role_ids: roleIds })
+      ElMessage.success('为用户分配角色成功')
+      // 分配成功后刷新用户详情
+      //await fetchUserDetail(userId)
+      return response
+    } catch (error) {
+      ElMessage.error('为用户分配角色失败')
+      console.error('为用户分配角色失败:', error)
       throw error
     } finally {
       loading.value.users = false
@@ -310,6 +329,7 @@ export const useSystemStore = defineStore('system', () => {
     createUser,
     updateUser,
     deleteUser,
+    assignUserRole,
 
     // 权限方法
 

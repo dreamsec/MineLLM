@@ -60,3 +60,12 @@ export const assignRolePermissionsapi = (roleId: number, data: PermissionTypes.A
     data
   });
 };
+
+//为用户分配角色
+export const assignUserRoleapi = (userId: number, data: PermissionTypes.AssignUserRoleRequest)=> {
+  return request<IApiResponseData<string>>({
+    url: `/api/v1/rbac/user/${userId}/roles`,
+    method: 'post',
+    data
+  });
+};
