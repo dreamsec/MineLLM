@@ -41,3 +41,11 @@ export function deleteDeviceApi(equipmentCode: string) {
     method: "delete"
   })
 }
+
+//获取实时信息
+export function getRealtimeDataApi(equipmentCode: string) {
+  return request<Device.GetEquipmentRealtimeDataResponse>({
+    url: `/api/v1/equipment/${equipmentCode}/realtime`,
+    method: "get"
+  })
+}

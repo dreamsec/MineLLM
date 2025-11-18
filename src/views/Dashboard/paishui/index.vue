@@ -24,258 +24,52 @@
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">排水机运行情况</span>
+            <span class="title-text">排水机实时数据</span>
             <div class="title-line"></div>
           </div>
 
-          <!-- 数据卡片组 -->
           <div class="data-cards">
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
+            <div class="data-card" v-for="item in leftItems" :key="item.key">
+              <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">130</div>
-                <div class="card-label">排水机总数</div>
-                <!-- <div class="card-unit">+2
-                  <n-icon size="16">
-                  <ArrowUpOutlined/>
-                </n-icon>
-                </div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">13</div>
-                <div class="card-label">在线设备</div>
-                <!-- <div class="card-unit">+1
-                   <n-icon size="16">
-                     <ArrowUpOutlined/>
-                   </n-icon>
-                </div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">4</div>
-                <div class="card-label">告警数量</div>
-                <!-- <div class="card-unit">平方米</div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">94.2%</div>
-                <div class="card-label">运行效率</div>
-                <!-- <div class="card-unit"></div> -->
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">排水机健康状态</span>
-            <div class="title-line"></div>
-          </div>
 
-          <!-- 进度条数据 -->
-          <div class="progress-data">
-            <div class="progress-item">
-              <div class="progress-label">主电机系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 92%"></div>
-              </div>
-              <div class="progress-value">92%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">制动系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 88%"></div>
-              </div>
-              <div class="progress-value">88%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">钢丝绳状态</div>
-              <div class="progress-bar">
-                <div class="progress-fill yellow" style="width: 85%"></div>
-              </div>
-              <div class="progress-value">85%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">液压系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 90%"></div>
-              </div>
-              <div class="progress-value">90%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">控制系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 95%"></div>
-              </div>
-              <div class="progress-value">95%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">安全保护系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 98%"></div>
-              </div>
-              <div class="progress-value">98%</div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 智慧园区数据展示 - 圆形图表 -->
-         <!-- 排水机运行数据统计 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">排水机运行数据统计</span>
-            <div class="title-line"></div>
-          </div>
 
-          <div class="circle-charts">
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="62.8"/>
-                </svg>
-                <div class="chart-value">156</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">今日提升次数</div>
-                <div class="chart-data">
-                  <div>提升高度: 680m</div>
-                  <div>载重: 12吨/次</div>
-                </div>
-              </div>
-            </div>
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="37.68"/>
-                </svg>
-                <div class="chart-value">94.7%</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">运行效率</div>
-                <div class="chart-data">
-                  <div>故障次数: 0</div>
-                  <div>可用率: 98.5%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
 
       </div>
 
       <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title1">
-            <span class="title-text">环境监控</span>
-            <div class="title-line"></div>
-          </div>
 
 
-          <div class="env-cards">
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/wen.png" alt="温度">
-              <div class="env-content">
-                <div class="env-value">28℃</div>
-                <div class="env-label">井下温度</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/feng.png" alt="风速">
-              <div class="env-content">
-                <div class="env-value">2.3m/s</div>
-                <div class="env-label">风速</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/shi.png" alt="空气湿度">
-              <div class="env-content">
-                <div class="env-value">65%</div>
-                <div class="env-label">空气湿度</div>
-                <div class="env-unit yellow">稍高</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/nong.png" alt="气体浓度">
-              <div class="env-content">
-                <div class="env-value">0.02%</div>
-                <div class="env-label">气体浓度</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- 智慧园区数据展示 - 饼图 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">智慧园区数据展示</span>
+            <span class="title-text">电机/泵实时数据</span>
             <div class="title-line"></div>
           </div>
-
-          <div class="panel-section1">
-            <div class="chart-container" ref="chartRef"></div>
-          </div>
-
-        </div>
-
-        <!-- 智慧园区数据展示 - 关键设备 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">关键设备</span>
-            <div class="title-line"></div>
-          </div>
-
-           <div class="icon-data">
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主排水机#1</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in rightItems" :key="item.key">
+              <div class="card-icon">🔧</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主排水机#2</div>
-                  <div class="icon-value">温度：55℃  运行：12h</div>
-                </div>
-                <div class="icon-unit orange">预警</div>
-              </div>
-            </div>
-            <!-- <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">运输皮带#5</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div> -->
           </div>
-
-
         </div>
+
+
+
+
 
 
       </div>
@@ -290,290 +84,63 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, onMounted, onUnmounted} from 'vue'
-import * as echarts from 'echarts'
+import {ref, onMounted, onUnmounted, computed} from 'vue'
+import { getRealtimeDataApi } from '@/api/device'
+import type { PumpRealtimeData } from '@/api/device/types/device'
 
-const chartRef = ref<HTMLElement | null>(null)
-let chart: echarts.ECharts | null = null
+const pumpData = ref<PumpRealtimeData | null>(null)
+const leftDefs = [
+  { key: 'voltage', label: '电压', unit: 'V' },
+  { key: 'current', label: '电流', unit: 'A' },
+  { key: 'positive_pressure', label: '正压', unit: 'MPa' },
+  { key: 'negative_pressure', label: '负压', unit: 'MPa' },
+  { key: 'pump_front_temp', label: '泵前温度', unit: '°C' },
+  { key: 'pump_rear_temp', label: '泵后温度', unit: '°C' },
+  { key: 'pump_vibration_1', label: '泵振动1', unit: 'mm/s' },
+  { key: 'pump_vibration_2', label: '泵振动2', unit: 'mm/s' }
+] as const
+const rightDefs = [
+  { key: 'motor_front_temp', label: '电机前温度', unit: '°C' },
+  { key: 'motor_rear_temp', label: '电机后温度', unit: '°C' },
+  { key: 'motor_phase_a_temp', label: 'A相温度', unit: '°C' },
+  { key: 'motor_phase_b_temp', label: 'B相温度', unit: '°C' },
+  { key: 'motor_phase_c_temp', label: 'C相温度', unit: '°C' },
+  { key: 'motor_vibration_1', label: '电机振动1', unit: 'mm/s' },
+  { key: 'motor_vibration_2', label: '电机振动2', unit: 'mm/s' },
+  { key: 'total_run_time', label: '累计运行', unit: 'h' }
+] as const
 
-// 根据窗口高度计算图表高度
-const calculateChartHeight = (windowHeight: number): number => {
-  // 基础高度
-  let baseHeight = 200
+const leftItems = computed(() => leftDefs.map(def => ({
+  ...def,
+  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
+    ? '--'
+    : String(pumpData.value?.[def.key as keyof PumpRealtimeData])
+})))
+const rightItems = computed(() => rightDefs.map(def => ({
+  ...def,
+  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
+    ? '--'
+    : String(pumpData.value?.[def.key as keyof PumpRealtimeData])
+})))
 
-  if (windowHeight < 600) {
-    baseHeight = 120  // 极小屏幕
-  } else if (windowHeight < 900) {
-    baseHeight = 160  // 小屏幕
-  } else if (windowHeight < 1000) {
-    baseHeight = 180  // 中等屏幕
-  } else if (windowHeight < 1200) {
-    baseHeight = 200  // 大屏幕
-  } else {
-    baseHeight = 220  // 超大屏幕
-  }
-
-  return baseHeight
+let refreshTimer: number | undefined
+async function loadRealtime() {
+  try {
+    const res = await getRealtimeDataApi('PS001')
+    pumpData.value = res.data as PumpRealtimeData
+  } catch (e) {}
 }
 
-const initChart = () => {
-  if (chartRef.value) {
-    // 根据窗口高度动态设置图表容器高度
-    const windowHeight = window.innerHeight
-    const chartHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = chartHeight + 'px'
-    chart = echarts.init(chartRef.value)
-    const xData = ["提升效率", "提升速度", "载重状态", "制动系统", "安全指数"]
 
-    const percent = [94, 87, 76, 100, 92]
 
-    const imgList: Array<{
-      coord: [number, number];
-      symbolSize: [number, number];
-      symbolKeepAspect: boolean;
-      symbolOffset: [number, number];
-      symbol: string;
-    }> = []
-    const iconData: Array<{
-      value: number;
-      symbolPosition: string;
-    }> = []
-
-    percent.forEach((item, index) => {
-      imgList.push({
-        coord: [index, item],
-        symbolSize: [100, 50],
-        symbolKeepAspect: true,
-        symbolOffset: [-40, -185],
-        symbol: "circle",
-      })
-      iconData.push({
-        value: item,
-        symbolPosition: 'end',
-      })
-    })
-
-    const option = {
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: "rgba(7,55,63,0.7)",
-        borderColor: "rgba(7,55,63,0.7)",
-        textStyle: {
-          color: '#fff',
-        },
-        formatter: function (params: Array<{marker: string, name: string, value: number}>) {
-          return params[0].marker + '' + params[0].name + ': ' + params[0].value + '%'
-        }
-      },
-      grid: {
-        top: '10%',
-        bottom: '10%',
-        right: 0,
-        left: 0,
-      },
-      xAxis: {
-        data: xData,
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: true,
-          textStyle: { color: '#fff', fontSize: 11 },
-          interval: 0,
-          formatter: function(value: string) {
-            // 长文字分两行显示
-            if (value.length > 3) {
-              return value.substring(0, 2) + '\n' + value.substring(2)
-            }
-            return value
-          }
-        }
-      },
-      yAxis: {
-        max: 110,
-        splitLine: {
-          show: false
-        },
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: false
-        }
-      },
-      series: [
-        {
-          name: '权属情况',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -7],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: '#14b1eb',
-              opacity: 0.5,
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [40, 15],
-          symbolOffset: [0,-2],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -5],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [15, 5],
-          symbolOffset: [0, -5],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: 'rgb(9,227,255)'
-            }
-          },
-          data: iconData
-        },
-        {
-          type: 'bar',
-          itemStyle: {
-            normal: {
-              color: {
-                x: 0,
-                y: 0,
-                x2: 0,
-                y2: 1,
-                type: 'linear',
-                global: false,
-                colorStops: [{
-                  offset: 0,
-                  color: "rgb(24,118,158)"
-                }, {
-                  offset: 1,
-                  // color: "rgba(9,30,41,0.5)"
-                  color:"rgba(26, 35, 50, 0.5)"
-                }]
-              }
-            }
-          },
-          barWidth: 30,
-          data: percent,
-          label: {
-            show: true,
-            position: 'top',
-            distance: 15,
-            color: '#fff',
-            fontSize: 12,
-            formatter: (params: { dataIndex: number, value: number }) => {
-              return '{b|' + params.value + '%}'
-            },
-            rich: {
-              a: {
-                color: '#03adff',
-                fontSize: 12,
-                fontWeight: 'bold'
-              },
-              b: {
-                color: '#fff',
-                fontSize: 12,
-                marginTop: 15,
-              }
-            }
-          },
-          markPoint: {
-            data: imgList
-          }
-        }
-      ]
-    }
-
-    chart.setOption(option)
-  }
-}
-
-const resizeChart = () => {
-   if (chart && chartRef.value) {
-    const windowHeight = window.innerHeight;
-
-    // 动态调整容器高度
-    const newHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = newHeight + 'px'
-
-    // 重新调整图表大小
-    chart.resize()
-
-    // 根据窗口高度调整Y轴最大值
-    let newMax = 110;
-
-    if (windowHeight < 600) {
-      newMax = 160;
-    } else if (windowHeight < 900) {
-      newMax = 140;
-    } else if (windowHeight < 1000) {
-      newMax = 130;
-    } else {
-      newMax = 100;
-    }
-
-    chart.setOption(
-      {
-        yAxis: {
-          max: newMax
-        },
-        grid: {
-          top: '10%',
-          bottom: '10%',
-          right: 0,
-          left: 0,
-        }
-      },
-      false
-    )
-
-  }
-}
 
 onMounted(() => {
-  initChart()
-  window.addEventListener('resize', resizeChart)
+  loadRealtime()
+  refreshTimer = window.setInterval(loadRealtime, 3000)
 })
 
 onUnmounted(() => {
-  chart?.dispose()
-  window.removeEventListener('resize', resizeChart)
+  if (refreshTimer) window.clearInterval(refreshTimer)
 })
 </script>
 
@@ -680,22 +247,21 @@ article::-webkit-scrollbar {
 .left-panel {
   background: url('@/assets/img/239.png') left;
   background-size: cover;
-	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
-	min-width: 250px; /* 减小最小宽度 */
-	max-width: 350px; /* 减小最大宽度 */
-	height: calc(100vh - 190px); /* 使用视口高度 */
-	display: flex;
-	flex-direction: column;
-	gap: 15px;
-	margin: 0;
-	padding: 15px 15px 15px 25px;
-	position: absolute;
-	top: 60px; /* 在标题下方 */
-	left: 15px; /* 减小左边距 */
-	z-index: 10;
-	overflow-y: auto; /* 允许垂直滚动 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
+  width: min(320px, 22vw);
+  min-width: 250px;
+  max-width: 350px;
+  height: auto;
+  max-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 14px 12px 18px;
+  position: absolute;
+  top: 100px;
+  left: 15px;
+  z-index: 10;
+  overflow: visible;
 }
 
 .left-panel::-webkit-scrollbar {
@@ -703,24 +269,23 @@ article::-webkit-scrollbar {
 }
 
 .right-panel {
-	background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
+  background: url('@/assets/img/240.png') right;
   background-size: cover;
-	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
-	min-width: 250px; /* 减小最小宽度 */
-	max-width: 350px; /* 减小最大宽度 */
-	height: calc(100vh - 190px); /* 使用视口高度 */
-	display: flex;
-	flex-direction: column;
-	gap: 15px;
-	margin: 0;
-	padding: 15px 25px 15px 15px;
-	position: absolute; /* 绝对定位浮层 */
-	top: 60px; /* 在标题下方 */
-	right: 15px; /* 减小右边距 */
-	z-index: 10; /* 确保在3D模型上方 */
-	overflow-y: auto; /* 允许滚动 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
+  width: min(320px, 22vw);
+  min-width: 250px;
+  max-width: 350px;
+  height: auto;
+  max-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 18px 12px 14px;
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  z-index: 10;
+  overflow: visible;
 }
 
 .right-panel::-webkit-scrollbar {
@@ -740,15 +305,18 @@ article::-webkit-scrollbar {
 /* 面板区域 */
 
 .panel-section1 {
-  /* padding: 5px; */
-  backdrop-filter: blur(10px);
+  padding: 10px;
+  backdrop-filter: blur(8px);
   height: auto;
-  flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 允许flex子元素缩小 */
-  overflow: visible; /* 允许内容正常显示 */
-
+  min-height: 0;
+  overflow: visible;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25), inset 0 0 30px rgba(0, 188, 212, 0.06);
 }
 
 .section-title {
@@ -774,6 +342,13 @@ article::-webkit-scrollbar {
   text-align: center;
 }
 
+.title-line {
+  width: 80%;
+  height: 2px;
+  margin-top: 6px;
+  background: linear-gradient(90deg, rgba(0, 188, 212, 0.6), rgba(0, 188, 212, 0));
+}
+
 
 .title-text {
   /* color: #00bcd4; */
@@ -797,33 +372,29 @@ article::-webkit-scrollbar {
 /* 数据卡片 */
 .data-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  flex: 1; /* 使卡片区域能够扩展和收缩 */
-  min-height: 80px; /* 设置最小高度，确保至少能显示2行卡片 */
-  max-height: 100%; /* 限制最大高度不超过父容器 */
-  overflow-y: hidden; /* 内容超出时显示滚动条 */
-  overflow-x: hidden; /* 隐藏水平滚动条 */
-  align-content: start; /* 卡片从顶部开始排列 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  flex: 0 0 auto;
+  align-content: start;
 }
 
 .data-card {
-  background: rgba(0, 188, 212, 0.1);
-  border: 1px solid rgba(0, 188, 212, 0.3);
-  border-radius: 6px;
-  padding: 10px 5px 8px 12px; /* 调整padding给内容更多空间 */
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  padding: 10px 10px;
   display: flex;
   align-items: center;
-  gap: 8px; /* 减小间距 */
-  width: 100%; /* 使用100%宽度而不是固定宽度 */
-  height: auto; /* 让高度自适应内容 */
-  min-height: 50px; /* 设置合适的最小高度 */
-  max-width: 150px; /* 保持最大宽度限制 */
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  min-height: 56px;
+  backdrop-filter: blur(6px);
 }
 
 .card-icon {
-  font-size: 24px;
-  color: #00bcd4;
+  font-size: 20px;
+  color: #8fd6ff;
 }
 
 .card-content {
@@ -831,17 +402,17 @@ article::-webkit-scrollbar {
 }
 
 .card-value {
-  font-size: clamp(16px, 2.5vw, 19px); /* 响应式字体大小 */
-  font-weight: bold;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: 700;
   color: #ffffff;
-  margin-bottom: 2px; /* 减小间距 */
+  margin-bottom: 2px;
 }
 
 .card-label {
-  font-size: clamp(10px, 1.5vw, 12px); /* 响应式字体大小 */
-  color: #cccccc;
-  margin-bottom: 1px; /* 减小间距 */
-  line-height: 1.2; /* 调整行高 */
+  font-size: clamp(11px, 1.4vw, 13px);
+  color: #9ad1ff;
+  margin-bottom: 1px;
+  line-height: 1.2;
 }
 
 .card-unit {

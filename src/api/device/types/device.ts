@@ -137,3 +137,232 @@ export type UpdateDeviceResponseData = IApiResponseData<DeviceData>;
 // 删除设备响应数据类型
 export type DeleteDeviceResponseData = IApiResponseData<string>;
 
+
+
+
+// 基础设备实时数据接口（所有设备类型共享的字段）
+export interface BaseRealtimeData {
+  // 数据ID
+  id?: number;
+  // 设备编码
+  equipment_code: string;
+  // 数据采集时间
+  collected_at: string;
+}
+
+// 提升机实时数据接口
+export interface HoistRealtimeData extends BaseRealtimeData {
+  // 提升机特有数据字段 - 电机温度相关
+  motor_temp_1?: number;
+  motor_temp_2?: number;
+  motor_temp_3?: number;
+  motor_temp_4?: number;
+  motor_temp_5?: number;
+  motor_temp_6?: number;
+  motor_temp_7?: number;
+  motor_temp_8?: number;
+  motor_temp_9?: number;
+  motor_temp_10?: number;
+  motor_temp_11?: number;
+  motor_temp_12?: number;
+  motor_temp_max?: number;
+  motor_current?: number;
+
+  // 天轮温度相关
+  sheave_temp_1?: number;
+  sheave_temp_2?: number;
+  sheave_temp_3?: number;
+  sheave_temp_4?: number;
+  sheave_temp_5?: number;
+  sheave_temp_6?: number;
+  sheave_temp_7?: number;
+  sheave_temp_8?: number;
+  sheave_temp_max?: number;
+
+  // 主轴温度相关
+  main_shaft_temp_1?: number;
+  main_shaft_temp_2?: number;
+  main_shaft_temp_3?: number;
+  main_shaft_temp_4?: number;
+  main_shaft_temp_max?: number;
+
+  // 速度相关
+  plc_speed_1?: number;
+  plc_speed_2?: number;
+  speed_1?: number;
+  speed_2?: number;
+  speed_3?: number;
+  speed_4?: number;
+  actual_speed?: number;
+  speed_diff?: number;
+  travel_diff?: number;
+  deceleration?: number;
+
+  // 副罐笼深度相关
+  vice_skip_depth?: number;
+  vice_skip_overwind?: number;
+  vice_skip_deceleration_point?: number;
+  vice_skip_stop_point?: number;
+  vice_skip_monitor_2m?: number;
+
+  // 主罐笼深度相关
+  main_skip_depth?: number;
+  main_skip_overwind?: number;
+  main_skip_stop_point?: number;
+  main_skip_deceleration_point?: number;
+  main_skip_monitor_2m?: number;
+
+  // 运行模式相关
+  auto_run?: number;
+  semi_auto_run?: number;
+  simple_run?: number;
+  manual_run?: number;
+  repair_mode?: number;
+  emergency_stop?: number;
+  fault_stop?: number;
+  fault_alarm?: number;
+  start_condition_insufficient?: number;
+
+  // 提升类型
+  lift_person?: number;
+  lift_material?: number;
+
+  // 控制相关
+  handle_zero_position?: number;
+  handle_set_speed_check?: number;
+  speed_setpoint?: number;
+  guide_wheel_speed?: number;
+
+  // 制动和温度
+  brake_oil_pressure?: number;
+  brake_oil_temp?: number;
+  wellhead_temp?: number;
+
+  // 信号
+  signal_0?: number;
+  signal_2?: number;
+  signal_3?: number;
+  signal_4?: number;
+  signal_5?: number;
+
+  // 励磁和气压
+  excitation_merge?: number;
+  excitation_current?: number;
+  brake_air_pressure?: number;
+
+  // 负载重量
+  load_weight?: number;
+}
+
+// 压风机实时数据接口
+export interface CompressorRealtimeData extends BaseRealtimeData {
+  // 压风机特有数据字段
+  standby_status?: string;
+  current_run_time?: number;
+  unit_exhaust_temp?: number;
+  intake_vacuum?: number;
+  coolant_temp?: number;
+  motor_vibration?: number;
+  analog_alarm_airbag_temp?: number;
+  separation_pressure?: number;
+  main_exhaust_temp?: number;
+  running_temp?: number;
+  voltage?: number;
+  current?: number;
+  separation_diff_pressure?: number;
+  analog_current_airbag_temp?: number;
+  exhaust_pressure?: number;
+  main_vibration?: number;
+}
+
+// 通风机实时数据接口
+export interface VentilatorRealtimeData extends BaseRealtimeData {
+  // 通风机特有数据字段
+  motor1_current?: number;
+  motor1_voltage?: number;
+  motor2_horiz_vibration?: number;
+  motor2_south_axis_temp?: number;
+  motor1_phase_b_temp?: number;
+  vfd_run_current?: number;
+  alarm?: number;
+  vfd_run_feedback?: number;
+  motor1_north_axis_temp?: number;
+  motor1_phase_c_temp?: number;
+  motor2_vert_vibration?: number;
+  motor1_vert_vibration?: number;
+  motor1_south_axis_temp?: number;
+  motor2_phase_a_temp?: number;
+  motor1_phase_a_temp?: number;
+  motor2_phase_c_temp?: number;
+  motor2_voltage?: number;
+  motor1_horiz_vibration?: number;
+  motor2_phase_b_temp?: number;
+  motor2_current?: number;
+  motor2_north_axis_temp?: number;
+  vfd_run_freq?: number;
+  side_door_closed?: number;
+  side_door_opened?: number;
+  standby?: number;
+  air_volume?: number;
+  air_speed?: number;
+  exhaust_mode?: number;
+  neg_pressure?: number;
+  total_pressure?: number;
+}
+
+// 排水机实时数据接口
+export interface PumpRealtimeData extends BaseRealtimeData {
+  // 排水机特有数据字段
+  voltage?: number;
+  current?: number;
+  positive_pressure?: number;
+  negative_pressure?: number;
+  pump_front_temp?: number;
+  motor_front_temp?: number;
+  pump_rear_temp?: number;
+  motor_rear_temp?: number;
+  motor_phase_a_temp?: number;
+  motor_phase_b_temp?: number;
+  motor_phase_c_temp?: number;
+  pump_vibration_1?: number;
+  pump_vibration_2?: number;
+  motor_vibration_1?: number;
+  motor_vibration_2?: number;
+  total_run_time?: number;
+}
+
+// 运输机实时数据接口
+export interface ConveyorRealtimeData extends BaseRealtimeData {
+  // 运输机特有数据字段
+  belt_speed?: number;
+  load_capacity?: number;
+  motor_current?: number;
+  motor_voltage?: number;
+  motor_power?: number;
+  motor_temperature?: number;
+  gearbox_temperature?: number;
+  bearing_temperature?: number;
+  belt_tension?: number;
+  vibration_value?: number;
+  belt_deviation?: number;
+  running_hours?: number;
+  transport_direction?: string;
+}
+
+// 设备实时数据联合类型
+export type EquipmentRealtimeData =
+    | HoistRealtimeData
+  | CompressorRealtimeData
+  | VentilatorRealtimeData
+  | PumpRealtimeData
+  | ConveyorRealtimeData;
+
+// 设备实时数据响应类型
+export type GetEquipmentRealtimeDataResponse = IApiResponseData<EquipmentRealtimeData>;
+
+
+
+
+
+
+
