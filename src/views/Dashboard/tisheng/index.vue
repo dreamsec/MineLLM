@@ -17,277 +17,51 @@
           allowfullscreen
           scrolling="no"
         ></iframe>
-        <!-- 全屏按钮 -->
-        <button class="fullscreen-btn" @click="toggleFullScreen" title="切换全屏">
-          <!-- 根据全屏状态显示不同图标 -->
-          <svg v-if="!isFullScreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-          </svg>
-        </button>
       </div>
 
       <!-- 左侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
-      <div v-if="!isFullScreen" class="left-panel">
+      <div  class="left-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">提升机运行情况</span>
+            <span class="title-text">提升机实时数据</span>
             <div class="title-line"></div>
           </div>
 
-          <!-- 数据卡片组 -->
           <div class="data-cards">
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
+            <div class="data-card" v-for="item in leftItems" :key="item.key">
+              <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">130</div>
-                <div class="card-label">提升机总数</div>
-                <!-- <div class="card-unit">+2
-                  <n-icon size="16">
-                  <ArrowUpOutlined/>
-                </n-icon>
-                </div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">13</div>
-                <div class="card-label">在线设备</div>
-                <!-- <div class="card-unit">+1
-                   <n-icon size="16">
-                     <ArrowUpOutlined/>
-                   </n-icon>
-                </div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">4</div>
-                <div class="card-label">告警数量</div>
-                <!-- <div class="card-unit">平方米</div> -->
-              </div>
-            </div>
-            <div class="data-card">
-              <div class="card-icon">🏢</div>
-              <div class="card-content">
-                <div class="card-value">94.2%</div>
-                <div class="card-label">运行效率</div>
-                <!-- <div class="card-unit"></div> -->
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">提升机健康状态</span>
-            <div class="title-line"></div>
-          </div>
 
-          <!-- 进度条数据 -->
-          <div class="progress-data">
-            <div class="progress-item">
-              <div class="progress-label">主电机系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 92%"></div>
-              </div>
-              <div class="progress-value">92%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">制动系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 88%"></div>
-              </div>
-              <div class="progress-value">88%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">钢丝绳状态</div>
-              <div class="progress-bar">
-                <div class="progress-fill yellow" style="width: 85%"></div>
-              </div>
-              <div class="progress-value">85%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">液压系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 90%"></div>
-              </div>
-              <div class="progress-value">90%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">控制系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 95%"></div>
-              </div>
-              <div class="progress-value">95%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">安全保护系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 98%"></div>
-              </div>
-              <div class="progress-value">98%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 智慧园区数据展示 - 圆形图表 -->
-         <!-- 提升机运行数据统计 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">提升机运行数据统计</span>
-            <div class="title-line"></div>
-          </div>
-
-          <div class="circle-charts">
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="62.8"/>
-                </svg>
-                <div class="chart-value">156</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">今日提升次数</div>
-                <div class="chart-data">
-                  <div>提升高度: 680m</div>
-                  <div>载重: 12吨/次</div>
-                </div>
-              </div>
-            </div>
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="37.68"/>
-                </svg>
-                <div class="chart-value">94.7%</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">运行效率</div>
-                <div class="chart-data">
-                  <div>故障次数: 0</div>
-                  <div>可用率: 98.5%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
 
       </div>
 
       <!-- 右侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
-      <div v-if="!isFullScreen" class="right-panel">
-        <!-- 智慧园区数据展示 -->
+      <div  class="right-panel">
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">环境监控</span>
+            <span class="title-text">运行参数</span>
             <div class="title-line"></div>
           </div>
 
-
-          <div class="env-cards">
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/wen.png" alt="温度">
-              <div class="env-content">
-                <div class="env-value">28℃</div>
-                <div class="env-label">井下温度</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/feng.png" alt="风速">
-              <div class="env-content">
-                <div class="env-value">2.3m/s</div>
-                <div class="env-label">风速</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/shi.png" alt="空气湿度">
-              <div class="env-content">
-                <div class="env-value">65%</div>
-                <div class="env-label">空气湿度</div>
-                <div class="env-unit yellow">稍高</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/nong.png" alt="气体浓度">
-              <div class="env-content">
-                <div class="env-value">0.02%</div>
-                <div class="env-label">气体浓度</div>
-                <div class="env-unit green">正常范围</div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in rightItems" :key="item.key">
+              <div class="card-icon">🔧</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
           </div>
-
         </div>
-
-        <!-- 智慧园区数据展示 - 饼图 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">智慧园区数据展示</span>
-            <div class="title-line"></div>
-          </div>
-
-          <div class="panel-section1">
-            <div class="chart-container" ref="chartRef"></div>
-          </div>
-
-        </div>
-
-        <!-- 智慧园区数据展示 - 关键设备 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">关键设备</span>
-            <div class="title-line"></div>
-          </div>
-
-           <div class="icon-data">
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主提升机#1</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div>
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主提升机#2</div>
-                  <div class="icon-value">温度：55℃  运行：12h</div>
-                </div>
-                <div class="icon-unit orange">预警</div>
-              </div>
-            </div>
-            <!-- <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">运输皮带#5</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div> -->
-          </div>
-
-
-        </div>
-
-
       </div>
     </div>
 
@@ -300,366 +74,122 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, onMounted, onUnmounted} from 'vue'
+import {ref, onMounted, onUnmounted, computed} from 'vue'
 import * as echarts from 'echarts'
+import { getRealtimeDataApi } from '@/api/device'
+import type { HoistRealtimeData } from '@/api/device/types/device'
 
-const isFullScreen = ref(false)
 
-const toggleFullScreen = () => {
-  // 切换全屏状态
-  isFullScreen.value = !isFullScreen.value;
 
-  if (isFullScreen.value) {
-    // 进入全屏模式
-    const docEl = document.documentElement;
-    if (docEl.requestFullscreen) {
-      docEl.requestFullscreen();
-    } else if (docEl.webkitRequestFullscreen) {
-      docEl.webkitRequestFullscreen();
-    } else if (docEl.mozRequestFullScreen) {
-      docEl.mozRequestFullScreen();
-    } else if (docEl.msRequestFullscreen) {
-      docEl.msRequestFullscreen();
-    }
-    // 添加全屏样式类
-    document.body.classList.add('fullscreen-mode');
-    document.documentElement.classList.add('fullscreen-mode');
-  } else {
-    // 退出全屏模式
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
-    // 移除全屏样式类
-    document.body.classList.remove('fullscreen-mode');
-    document.documentElement.classList.remove('fullscreen-mode');
-  }
-};
+const hoistData = ref<HoistRealtimeData | null>(null)
+const leftDefs = [
+  { key: 'actual_speed', label: '实际速度', unit: 'm/s' },
+  { key: 'speed_setpoint', label: '设定速度', unit: 'm/s' },
+  { key: 'guide_wheel_speed', label: '导向轮速度', unit: 'm/s' },
+  { key: 'deceleration', label: '减速度', unit: '' },
+  { key: 'speed_diff', label: '速度差', unit: '' },
+  { key: 'travel_diff', label: '行程差', unit: 'm' },
+  { key: 'load_weight', label: '载重', unit: 't' },
+  { key: 'motor_current', label: '电机电流', unit: 'A' },
+  { key: 'brake_air_pressure', label: '制动气压', unit: 'MPa' },
+  { key: 'brake_oil_pressure', label: '制动油压', unit: 'MPa' },
+  { key: 'brake_oil_temp', label: '制动油温', unit: '°C' },
+  { key: 'wellhead_temp', label: '井口温度', unit: '°C' },
+  { key: 'motor_temp_max', label: '电机最高温度', unit: '°C' },
+  { key: 'sheave_temp_max', label: '天轮最高温度', unit: '°C' },
+  { key: 'main_shaft_temp_max', label: '主轴最高温度', unit: '°C' }
+] as const
+const rightDefs = [
+  { key: 'plc_speed_1', label: 'PLC速度1', unit: 'm/s' },
+  { key: 'plc_speed_2', label: 'PLC速度2', unit: 'm/s' },
+  { key: 'speed_1', label: '速度1', unit: 'm/s' },
+  { key: 'speed_2', label: '速度2', unit: 'm/s' },
+  { key: 'speed_3', label: '速度3', unit: 'm/s' },
+  { key: 'speed_4', label: '速度4', unit: 'm/s' },
+  { key: 'vice_skip_depth', label: '副罐笼深度', unit: 'm' },
+  { key: 'vice_skip_overwind', label: '副罐笼过卷', unit: 'm' },
+  { key: 'vice_skip_deceleration_point', label: '副罐笼减速点', unit: 'm' },
+  { key: 'vice_skip_stop_point', label: '副罐笼停车点', unit: 'm' },
+  { key: 'vice_skip_monitor_2m', label: '副罐笼监控2m', unit: 'm' },
+  { key: 'main_skip_depth', label: '主罐笼深度', unit: 'm' },
+  { key: 'main_skip_overwind', label: '主罐笼过卷', unit: 'm' },
+  { key: 'main_skip_stop_point', label: '主罐笼停车点', unit: 'm' },
+  { key: 'main_skip_deceleration_point', label: '主罐笼减速点', unit: 'm' },
+  { key: 'main_skip_monitor_2m', label: '主罐笼监控2m', unit: 'm' },
+  { key: 'auto_run', label: '自动运行', unit: '' },
+  { key: 'semi_auto_run', label: '半自动运行', unit: '' },
+  { key: 'simple_run', label: '简易运行', unit: '' },
+  { key: 'manual_run', label: '手动运行', unit: '' },
+  { key: 'repair_mode', label: '检修模式', unit: '' },
+  { key: 'emergency_stop', label: '急停', unit: '' },
+  { key: 'fault_stop', label: '故障停机', unit: '' },
+  { key: 'fault_alarm', label: '故障报警', unit: '' },
+  { key: 'start_condition_insufficient', label: '启动条件不足', unit: '' },
+  { key: 'lift_person', label: '提升人员', unit: '' },
+  { key: 'lift_material', label: '提升物料', unit: '' },
+  { key: 'handle_zero_position', label: '手柄零位', unit: '' },
+  { key: 'handle_set_speed_check', label: '手柄设定速度校验', unit: '' },
+  { key: 'excitation_merge', label: '励磁合闸', unit: '' },
+  { key: 'excitation_current', label: '励磁电流', unit: 'A' },
+  { key: 'signal_0', label: '信号0', unit: '' },
+  { key: 'signal_2', label: '信号2', unit: '' },
+  { key: 'signal_3', label: '信号3', unit: '' },
+  { key: 'signal_4', label: '信号4', unit: '' },
+  { key: 'signal_5', label: '信号5', unit: '' },
+  { key: 'motor_temp_1', label: '电机温度1', unit: '°C' },
+  { key: 'motor_temp_2', label: '电机温度2', unit: '°C' },
+  { key: 'motor_temp_3', label: '电机温度3', unit: '°C' },
+  { key: 'motor_temp_4', label: '电机温度4', unit: '°C' },
+  { key: 'motor_temp_5', label: '电机温度5', unit: '°C' },
+  { key: 'motor_temp_6', label: '电机温度6', unit: '°C' },
+  { key: 'motor_temp_7', label: '电机温度7', unit: '°C' },
+  { key: 'motor_temp_8', label: '电机温度8', unit: '°C' },
+  { key: 'motor_temp_9', label: '电机温度9', unit: '°C' },
+  { key: 'motor_temp_10', label: '电机温度10', unit: '°C' },
+  { key: 'motor_temp_11', label: '电机温度11', unit: '°C' },
+  { key: 'motor_temp_12', label: '电机温度12', unit: '°C' },
+  { key: 'sheave_temp_1', label: '天轮温度1', unit: '°C' },
+  { key: 'sheave_temp_2', label: '天轮温度2', unit: '°C' },
+  { key: 'sheave_temp_3', label: '天轮温度3', unit: '°C' },
+  { key: 'sheave_temp_4', label: '天轮温度4', unit: '°C' },
+  { key: 'sheave_temp_5', label: '天轮温度5', unit: '°C' },
+  { key: 'sheave_temp_6', label: '天轮温度6', unit: '°C' },
+  { key: 'sheave_temp_7', label: '天轮温度7', unit: '°C' },
+  { key: 'sheave_temp_8', label: '天轮温度8', unit: '°C' },
+  { key: 'main_shaft_temp_1', label: '主轴温度1', unit: '°C' },
+  { key: 'main_shaft_temp_2', label: '主轴温度2', unit: '°C' },
+  { key: 'main_shaft_temp_3', label: '主轴温度3', unit: '°C' },
+  { key: 'main_shaft_temp_4', label: '主轴温度4', unit: '°C' }
+] as const
+const leftItems = computed(() => leftDefs.map(def => ({
+  ...def,
+  value: hoistData.value?.[def.key as keyof HoistRealtimeData] == null
+    ? '--'
+    : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
+})))
+const rightItems = computed(() => rightDefs.map(def => ({
+  ...def,
+  value: hoistData.value?.[def.key as keyof HoistRealtimeData] == null
+    ? '--'
+    : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
+})))
 
-// 监听全屏状态变化（用户可能通过ESC键或其他方式退出全屏）
-const handleFullscreenChange = () => {
-  // 检测实际的全屏状态
-  const isActuallyFullscreen = !!(document.fullscreenElement ||
-    document.webkitFullscreenElement ||
-    document.mozFullScreenElement ||
-    document.msFullscreenElement);
+let refreshTimer: number | undefined
 
-  // 更新我们的状态变量，确保与实际状态同步
-  isFullScreen.value = isActuallyFullscreen;
-};
-
-const chartRef = ref<HTMLElement | null>(null)
-let chart: echarts.ECharts | null = null
-
-// 根据窗口高度计算图表高度
-const calculateChartHeight = (windowHeight: number): number => {
-  // 基础高度
-  let baseHeight = 200
-
-  if (windowHeight < 600) {
-    baseHeight = 120  // 极小屏幕
-  } else if (windowHeight < 900) {
-    baseHeight = 160  // 小屏幕
-  } else if (windowHeight < 1000) {
-    baseHeight = 180  // 中等屏幕
-  } else if (windowHeight < 1200) {
-    baseHeight = 200  // 大屏幕
-  } else {
-    baseHeight = 220  // 超大屏幕
-  }
-
-  return baseHeight
+async function loadRealtime() {
+  try {
+    const res = await getRealtimeDataApi('TS001')
+    hoistData.value = res.data as HoistRealtimeData
+  } catch (e) {}
 }
 
-const initChart = () => {
-  if (chartRef.value) {
-    // 根据窗口高度动态设置图表容器高度
-    const windowHeight = window.innerHeight
-    const chartHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = chartHeight + 'px'
-    chart = echarts.init(chartRef.value)
-    const xData = ["提升效率", "提升速度", "载重状态", "制动系统", "安全指数"]
-
-    const percent = [94, 87, 76, 100, 92]
-
-    const imgList: Array<{
-      coord: [number, number];
-      symbolSize: [number, number];
-      symbolKeepAspect: boolean;
-      symbolOffset: [number, number];
-      symbol: string;
-    }> = []
-    const iconData: Array<{
-      value: number;
-      symbolPosition: string;
-    }> = []
-
-    percent.forEach((item, index) => {
-      imgList.push({
-        coord: [index, item],
-        symbolSize: [100, 50],
-        symbolKeepAspect: true,
-        symbolOffset: [-40, -185],
-        symbol: "circle",
-      })
-      iconData.push({
-        value: item,
-        symbolPosition: 'end',
-      })
-    })
-
-    const option = {
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: "rgba(7,55,63,0.7)",
-        borderColor: "rgba(7,55,63,0.7)",
-        textStyle: {
-          color: '#fff',
-        },
-        formatter: function (params: Array<{marker: string, name: string, value: number}>) {
-          return params[0].marker + '' + params[0].name + ': ' + params[0].value + '%'
-        }
-      },
-      grid: {
-        top: '10%',
-        bottom: '10%',
-        right: 0,
-        left: 0,
-      },
-      xAxis: {
-        data: xData,
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: true,
-          textStyle: { color: '#fff', fontSize: 11 },
-          interval: 0,
-          formatter: function(value: string) {
-            // 长文字分两行显示
-            if (value.length > 3) {
-              return value.substring(0, 2) + '\n' + value.substring(2)
-            }
-            return value
-          }
-        }
-      },
-      yAxis: {
-        max: 110,
-        splitLine: {
-          show: false
-        },
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: false
-        }
-      },
-      series: [
-        {
-          name: '权属情况',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -7],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: '#14b1eb',
-              opacity: 0.5,
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [40, 15],
-          symbolOffset: [0,-2],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -5],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [15, 5],
-          symbolOffset: [0, -5],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: 'rgb(9,227,255)'
-            }
-          },
-          data: iconData
-        },
-        {
-          type: 'bar',
-          itemStyle: {
-            normal: {
-              color: {
-                x: 0,
-                y: 0,
-                x2: 0,
-                y2: 1,
-                type: 'linear',
-                global: false,
-                colorStops: [{
-                  offset: 0,
-                  color: "rgb(24,118,158)"
-                }, {
-                  offset: 1,
-                  // color: "rgba(9,30,41,0.5)"
-                  color:"rgba(26, 35, 50, 0.5)"
-                }]
-              }
-            }
-          },
-          barWidth: 30,
-          data: percent,
-          label: {
-            show: true,
-            position: 'top',
-            distance: 15,
-            color: '#fff',
-            fontSize: 12,
-            formatter: (params: { dataIndex: number, value: number }) => {
-              return '{b|' + params.value + '%}'
-            },
-            rich: {
-              a: {
-                color: '#03adff',
-                fontSize: 12,
-                fontWeight: 'bold'
-              },
-              b: {
-                color: '#fff',
-                fontSize: 12,
-                marginTop: 15,
-              }
-            }
-          },
-          markPoint: {
-            data: imgList
-          }
-        }
-      ]
-    }
-
-    chart.setOption(option)
-  }
-}
-
-const resizeChart = () => {
-   if (chart && chartRef.value) {
-    const windowHeight = window.innerHeight;
-
-    // 动态调整容器高度
-    const newHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = newHeight + 'px'
-
-    // 重新调整图表大小
-    chart.resize()
-
-    // 根据窗口高度调整Y轴最大值
-    let newMax = 110;
-
-    if (windowHeight < 600) {
-      newMax = 160;
-    } else if (windowHeight < 900) {
-      newMax = 140;
-    } else if (windowHeight < 1000) {
-      newMax = 130;
-    } else {
-      newMax = 100;
-    }
-
-    chart.setOption(
-      {
-        yAxis: {
-          max: newMax
-        },
-        grid: {
-          top: '10%',
-          bottom: '10%',
-          right: 0,
-          left: 0,
-        }
-      },
-      false
-    )
-
-  }
-}
 
 onMounted(() => {
-  initChart()
-  window.addEventListener('resize', resizeChart)
-
-  // 添加全屏事件监听
-  document.addEventListener('fullscreenchange', handleFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-  document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+  loadRealtime()
+  refreshTimer = window.setInterval(loadRealtime, 3000)
 })
 
-onUnmounted(() => {
-  chart?.dispose()
-  window.removeEventListener('resize', resizeChart)
 
-  // 移除全屏事件监听
-  document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-  document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-  document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-
-  // 如果组件卸载时仍处于全屏状态，尝试退出全屏
-  if (isFullScreen.value) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
-  }
-})
 </script>
 
 <style scoped>
@@ -669,21 +199,21 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-/* 全局隐藏滚动条 */
+/* 全局隐藏滚动条（注释以允许显示滚动条） */
+/*
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none; 
 }
 
 html, body {
-  overflow: hidden; /* 隐藏页面级别滚动条 */
+  overflow: hidden; 
 }
 
-/* 确保所有可滚动元素都隐藏滚动条 */
 div, section, aside, main, article {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -696,6 +226,7 @@ main::-webkit-scrollbar,
 article::-webkit-scrollbar {
   display: none;
 }
+*/
 
 .dashboard-container {
   width: 100%; /* 使用100%宽度自适应父容器 */
@@ -763,7 +294,7 @@ article::-webkit-scrollbar {
 }
 
 .left-panel {
-  background: #001440  url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
+  /*background: #001440  url('@/assets/img/239.png') left; /* 设置背景图片，图片靠左对齐 */
   background-size: cover; /* 背景图片覆盖整个面板 */
   width: min(320px, 22vw); /* 面板宽度，取320px和屏幕宽度22%中的较小值 */
   min-width: 250px; /* 面板最小宽度为250px */
@@ -783,12 +314,10 @@ article::-webkit-scrollbar {
   -ms-overflow-style: none; /* IE和Edge浏览器隐藏滚动条 */
 }
 
-.left-panel::-webkit-scrollbar {
-  display: none; /* Chrome、Safari和Opera浏览器隐藏滚动条 */
-}
+/* .left-panel::-webkit-scrollbar { display: none; } */
 
 .right-panel {
-	background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
+	/*background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
   background-size: cover;
 	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
 	min-width: 250px; /* 减小最小宽度 */
@@ -803,13 +332,21 @@ article::-webkit-scrollbar {
 	top: 60px; /* 在标题下方 */
 	right: 15px; /* 减小右边距 */
 	z-index: 10; /* 确保在3D模型上方 */
-	overflow-y: auto; /* 允许滚动 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
+	overflow-y: auto;
+	scrollbar-width: auto;
+	-ms-overflow-style: auto;
 }
 
 .right-panel::-webkit-scrollbar {
-	display: none; /* Chrome, Safari and Opera */
+    width: 8px;
+}
+.right-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+.right-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
 }
 
 .center-panel {
@@ -894,15 +431,18 @@ article::-webkit-scrollbar {
 /* 面板区域 */
 
 .panel-section1 {
-  /* padding: 5px; */
-  backdrop-filter: blur(90px);
+  padding: 10px;
+  backdrop-filter: blur(8px);
   height: auto;
-  flex: 0 1 auto; /* 根据内容大小分配高度，而不是平均分配 */
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 允许flex子元素缩小 */
-  overflow: visible; /* 允许内容正常显示 */
-
+  min-height: 0;
+  overflow: visible;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25), inset 0 0 30px rgba(0, 188, 212, 0.06);
 }
 
 .section-title {
@@ -955,14 +495,21 @@ article::-webkit-scrollbar {
   gap: 12px;
   flex: 1; /* 使卡片区域能够扩展和收缩 */
   min-height: 80px; /* 设置最小高度，确保至少能显示2行卡片 */
-  max-height: 100%; /* 限制最大高度不超过父容器 */
-  overflow-y: hidden; /* 内容超出时显示滚动条 */
+  overflow-y: visible; /* 自身不滚动，交给父容器滚动 */
   overflow-x: hidden; /* 隐藏水平滚动条 */
   align-content: start; /* 卡片从顶部开始排列 */
 }
 
+:deep(.right-panel .data-cards) {
+  scrollbar-width: none; /* Firefox 隐藏滚动条外观 */
+  -ms-overflow-style: none; /* IE/Edge 隐藏滚动条外观 */
+}
+:deep(.right-panel .data-cards::-webkit-scrollbar) {
+  display: none; /* WebKit 隐藏滚动条外观 */
+}
+
 .data-card {
-  background: rgba(0, 188, 212, 0.1);
+  background: #001440;
   border: 1px solid rgba(0, 188, 212, 0.3);
   border-radius: 6px;
   padding: 10px 5px 8px 12px; /* 调整padding给内容更多空间 */
