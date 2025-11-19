@@ -313,21 +313,66 @@ export interface VentilatorRealtimeData extends BaseRealtimeData {
 // 排水机实时数据接口
 export interface PumpRealtimeData extends BaseRealtimeData {
   // 排水机特有数据字段
+  // 电机相关
   voltage?: number;
   current?: number;
+  current_fault?: number;
+  motor_phase_a_temp?: number;
+  motor_phase_b_temp?: number;
+  motor_phase_c_temp?: number;
+  motor_vibration_1?: number;
+  motor_vibration_2?: number;
+  motor_rear_axis_temp?: number;
+  motor_front_axis_temp?: number;
+  motor_overheat_fault?: number;
+  
+  // 泵相关
+  pump_fault?: number;
+  pump_emergency_fault?: number;
+  pump_vibration_1?: number;
+  pump_vibration_2?: number;
+  pump_overheat_fault?: number;
+  pump_run_feedback?: number;
+  pump_front_axis_temp?: number;
+  pump_rear_axis_temp?: number;
+  
+  // 压力相关
+  pos_pressure?: number;
+  neg_pressure?: number;
+  pos_pressure_fault?: number;
+  neg_pressure_fault?: number;
+  
+  // 阀门相关
+  main_valve_close_feedback?: number;
+  main_valve_overload_fault?: number;
+  main_valve_closed?: number;
+  main_valve_open_feedback?: number;
+  main_valve_opening?: number;
+  main_valve_closed_fault?: number;
+  main_valve_open?: number;
+  main_valve_open_fault?: number;
+  jet_ball_valve_status?: number;
+  
+  // 运行状态相关
+  semi_auto_status?: number;
+  runtime_reset_button?: number;
+  total_fault?: number;
+  device_stop_status?: number;
+  maintenance_status?: number;
+  remote_status?: number;
+  runtime_minutes?: number;
+  runtime_hours?: number;
+  runtime?: number;
+  local_status?: number;
+  vibration_fault?: number;
+  
+  // 为兼容旧版接口保留的字段（实际应使用上述新字段）
   positive_pressure?: number;
   negative_pressure?: number;
   pump_front_temp?: number;
   motor_front_temp?: number;
   pump_rear_temp?: number;
   motor_rear_temp?: number;
-  motor_phase_a_temp?: number;
-  motor_phase_b_temp?: number;
-  motor_phase_c_temp?: number;
-  pump_vibration_1?: number;
-  pump_vibration_2?: number;
-  motor_vibration_1?: number;
-  motor_vibration_2?: number;
   total_run_time?: number;
 }
 

@@ -2,9 +2,9 @@
   <div class="dashboard-container" >
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
-			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">排水机孪生平台</div>
-		</div>
+		<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
+		<div class="header-title">排水机孪生平台</div>
+	</div>
 
 
     <!-- 主体内容区 -->
@@ -21,16 +21,49 @@
 
       <!-- 左侧数据区 - 透明浮层 -->
       <div class="left-panel">
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
+        <!-- 基本运行数据 -->
+        <div class="panel-section">
           <div class="section-title">
-            <span class="title-text">排水机实时数据</span>
+            <span class="title-text">基本运行数据</span>
             <div class="title-line"></div>
           </div>
-
           <div class="data-cards">
-            <div class="data-card" v-for="item in leftItems" :key="item.key">
-              <div class="card-icon">⚙️</div>
+            <div class="data-card" v-for="item in basicItems" :key="item.key">
+              <div class="card-icon">⚡</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 泵状态数据 -->
+        <div class="panel-section">
+          <div class="section-title">
+            <span class="title-text">泵状态数据</span>
+            <div class="title-line"></div>
+          </div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in pumpItems" :key="item.key">
+              <div class="card-icon">💧</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 压力数据 -->
+        <div class="panel-section">
+          <div class="section-title">
+            <span class="title-text">压力数据</span>
+            <div class="title-line"></div>
+          </div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in pressureItems" :key="item.key">
+              <div class="card-icon">📊</div>
               <div class="card-content">
                 <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
@@ -42,14 +75,49 @@
 
       <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
-        <div class="panel-section1">
+        <!-- 电机数据 -->
+        <div class="panel-section">
           <div class="section-title">
-            <span class="title-text">电机/泵实时数据</span>
+            <span class="title-text">电机数据</span>
             <div class="title-line"></div>
           </div>
           <div class="data-cards">
-            <div class="data-card" v-for="item in rightItems" :key="item.key">
+            <div class="data-card" v-for="item in motorItems" :key="item.key">
               <div class="card-icon">🔧</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 阀门状态 -->
+        <div class="panel-section">
+          <div class="section-title">
+            <span class="title-text">阀门状态</span>
+            <div class="title-line"></div>
+          </div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in valveItems" :key="item.key">
+              <div class="card-icon">🚪</div>
+              <div class="card-content">
+                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-label">{{ item.label }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 运行状态 -->
+        <div class="panel-section">
+          <div class="section-title">
+            <span class="title-text">运行状态</span>
+            <div class="title-line"></div>
+          </div>
+          <div class="data-cards">
+            <div class="data-card" v-for="item in statusItems" :key="item.key">
+              <div class="card-icon">✅</div>
               <div class="card-content">
                 <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
@@ -74,38 +142,97 @@ import { getRealtimeDataApi } from '@/api/device'
 import type { PumpRealtimeData } from '@/api/device/types/device'
 
 const pumpData = ref<PumpRealtimeData | null>(null)
-const leftDefs = [
+// 格式化状态值显示
+const formatStatusValue = (value: number | undefined | null): string => {
+  if (value === null || value === undefined) return '--'
+  return value === 1 ? '正常' : value === 0 ? '异常' : String(value)
+}
+
+// 格式化时间值显示
+const formatTimeValue = (hours: number | undefined | null, minutes: number | undefined | null): string => {
+  if (hours === null || hours === undefined) return '--'
+  if (minutes === null || minutes === undefined) return `${hours}h`
+  return `${hours}h ${minutes}m`
+}
+
+// 基本运行数据
+const basicDefs = [
   { key: 'voltage', label: '电压', unit: 'V' },
   { key: 'current', label: '电流', unit: 'A' },
-  { key: 'positive_pressure', label: '正压', unit: 'MPa' },
-  { key: 'negative_pressure', label: '负压', unit: 'MPa' },
-  { key: 'pump_front_temp', label: '泵前温度', unit: '°C' },
-  { key: 'pump_rear_temp', label: '泵后温度', unit: '°C' },
-  { key: 'pump_vibration_1', label: '泵振动1', unit: 'mm/s' },
-  { key: 'pump_vibration_2', label: '泵振动2', unit: 'mm/s' }
+  { key: 'current_fault', label: '电流故障', unit: '', formatter: formatStatusValue },
+  { key: 'pump_run_feedback', label: '泵运行反馈', unit: '', formatter: formatStatusValue }
 ] as const
-const rightDefs = [
-  { key: 'motor_front_temp', label: '电机前温度', unit: '°C' },
-  { key: 'motor_rear_temp', label: '电机后温度', unit: '°C' },
+
+// 泵状态数据
+const pumpDefs = [
+  { key: 'pump_fault', label: '泵故障', unit: '', formatter: formatStatusValue },
+  { key: 'pump_emergency_fault', label: '泵紧急故障', unit: '', formatter: formatStatusValue },
+  { key: 'pump_overheat_fault', label: '泵过热故障', unit: '', formatter: formatStatusValue },
+  { key: 'vibration_fault', label: '振动故障', unit: '', formatter: formatStatusValue }
+] as const
+
+// 压力数据
+const pressureDefs = [
+  { key: 'pos_pressure', label: '正压', unit: 'MPa' },
+  { key: 'neg_pressure', label: '负压', unit: 'MPa' },
+  { key: 'pos_pressure_fault', label: '正压故障', unit: '', formatter: formatStatusValue },
+  { key: 'neg_pressure_fault', label: '负压故障', unit: '', formatter: formatStatusValue }
+] as const
+
+// 电机数据
+const motorDefs = [
+  { key: 'motor_front_axis_temp', label: '电机前温度', unit: '°C' },
+  { key: 'motor_rear_axis_temp', label: '电机后温度', unit: '°C' },
   { key: 'motor_phase_a_temp', label: 'A相温度', unit: '°C' },
   { key: 'motor_phase_b_temp', label: 'B相温度', unit: '°C' },
   { key: 'motor_phase_c_temp', label: 'C相温度', unit: '°C' },
   { key: 'motor_vibration_1', label: '电机振动1', unit: 'mm/s' },
   { key: 'motor_vibration_2', label: '电机振动2', unit: 'mm/s' },
-  { key: 'total_run_time', label: '累计运行', unit: 'h' }
+  { key: 'motor_overheat_fault', label: '电机过热故障', unit: '', formatter: formatStatusValue }
 ] as const
 
-const leftItems = computed(() => leftDefs.map(def => ({
-  ...def,
-  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null?
-  '--': String(pumpData.value?.[def.key as keyof PumpRealtimeData])
-})))
-const rightItems = computed(() => rightDefs.map(def => ({
-  ...def,
-  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
-    ? '--'
-    : String(pumpData.value?.[def.key as keyof PumpRealtimeData])
-})))
+// 阀门状态
+const valveDefs = [
+  { key: 'main_valve_opening', label: '主阀开度', unit: '%' },
+  { key: 'main_valve_open', label: '主阀开启', unit: '', formatter: formatStatusValue },
+  { key: 'main_valve_closed', label: '主阀关闭', unit: '', formatter: formatStatusValue },
+  { key: 'main_valve_open_fault', label: '主阀开启故障', unit: '', formatter: formatStatusValue },
+  { key: 'main_valve_closed_fault', label: '主阀关闭故障', unit: '', formatter: formatStatusValue },
+  { key: 'main_valve_overload_fault', label: '主阀过载故障', unit: '', formatter: formatStatusValue },
+  { key: 'jet_ball_valve_status', label: '喷射球阀状态', unit: '', formatter: formatStatusValue }
+] as const
+
+// 运行状态
+const statusDefs = [
+  { key: 'runtime_hours', label: '累计运行', unit: 'h' },
+  { key: 'runtime_minutes', label: '运行分钟', unit: 'm' },
+  { key: 'total_fault', label: '总故障数', unit: '次' },
+  { key: 'device_stop_status', label: '设备停止状态', unit: '', formatter: formatStatusValue },
+  { key: 'maintenance_status', label: '维护状态', unit: '', formatter: formatStatusValue },
+  { key: 'remote_status', label: '远程状态', unit: '', formatter: formatStatusValue },
+  { key: 'local_status', label: '本地状态', unit: '', formatter: formatStatusValue },
+  { key: 'semi_auto_status', label: '半自动状态', unit: '', formatter: formatStatusValue }
+] as const
+
+// 计算各数据面板的展示数据
+const createItemsComputed = (defs: readonly { key: string; label: string; unit: string; formatter?: (value: any) => string }[]) => {
+  return computed(() => defs.map(def => ({
+    ...def,
+    value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
+      ? '--'
+      : def.formatter
+        ? def.formatter(pumpData.value[def.key as keyof PumpRealtimeData])
+        : String(pumpData.value[def.key as keyof PumpRealtimeData])
+  })))
+}
+
+// 生成各面板的计算属性
+const basicItems = createItemsComputed(basicDefs)
+const pumpItems = createItemsComputed(pumpDefs)
+const pressureItems = createItemsComputed(pressureDefs)
+const motorItems = createItemsComputed(motorDefs)
+const valveItems = createItemsComputed(valveDefs)
+const statusItems = createItemsComputed(statusDefs)
 
 let refreshTimer: number | undefined
 async function loadRealtime() {
@@ -136,45 +263,40 @@ onUnmounted(() => {
 }
 
 /* 全局隐藏滚动条 */
+/*
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-*::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
-}
-
-html, body {
-  overflow: hidden; /* 隐藏页面级别滚动条 */
-}
-
-/* 确保所有可滚动元素都隐藏滚动条 */
-div, section, aside, main, article {
-  scrollbar-width: none;
+  scrollbar-width: thin;
   -ms-overflow-style: none;
 }
 
-div::-webkit-scrollbar,
-section::-webkit-scrollbar,
-aside::-webkit-scrollbar,
-main::-webkit-scrollbar,
-article::-webkit-scrollbar {
-  display: none;
+*::-webkit-scrollbar {
+  width: 6px;
 }
 
+*::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}*/
+
 .dashboard-container {
-  width: 100%; /* 使用100%宽度自适应父容器 */
-  height: calc(100vh - 100px);
+  width: 100%;
+  height: 100vh;
   background: #001440;
   color: #ffffff;
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  overflow: hidden; /* 完全隐藏滚动条 */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  position: relative; /* 为内部固定定位元素建立定位上下文 */
+  position: relative;
 }
-
 
 .dashboard-header {
 	position: absolute;
@@ -186,7 +308,6 @@ article::-webkit-scrollbar {
 	align-items: center;
 	justify-content: center;
 	z-index: 100;
-	/* background: linear-gradient(rgba(10,26,42) 80%, rgba(10,26,42,0.9) 100%); */
 }
 .header-bg {
 	position: absolute;
@@ -242,7 +363,7 @@ article::-webkit-scrollbar {
   margin: 0;
   padding: 12px 14px 12px 18px;
   position: absolute;
-  top: 100px;
+  top: 50px;
   left: 15px;
   z-index: 10;
   overflow: visible;
@@ -266,7 +387,7 @@ article::-webkit-scrollbar {
   margin: 0;
   padding: 12px 18px 12px 14px;
   position: absolute;
-  top: 100px;
+  top: 50px;
   right: 15px;
   z-index: 10;
   overflow: visible;
@@ -288,7 +409,8 @@ article::-webkit-scrollbar {
 
 /* 面板区域 */
 
-.panel-section1 {
+.panel-section1,
+.panel-section {
   padding: 10px;
   backdrop-filter: blur(8px);
   height: auto;
@@ -296,11 +418,32 @@ article::-webkit-scrollbar {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: visible;
+  max-height: 300px;
+  overflow-y: auto;
   border: 1px solid rgba(0, 188, 212, 0.25);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
   box-shadow: 0 8px 18px rgba(0,0,0,0.25), inset 0 0 30px rgba(0, 188, 212, 0.06);
+}
+
+/* 数据卡片 */
+.data-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1; /* 使卡片区域能够扩展和收缩 */
+  min-height: 80px; /* 设置最小高度，确保至少能显示2行卡片 */
+  overflow-y: visible; /* 自身不滚动，交给父容器滚动 */
+  overflow-x: hidden; /* 隐藏水平滚动条 */
+  align-content: start; /* 卡片从顶部开始排列 */
+}
+
+:deep(.right-panel .data-cards) {
+  scrollbar-width: none; /* Firefox 隐藏滚动条外观 */
+  -ms-overflow-style: none; /* IE/Edge 隐藏滚动条外观 */
+}
+:deep(.right-panel .data-cards::-webkit-scrollbar) {
+  display: none; /* WebKit 隐藏滚动条外观 */
 }
 
 .section-title {
@@ -308,10 +451,15 @@ article::-webkit-scrollbar {
   align-items: center;
   justify-content: center;
   margin-bottom: 15px;
-  position: relative;
-  background: url('@/assets/img/225.png') no-repeat center;
+  position: sticky;
+  top: 0;
+  background: url('@/assets/img/225.png') no-repeat center, linear-gradient(180deg, rgba(0, 188, 212, 0.12), rgba(0, 188, 212, 0.08));
   background-size: cover;
   text-align: center;
+  z-index: 10;
+  padding: 4px 0;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
 }
 
 .section-title1 {
@@ -353,14 +501,7 @@ article::-webkit-scrollbar {
   background: linear-gradient(90deg, #00bcd4 0%, transparent 100%);
 } */
 
-/* 数据卡片 */
-.data-cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  flex: 0 0 auto;
-  align-content: start;
-}
+
 
 .data-card {
   background: rgba(0, 14, 212, 0.08);
@@ -390,6 +531,16 @@ article::-webkit-scrollbar {
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 2px;
+  word-break: break-word;
+}
+
+/* 状态文字颜色 */
+.card-label:contains('故障') + .card-value {
+  color: #ff4d4f !important;
+}
+
+.card-label:contains('正常') + .card-value {
+  color: #52c41a !important;
 }
 
 .card-label {
