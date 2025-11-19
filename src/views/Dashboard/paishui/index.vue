@@ -23,7 +23,7 @@
       <div class="left-panel">
         <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
-          <div class="section-title1">
+          <div class="section-title">
             <span class="title-text">排水机实时数据</span>
             <div class="title-line"></div>
           </div>
@@ -38,19 +38,10 @@
             </div>
           </div>
         </div>
-
-        <!-- 智慧园区数据展示 -->
-
-
-
-
-
       </div>
 
       <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
-
-
         <div class="panel-section1">
           <div class="section-title">
             <span class="title-text">电机/泵实时数据</span>
@@ -66,12 +57,6 @@
             </div>
           </div>
         </div>
-
-
-
-
-
-
       </div>
     </div>
 
@@ -112,9 +97,8 @@ const rightDefs = [
 
 const leftItems = computed(() => leftDefs.map(def => ({
   ...def,
-  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
-    ? '--'
-    : String(pumpData.value?.[def.key as keyof PumpRealtimeData])
+  value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null?
+  '--': String(pumpData.value?.[def.key as keyof PumpRealtimeData])
 })))
 const rightItems = computed(() => rightDefs.map(def => ({
   ...def,
@@ -245,7 +229,7 @@ article::-webkit-scrollbar {
 }
 
 .left-panel {
-  background: url('@/assets/img/239.png') left;
+  /*background: url('@/assets/img/239.png') left;*/
   background-size: cover;
   width: min(320px, 22vw);
   min-width: 250px;
@@ -269,7 +253,7 @@ article::-webkit-scrollbar {
 }
 
 .right-panel {
-  background: url('@/assets/img/240.png') right;
+  /*background: url('@/assets/img/240.png') right;*/
   background-size: cover;
   width: min(320px, 22vw);
   min-width: 250px;
@@ -282,7 +266,7 @@ article::-webkit-scrollbar {
   margin: 0;
   padding: 12px 18px 12px 14px;
   position: absolute;
-  top: 10px;
+  top: 100px;
   right: 15px;
   z-index: 10;
   overflow: visible;
@@ -379,7 +363,7 @@ article::-webkit-scrollbar {
 }
 
 .data-card {
-  background: rgba(0, 188, 212, 0.08);
+  background: rgba(0, 14, 212, 0.08);
   border: 1px solid rgba(0, 188, 212, 0.25);
   border-radius: 10px;
   padding: 10px 10px;
@@ -410,7 +394,7 @@ article::-webkit-scrollbar {
 
 .card-label {
   font-size: clamp(11px, 1.4vw, 13px);
-  color: #9ad1ff;
+  color: #ffffff;
   margin-bottom: 1px;
   line-height: 1.2;
 }
