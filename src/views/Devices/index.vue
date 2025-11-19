@@ -445,6 +445,7 @@ const editDialogVisible = ref<boolean>(false)
 const currentEditId = ref<number | null>(null)
 const currentEditType = ref<string>('')
 const selectedDevice = ref<any>(null)
+const originalEquipmentCode = ref<string>('')
 
 // 分别存储设备、传感器和摄像头数据
 const mechanicalDevices = ref<DeviceData[]>([])
@@ -717,6 +718,7 @@ function editDevice(device: any ): void {
       is_online: deviceData.is_online,
       remark: deviceData.remark || ''
     })
+    originalEquipmentCode.value = deviceData.code
   }
   editDialogVisible.value = true
 
@@ -919,7 +921,7 @@ function handleEditSubmit(): void {
           remark: editFormData.remark
         }
 
-        updateDeviceApi(editFormData.equipment_code, edit_deviceData)
+        updateDeviceApi(originalEquipmentCode.value, edit_deviceData)
           .then(() => {
             ElMessage.success('设备更新成功')
             fetchAllDevices()
