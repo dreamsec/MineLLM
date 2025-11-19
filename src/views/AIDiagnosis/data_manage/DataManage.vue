@@ -662,13 +662,13 @@ const train = (data: any) => {
         localStorage.setItem("createModelForm.from_data", "1")
         localStorage.setItem("createModelForm.datasetID", data.id)
         localStorage.setItem("createModelForm.datatypeID", data.datatype_id)
-        router.push({path: "/models/model_manage"})
+        router.push({path: "/AIDiagnosis/model_manage"})
       } else if (res.code == 0) {
         localStorage.setItem("createModelForm.from_data", "1")
         localStorage.setItem("createModelForm.datasetID", data.id)
         localStorage.setItem("createModelForm.datatypeID", data.datatype_id)
         router.push({
-          path: "/models/train"
+          path: "/AIDiagnosis/train"
         })
       }
     })

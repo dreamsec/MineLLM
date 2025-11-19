@@ -469,7 +469,7 @@ const handleold = () => {
 }
 
 const backmain = () => {
-  router.push({ path: "/models/model_manage" })
+  router.push({ path: "/AIDiagnosis/model_manage" })
 }
 
 // 发布进度对话框与轮询

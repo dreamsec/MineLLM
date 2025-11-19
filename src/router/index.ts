@@ -162,7 +162,7 @@ export const constantRoutes: RouteRecordRaw[] = [
             }
           },
           {
-            path: "train",
+            path: "/AIDiagnosis/train",
             name: "train",
             component: () => import("@/views/AIDiagnosis/model_manage/data_train.vue"),
             meta: {
