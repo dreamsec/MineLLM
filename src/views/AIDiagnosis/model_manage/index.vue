@@ -922,7 +922,7 @@ const handlePublish = (row: any) => {
 }
 
 const handleDetect = () => {
-  router.push({path: "/models/model_detect"})
+  router.push({path: "/AIDiagnosis/model_detect"})
 }
 
 const backmain = () => {
