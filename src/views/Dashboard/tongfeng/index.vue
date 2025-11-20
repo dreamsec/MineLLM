@@ -144,7 +144,7 @@ async function loadRealtime() {
 
 onMounted(() => {
   loadRealtime()
-  refreshTimer = window.setInterval(loadRealtime, 3000)
+  /*refreshTimer = window.setInterval(loadRealtime, 3000)*/
 })
 
 

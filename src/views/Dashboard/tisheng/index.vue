@@ -75,7 +75,6 @@ defineOptions({
 })
 
 import {ref, onMounted, onUnmounted, computed} from 'vue'
-import * as echarts from 'echarts'
 import { getRealtimeDataApi } from '@/api/device'
 import type { HoistRealtimeData } from '@/api/device/types/device'
 
@@ -186,7 +185,7 @@ async function loadRealtime() {
 
 onMounted(() => {
   loadRealtime()
-  refreshTimer = window.setInterval(loadRealtime, 3000)
+  /*refreshTimer = window.setInterval(loadRealtime, 3000)*/
 })
 
 
@@ -202,16 +201,16 @@ onMounted(() => {
 /* 全局隐藏滚动条（注释以允许显示滚动条） */
 /*
 * {
-  scrollbar-width: none; 
-  -ms-overflow-style: none; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 *::-webkit-scrollbar {
-  display: none; 
+  display: none;
 }
 
 html, body {
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 div, section, aside, main, article {
