@@ -32,8 +32,16 @@ const props = defineProps({
   offsetY: {
     type: Number,
     default: 0
+  },
+  selectMode: {
+    type: String as PropType<'none' | 'delete' | 'edit' | 'view'>,
+    default: 'none'
   }
 })
+
+const emit = defineEmits<{
+  (e: 'select', item: Camera): void
+}>()
 
 // 图标源
 const imagesLoaded = ref(false);
@@ -85,8 +93,12 @@ const calculatedPosition = computed(() => ({
   y: props.item.vy * props.scale + props.offsetY
 }));
 
-// 点击摄像头图标直接打开视频弹窗
+// 点击摄像头图标：优先处理选择模式，其次打开视频
 const handleClick = () => {
+  if (props.selectMode !== 'none') {
+    emit('select', props.item)
+    return
+  }
   if (props.item.rtsp) {
     openVideoDialog();
   } else {

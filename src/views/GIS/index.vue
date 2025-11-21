@@ -5,9 +5,9 @@ import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图�
 import {throttle} from "lodash";
 import svgPanZoom from 'svg-pan-zoom';
 import CameraItem from './component/CameraItem/index.vue';
-import { getAllCamerasApi, addCameraApi } from '@/api/camera';
-import type { AddCameraRequestParams } from '@/api/camera/types/camera'
-import { ElMessage } from 'element-plus';
+import { getAllCamerasApi, addCameraApi, updateCameraApi, deleteCameraApi } from '@/api/camera';
+import type { AddCameraRequestParams, UpdateCameraRequestParams } from '@/api/camera/types/camera'
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 interface Camera {
   id: number;
@@ -152,6 +152,11 @@ const fetchCameraData = async () => {
 // ————————————————————————————————————————————————————————————————————————————— 添加摄像头模式相关状态
 // 是否处于添加摄像头模式
 const isAddMode = ref(false)
+// 是否处于删除/编辑选择模式
+const isDeleteMode = ref(false)
+const isEditMode = ref(false)
+// 是否处于查看模式（用于明确提示与按钮状态，不改变select-mode）
+const isViewMode = ref(false)
 // 临时选点坐标（存储未缩放的地图坐标系下的vx/vy）
 const tempPosition = ref<{ vx: number; vy: number } | null>(null)
 // 添加摄像头表单数据
@@ -180,6 +185,42 @@ const cancelAddCamera = () => {
   isAddMode.value = false
   tempPosition.value = null
   addDialogVisible.value = false
+}
+
+// 进入删除模式
+const startDeleteMode = () => {
+  isDeleteMode.value = true
+  isEditMode.value = false
+}
+
+// 取消删除模式
+const cancelDeleteMode = () => {
+  isDeleteMode.value = false
+}
+
+// 进入编辑模式
+const startEditMode = () => {
+  isEditMode.value = true
+  isDeleteMode.value = false
+  isViewMode.value = false
+}
+
+// 取消编辑模式
+const cancelEditMode = () => {
+  isEditMode.value = false
+  editDialogVisible.value = false
+}
+
+// 进入查看模式
+const startViewMode = () => {
+  isViewMode.value = true
+  isDeleteMode.value = false
+  isEditMode.value = false
+}
+
+// 取消查看模式
+const cancelViewMode = () => {
+  isViewMode.value = false
 }
 
 // 地图点击事件：将屏幕坐标转换为地图坐标（vx/vy）
@@ -227,6 +268,101 @@ const submitAddCamera = async () => {
     }
   } catch (e) {
     ElMessage.error('摄像头添加异常')
+    console.error(e)
+  }
+}
+
+// 选择的摄像头ID与编辑表单
+const selectedCameraId = ref<number | null>(null)
+const editDialogVisible = ref(false)
+const editCameraForm = ref<UpdateCameraRequestParams>({
+  id: 0,
+  name: '',
+  ip: '',
+  username: '',
+  password: '',
+  rtsp: '',
+  status: 1,
+  x: 0,
+  y: 0
+})
+
+// 查看摄像头属性对话框与数据
+const viewDialogVisible = ref(false)
+const viewCameraData = ref<Camera | null>(null)
+
+// 处理摄像头选择（删除/编辑/查看）
+const onCameraSelected = async (item: any) => {
+  if (isDeleteMode.value) {
+    try {
+      await ElMessageBox.confirm('确认删除该摄像头？', '提示', { type: 'warning' })
+      const res = await deleteCameraApi({ id: item.id })
+      if (res.code === 1) {
+        ElMessage.success('删除成功')
+        fetchCameraData()
+        isDeleteMode.value = false
+      } else {
+        ElMessage.error(res.message || '删除失败')
+      }
+    } catch {
+      // 用户取消
+    }
+    return
+  }
+
+  if (isEditMode.value) {
+    selectedCameraId.value = item.id
+    editCameraForm.value = {
+      id: item.id,
+      name: item.name,
+      ip: item.ip,
+      username: item.username,
+      password: item.password,
+      rtsp: item.rtsp,
+      status: item.status ?? 1,
+      x: item.vx,
+      y: item.vy
+    }
+    editDialogVisible.value = true
+    return
+  }
+
+  if (isViewMode.value) {
+    // 填充查看数据并打开查看弹窗
+    viewCameraData.value = {
+      id: item.id,
+      name: item.name,
+      ip: item.ip,
+      username: item.username,
+      password: item.password,
+      rtsp: item.rtsp,
+      status: item.status ?? 1,
+      vx: item.vx,
+      vy: item.vy,
+      create_time: item.create_time,
+      update_time: item.update_time,
+      show: item.show
+    }
+    viewDialogVisible.value = true
+    return
+  }
+}
+
+// 提交编辑摄像头
+const submitEditCamera = async () => {
+  try {
+    const payload: UpdateCameraRequestParams = { ...editCameraForm.value }
+    const res = await updateCameraApi(payload)
+    if (res.code === 1) {
+      ElMessage.success('更新成功')
+      await fetchCameraData()
+      editDialogVisible.value = false
+      isEditMode.value = false
+    } else {
+      ElMessage.error(res.message || '更新失败')
+    }
+  } catch (e) {
+    ElMessage.error('更新异常')
     console.error(e)
   }
 }
@@ -534,15 +670,65 @@ onActivated(() => {
           <!-- 添加摄像头功能 -->
           <div class="layer-item">
             <div style="display:flex; gap:8px; width:100%;">
-              <el-button type="primary" size="small" @click="startAddCamera" :disabled="isAddMode">
+              <el-button type="primary" size="small" width="50%" @click="startAddCamera" :disabled="isAddMode">
                 添加
               </el-button>
-              <el-button type="danger" size="small" @click="cancelAddCamera" :disabled="!isAddMode">
+              <el-button type="danger" size="small" width="50%" @click="cancelAddCamera" :disabled="!isAddMode">
                 取消
               </el-button>
             </div>
             <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
-              {{ isAddMode ? '提示：在地图上点击选择摄像头位置' : '点击“添加摄像头”进入选点模式' }}
+              {{ isAddMode ? '提示：在地图上点击选择摄像头位置' : '点击“添加”进入选点模式' }}
+            </div>
+          </div>
+
+          <!-- 删除/编辑选择模式 -->
+          <div class="layer-item">
+            <!-- 删除分组：包含 删除 与 取消删除 两个按钮 -->
+            <div style="display:flex; gap:8px;width:100%;">
+              <el-button type="warning" size="small" width="50%" @click="startDeleteMode" :disabled="isDeleteMode">
+                删除
+              </el-button>
+              <el-button type="danger" size="small" width="50%" @click="cancelDeleteMode" :disabled="!isDeleteMode">
+                取消
+              </el-button>
+            </div>
+            <!-- 模式提示：根据当前模式动态提示下一步操作 -->
+            <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
+              {{ isDeleteMode ? '提示：点击地图上的摄像头进行删除' : isEditMode ? '提示：点击地图上的摄像头进行编辑' : '点击“删除”进入选择模式' }}
+            </div>
+          </div>
+
+
+            <!-- 编辑分组：包含 编辑 与 取消编辑 两个按钮 -->
+          <div class="layer-item">
+            <div style="display:flex; gap:8px;width:100%;">
+              <el-button type="success" width="50%" size="small" @click="startEditMode" :disabled="isEditMode">
+                编辑
+              </el-button>
+              <el-button type="danger" width="50%" size="small" @click="cancelEditMode" :disabled="!isEditMode">
+                取消
+              </el-button>
+            </div>
+            <!-- 模式提示：根据当前模式动态提示下一步操作 -->
+            <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
+              {{ isDeleteMode ? '提示：点击地图上的摄像头进行删除' : isEditMode ? '提示：点击地图上的摄像头进行编辑' : '点击“编辑”进入选择模式' }}
+            </div>
+          </div>
+
+          <!-- 查看分组：样式模仿编辑分组，包含 查看 与 取消 两个按钮 -->
+          <div class="layer-item">
+            <div style="display:flex; gap:8px;width:100%;">
+              <el-button type="primary" width="50%" size="small" @click="startViewMode" :disabled="isViewMode">
+                查看
+              </el-button>
+              <el-button type="danger" width="50%" size="small" @click="cancelViewMode" :disabled="!isViewMode">
+                取消
+              </el-button>
+            </div>
+            <!-- 模式提示：根据当前模式动态提示下一步操作 -->
+            <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
+              {{ isViewMode ? '点击摄像头查看属性信息' : '点击“查看”进入查看模式' }}
             </div>
           </div>
         </div>
@@ -578,7 +764,9 @@ onActivated(() => {
             :item="item"
             :scale="scale"
             :offsetX="offsetX"
-            :offsetY="offsetY"/>
+            :offsetY="offsetY"
+            :select-mode="isDeleteMode ? 'delete' : (isEditMode ? 'edit' : (isViewMode ? 'view' : 'none'))"
+            @select="onCameraSelected"/>
         </template>
       </div>
     </div>
@@ -700,6 +888,65 @@ onActivated(() => {
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
           <el-button @click="cancelAddCamera">取消</el-button>
           <el-button type="primary" @click="submitAddCamera">保存</el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 查看摄像头属性弹窗 -->
+    <el-dialog v-model="viewDialogVisible" title="查看摄像头属性" width="520px" :close-on-click-modal="false">
+      <el-descriptions v-if="viewCameraData" :column="1" border size="small">
+        <el-descriptions-item label="摄像头名称">{{ viewCameraData.name }}</el-descriptions-item>
+        <el-descriptions-item label="IP地址">{{ viewCameraData.ip }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ viewCameraData.username }}</el-descriptions-item>
+        <el-descriptions-item label="密码">{{ viewCameraData.password }}</el-descriptions-item>
+        <el-descriptions-item label="RTSP地址">{{ viewCameraData.rtsp }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <span :class="{ 'status-online': viewCameraData.status === 1, 'status-offline': viewCameraData.status !== 1 }">
+            {{ viewCameraData.status === 1 ? '在线' : '离线' }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="坐标X">{{ viewCameraData.vx }}</el-descriptions-item>
+        <el-descriptions-item label="坐标Y">{{ viewCameraData.vy }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ viewCameraData.create_time }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ viewCameraData.update_time }}</el-descriptions-item>
+      </el-descriptions>
+
+      <template #footer>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <el-button type="primary" @click="viewDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑摄像头表单弹窗 -->
+    <el-dialog v-model="editDialogVisible" title="编辑摄像头" width="520px" :close-on-click-modal="false">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <el-form-item label="摄像头名称" prop="name">
+          <el-input v-model="editCameraForm.name" placeholder="摄像头名称" />
+        </el-form-item>
+        <el-form-item label="IP地址:" prop="ip">
+          <el-input v-model="editCameraForm.ip" placeholder="IP地址" />
+        </el-form-item>
+        <el-form-item label="用户名:" prop="username">
+          <el-input v-model="editCameraForm.username" placeholder="用户名" />
+        </el-form-item>
+        <el-form-item label="密码:" prop="password">
+          <el-input v-model="editCameraForm.password" placeholder="密码" type="password" />
+        </el-form-item>
+        <el-form-item label="RTSP地址:" prop="rtsp">
+          <el-input v-model="editCameraForm.rtsp" placeholder="RTSP地址" />
+        </el-form-item>
+        <div style="display:flex; gap:12px;">
+          <el-form-item label="X坐标:" prop="x">
+            <el-input v-model.number="editCameraForm.x" placeholder="X坐标" />
+          </el-form-item>
+          <el-form-item label="Y坐标:" prop="y">
+            <el-input v-model.number="editCameraForm.y" placeholder="Y坐标" />
+          </el-form-item>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <el-button @click="cancelEditMode">取消</el-button>
+          <el-button type="primary" @click="submitEditCamera">保存</el-button>
         </div>
       </div>
     </el-dialog>
