@@ -5,8 +5,7 @@ import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图�
 import {throttle} from "lodash";
 import svgPanZoom from 'svg-pan-zoom';
 import CameraItem from './component/CameraItem/index.vue';
-import { getAllCamerasApi, addCameraApi } from '@/api/camera';
-import type { AddCameraRequestParams } from '@/api/camera/types/camera'
+import { getAllCamerasApi } from '@/api/camera';
 import { ElMessage } from 'element-plus';
 
 interface Camera {
@@ -148,88 +147,6 @@ const fetchCameraData = async () => {
   //   loading.value = false;
   // }
 };
-
-// ————————————————————————————————————————————————————————————————————————————— 添加摄像头模式相关状态
-// 是否处于添加摄像头模式
-const isAddMode = ref(false)
-// 临时选点坐标（存储未缩放的地图坐标系下的vx/vy）
-const tempPosition = ref<{ vx: number; vy: number } | null>(null)
-// 添加摄像头表单数据
-const addDialogVisible = ref(false)
-const newCameraForm = ref<AddCameraRequestParams>({
-  // 摄像头基础信息，用户填写
-  name: '',
-  ip: '',
-  username: '',
-  password: '',
-  rtsp: '',
-  // 坐标信息，用户在地图点击选点后自动填充
-  x: 0,
-  y: 0,
-})
-
-// 进入添加模式
-const startAddCamera = () => {
-  isAddMode.value = true
-  tempPosition.value = null
-  addDialogVisible.value = false
-}
-
-// 取消添加模式
-const cancelAddCamera = () => {
-  isAddMode.value = false
-  tempPosition.value = null
-  addDialogVisible.value = false
-}
-
-// 地图点击事件：将屏幕坐标转换为地图坐标（vx/vy）
-const handleMapClick = (event: MouseEvent) => {
-  if (!isAddMode.value) return
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
-  // 计算点击点相对于主地图容器的本地坐标
-  const localX = event.clientX - rect.left
-  const localY = event.clientY - rect.top
-  // 依据当前pan/zoom状态，将本地像素坐标反变换为未缩放的地图坐标
-  const vx = (localX - offsetX.value) / scale.value
-  const vy = (localY - offsetY.value) / scale.value
-  tempPosition.value = { vx, vy }
-  // 将坐标同步到表单中，供用户确认
-  newCameraForm.value.x = vx
-  newCameraForm.value.y = vy
-  // 打开添加表单弹窗
-  addDialogVisible.value = true
-}
-
-// 提交添加摄像头
-const submitAddCamera = async () => {
-  try {
-    // 基础校验，避免空数据提交
-    if (!newCameraForm.value.name?.trim()) {
-      ElMessage.warning('请输入摄像头名称')
-      return
-    }
-    if (!tempPosition.value) {
-      ElMessage.warning('请在地图上选择位置')
-      return
-    }
-
-    const payload: AddCameraRequestParams = { ...newCameraForm.value }
-    const res = await addCameraApi(payload)
-    if (res ) {
-
-      ElMessage.success('摄像头添加成功')
-      await fetchCameraData()
-      // 重置添加状态
-      cancelAddCamera()
-    } else {
-      ElMessage.error((res as any)?.message || '摄像头添加失败')
-    }
-  } catch (e) {
-    ElMessage.error('摄像头添加异常')
-    console.error(e)
-  }
-}
 
 // 图层状态接口定义
 interface LayerVisibilityState {
@@ -530,23 +447,51 @@ onActivated(() => {
               <span>监控摄像头</span>
             </label>
           </div>
-
-          <!-- 添加摄像头功能 -->
           <div class="layer-item">
-            <div style="display:flex; gap:8px; width:100%;">
-              <el-button type="primary" size="small" @click="startAddCamera" :disabled="isAddMode">
-                添加
-              </el-button>
-              <el-button type="danger" size="small" @click="cancelAddCamera" :disabled="!isAddMode">
-                取消
-              </el-button>
-            </div>
-            <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
-              {{ isAddMode ? '提示：在地图上点击选择摄像头位置' : '点击“添加摄像头”进入选点模式' }}
-            </div>
+            <label>
+              <input type="checkbox" v-model="layerStates.sensors" @change="saveLayerState">
+              <span>传感器设备</span>
+            </label>
+          </div>
+          <div class="layer-item">
+            <label>
+              <input type="checkbox" v-model="layerStates.ventilation" @change="saveLayerState">
+              <span>通风系统</span>
+            </label>
+          </div>
+          <div class="layer-item">
+            <label>
+              <input type="checkbox" v-model="layerStates.safety" @change="saveLayerState">
+              <span>安全设施</span>
+            </label>
           </div>
         </div>
 
+        <!-- 设备状态面板 -->
+        <div class="panel device-status">
+          <h4>设备状态</h4>
+          <div class="status-item">
+            <span class="status-dot online"></span>
+            <span>在线设备: {{ onlineDevices }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-dot offline"></span>
+            <span>离线设备: {{ offlineDevices }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-dot warning"></span>
+            <span>告警设备: {{ warningDevices }}</span>
+          </div>
+        </div>
+
+        <!-- 工作面信息 -->
+        <div class="panel working-face">
+          <h4>工作面信息</h4>
+          <div class="face-item" v-for="face in workingFaces" :key="face.id">
+            <div class="face-name">{{ face.name }}</div>
+            <div class="face-status" :class="face.status">{{ face.statusText }}</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -559,16 +504,6 @@ onActivated(() => {
                :src="surfaceImage" @load="handleSVGLoad"/>
       </div>
 
-      <!-- 选点捕获层（仅在添加模式时启用点击） -->
-      <div class="click-capture-layer" :class="{ active: isAddMode }" @click="handleMapClick"></div>
-
-      <!-- 临时标记（显示用户选择的点位） -->
-      <div v-if="tempPosition" class="temp-marker"
-           :style="{
-             left: (tempPosition.vx * scale + offsetX - 8) + 'px',
-             top: (tempPosition.vy * scale + offsetY - 8) + 'px'
-           }"></div>
-
       <!-- 摄像头图标层 - 独立的覆盖层 -->
       <div class="camera-overlay">
         <template v-for="item in CameraList" :key="item.id">
@@ -578,7 +513,8 @@ onActivated(() => {
             :item="item"
             :scale="scale"
             :offsetX="offsetX"
-            :offsetY="offsetY"/>
+            :offsetY="offsetY"
+            :svg-pan-zoom-instance="svgTiger"/>
         </template>
       </div>
     </div>
@@ -672,37 +608,6 @@ onActivated(() => {
         <span>地图加载中...</span>
       </div>
     </div>
-
-    <!-- 添加摄像头表单弹窗 -->
-    <el-dialog v-model="addDialogVisible" title="添加摄像头" width="480px" :close-on-click-modal="false">
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <el-form-item label="摄像头名称" prop="name">
-          <el-input v-model="newCameraForm.name" placeholder="摄像头名称" />
-        </el-form-item>
-        <el-form-item label="IP地址:" prop="ip">
-          <el-input v-model="newCameraForm.ip" placeholder="IP地址" />
-        </el-form-item>
-        <el-form-item label="用户名:" prop="username">
-          <el-input v-model="newCameraForm.username" placeholder="用户名" />
-        </el-form-item>
-        <el-form-item label="密码:" prop="password">
-          <el-input v-model="newCameraForm.password" placeholder="密码" type="password" />
-        </el-form-item>
-        <el-form-item label="RTSP地址:" prop="rtsp">
-          <el-input v-model="newCameraForm.rtsp" placeholder="RTSP地址" />
-        </el-form-item>
-        <el-form-item label="X坐标:" prop="x">
-          <el-input v-model.number="newCameraForm.x" placeholder="X坐标" />
-        </el-form-item>
-        <el-form-item label="Y坐标:" prop="y">
-          <el-input v-model.number="newCameraForm.y" placeholder="Y坐标" />
-        </el-form-item>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-          <el-button @click="cancelAddCamera">取消</el-button>
-          <el-button type="primary" @click="submitAddCamera">保存</el-button>
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -791,32 +696,6 @@ onActivated(() => {
   height: 100%;
   z-index: 999; /* 确保摄像头图标层在最上方 */
   pointer-events: none; /* 默认不拦截鼠标事件，让SVG可以正常缩放平移 */
-}
-
-/* 添加模式下的点击捕获层：覆盖地图区域，接收点击以选点 */
-.click-capture-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 998; /* 位于摄像头覆盖层下方，避免遮挡摄像头交互 */
-  pointer-events: none; /* 默认不拦截事件 */
-}
-.click-capture-layer.active {
-  pointer-events: auto; /* 添加模式启用点击捕获 */
-  cursor: crosshair; /* 显示十字准星提示可选点 */
-}
-
-/* 临时标记样式：小圆点显示选择位置 */
-.temp-marker {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #409EFF;
-  box-shadow: 0 0 8px rgba(64, 158, 255, 0.6);
-  z-index: 1000;
 }
 
 .icon-box {
@@ -1027,7 +906,7 @@ onActivated(() => {
     background: rgba(0, 188, 212, 0.05);
     border: 1px solid rgba(0, 188, 212, 0.2);
     border-radius: 6px;
-    //flex: 1; /* 每个图层项平均分配剩余空间 */
+    flex: 1; /* 每个图层项平均分配剩余空间 */
     display: flex;
     align-items: center;
     transition: all 0.2s ease;
