@@ -135,7 +135,7 @@ let refreshTimer: number | undefined
 
 async function loadRealtime() {
   try {
-    const res = await getRealtimeDataApi('TF002')
+    const res = await getRealtimeDataApi('TF001')
     ventilatorData.value = res.data as VentilatorRealtimeData
   } catch (e) {}
 }
