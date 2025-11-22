@@ -170,7 +170,7 @@ function formatDataForUnity(data: VentilatorRealtimeData): string {
  */
 async function loadRealtimeAndSync() {
   try {
-    const res = await getRealtimeDataApi('TF002')
+    const res = await getRealtimeDataApi('TF001')
     const data = res.data as VentilatorRealtimeData
 
     // 1. 更新 Vue 界面
@@ -258,9 +258,9 @@ onMounted(() => {
   initUnity()
 
   // 启动 1秒 轮询
-  refreshTimer = window.setInterval(() => {
-    loadRealtimeAndSync()
-  }, 1000)
+  // refreshTimer = window.setInterval(() => {
+  //   loadRealtimeAndSync()
+  // }, 1000)
 })
 
 onUnmounted(() => {
