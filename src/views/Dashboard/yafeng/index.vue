@@ -1,33 +1,30 @@
 <template>
-  <div class="dashboard-container" >
+  <div class="dashboard-container">
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
-			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">煤矿井下自供能安全监测系统</div>
-		</div>
-
+      <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
+      <div class="header-title">煤矿井下自供能安全监测系统</div>
+    </div>
 
     <!-- 主体内容区 -->
     <div class="dashboard-main">
-      <!-- 中央3D区域 - 布满整个页面 -->
+
+      <!-- 中央3D区域 - 改为 Canvas -->
       <div class="center-panel">
-        <iframe
-          src="/CompressorFan/index.html"
-          style="width:100%; height:100%; border:none; background:transparent; overflow:hidden;"
-          allowfullscreen
-          scrolling="no"
-        ></iframe>
+        <canvas
+          ref="canvasRef"
+          id="unity-canvas"
+          style="width: 100%; height: 100%; background: transparent;"
+        ></canvas>
       </div>
 
       <!-- 左侧数据区 - 透明浮层 -->
       <div class="left-panel">
-        <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
             <span class="title-text">压风机实时数据</span>
             <div class="title-line"></div>
           </div>
-
           <!-- 数据卡片组 -->
           <div class="data-cards">
             <div class="data-card" v-for="item in leftItems" :key="item.key">
@@ -39,19 +36,15 @@
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
-        <!-- 智慧园区数据展示 -->
         <div class="panel-section1">
           <div class="section-title1">
             <span class="title-text">运行参数</span>
             <div class="title-line"></div>
           </div>
-
-
           <div class="data-cards">
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">🔧</div>
@@ -61,29 +54,52 @@
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
-    </div>
 
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// 智慧楼宇可视化指挥中心
 defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, computed, onMounted, onUnmounted} from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { CompressorRealtimeData } from '@/api/device/types/device'
 
+// ----------------------------------------------------------------------
+// 1. Unity 配置区域 (请根据实际打包生成的文件名修改)
+// ----------------------------------------------------------------------
+// 假设你的 Unity 打包输出在 /CompressorFan/Build/ 目录下，且文件名通常与文件夹一致
+const UNITY_CONFIG = {
+  loaderUrl: "/CompressorFan/Build/CompressorFan.loader.js",
+  dataUrl: "/CompressorFan/Build/CompressorFan.data",
+  frameworkUrl: "/CompressorFan/Build/CompressorFan.framework.js",
+  codeUrl: "/CompressorFan/Build/CompressorFan.wasm",
+  streamingAssetsUrl: "StreamingAssets",
+  productVersion: "0.1",
+  companyName: "DefaultCompany",
+  productName: "Myproject", // 对应 Unity 设置的 ProductName
+}
 
+// ★★★ 注意：这里的对象名和方法名必须与 Unity C# 脚本中挂载的 GameObject 和方法名一致 ★★★
+const UNITY_TARGET_OBJ = "SendMessageYaFeng" // Unity场景中挂载脚本的物体名称
+const UNITY_METHOD_NAME = "UpdateTMPTexts"   // Unity脚本中接收字符串的 public 方法名
 
+declare global {
+  interface Window {
+    createUnityInstance: any;
+  }
+}
 
+// ----------------------------------------------------------------------
+// 2. 业务数据定义
+// ----------------------------------------------------------------------
 const compressorData = ref<CompressorRealtimeData | null>(null)
+
 const leftDefs = [
   { key: 'exhaust_pressure', label: '排气压力', unit: 'MPa' },
   { key: 'voltage', label: '电压', unit: 'V' },
@@ -96,6 +112,7 @@ const leftDefs = [
   { key: 'separation_pressure', label: '分离压力', unit: 'MPa' },
   { key: 'separation_diff_pressure', label: '分离差压', unit: 'MPa' }
 ] as const
+
 const rightDefs = [
   { key: 'standby_status', label: '待机状态', unit: '' },
   { key: 'current_run_time', label: '当前运行时长', unit: 'h' },
@@ -111,6 +128,7 @@ const leftItems = computed(() => leftDefs.map(def => ({
     ? '--'
     : String(compressorData.value?.[def.key as keyof CompressorRealtimeData])
 })))
+
 const rightItems = computed(() => rightDefs.map(def => ({
   ...def,
   value: compressorData.value?.[def.key as keyof CompressorRealtimeData] == null
@@ -118,24 +136,289 @@ const rightItems = computed(() => rightDefs.map(def => ({
     : String(compressorData.value?.[def.key as keyof CompressorRealtimeData])
 })))
 
+// ----------------------------------------------------------------------
+// 3. Unity 集成与核心逻辑
+// ----------------------------------------------------------------------
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let unityInstance: any = null
 let refreshTimer: number | undefined
 
+/**
+ * 将业务数据拼接成 Unity 约定的字符串格式
+ * 例如: "0.8|220|15|..." 或者 JSON 字符串，取决于 C# 怎么解析
+ */
+function formatDataForUnity(data: CompressorRealtimeData): string {
+  if (!data) return "";
+
+  // 示例：简单拼接，实际请根据 Unity 需求调整
+  // 这里演示将所有数值用竖线 | 分隔
+  const values = [
+    data.voltage || 0,
+    data.current || 0,
+    data.main_vibration || 0,
+    data.motor_vibration || 0,
+
+    data.exhaust_pressure || 0,
+    data.running_temp || 0,
+    data.main_exhaust_temp || 0,
+    data.separation_pressure || 0,
+
+  ];
+
+  return "电压：" + values[0] + "V,电流：" + values[1] +  "A,主振动：" + values[2] + "mm/s,电机振动：" + values[3] + "mm/s|排气压力：" + values[4] + "Mpa,运行温度" + values[5] + "°C,主排气温度：" + values[6] + "°C,分离压力：" + values[7] + "Mpa";
+}
+
+/**
+ * 获取数据并同步给 Unity
+ */
 async function loadRealtime() {
   try {
     const res = await getRealtimeDataApi('YF001')
-    compressorData.value = res.data as CompressorRealtimeData
-  } catch (e) {}
+    const data = res.data as CompressorRealtimeData
+    compressorData.value = data
+
+    // 如果 Unity 实例已加载，发送数据
+    if (unityInstance) {
+      const msg = formatDataForUnity(data)
+      // console.log('发送数据给 Unity:', msg)
+      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
+/**
+ * 初始化 Unity 实例
+ */
+function initUnity() {
+  if (!canvasRef.value) return
 
+  const script = document.createElement("script")
+  script.src = UNITY_CONFIG.loaderUrl
 
+  script.onload = () => {
+    const config = {
+      dataUrl: UNITY_CONFIG.dataUrl,
+      frameworkUrl: UNITY_CONFIG.frameworkUrl,
+      codeUrl: UNITY_CONFIG.codeUrl,
+      streamingAssetsUrl: UNITY_CONFIG.streamingAssetsUrl,
+      companyName: UNITY_CONFIG.companyName,
+      productName: UNITY_CONFIG.productName,
+      productVersion: UNITY_CONFIG.productVersion,
+    }
+
+    if (window.createUnityInstance) {
+      window.createUnityInstance(canvasRef.value, config)
+        .then((instance: any) => {
+          console.log("Unity Load Success")
+          unityInstance = instance
+          // 加载完成后立即推送一次当前数据
+          if (compressorData.value) {
+            const msg = formatDataForUnity(compressorData.value)
+            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+          }
+        })
+        .catch((msg: any) => {
+          console.error("Unity Load Error:", msg)
+        })
+    }
+  }
+
+  script.onerror = () => {
+    console.error("Failed to load Unity loader:", UNITY_CONFIG.loaderUrl)
+  }
+
+  document.body.appendChild(script)
+}
+
+// ----------------------------------------------------------------------
+// 4. 生命周期
+// ----------------------------------------------------------------------
 onMounted(() => {
-
+  // 1. 先获取一次数据
   loadRealtime()
-  /*refreshTimer = window.setInterval(loadRealtime, 3000)*/
+
+  // 2. 初始化 Unity
+  initUnity()
+
+  // 3. 开启轮询 (参考代码是3秒)
+  refreshTimer = window.setInterval(loadRealtime, 1000)
 })
 
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+  if (unityInstance) {
+    // 释放引用，具体销毁逻辑视 Unity 版本和内存管理而定
+    unityInstance = null
+  }
+})
 </script>
+
+<style scoped>
+/* 保持原有样式，并增加部分适应性样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.dashboard-container {
+  width: 100%;
+  height: calc(100vh - 100px); /* 假设顶部有导航栏 */
+  background: #001440;
+  color: #ffffff;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.dashboard-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.header-bg {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 85px;
+  object-fit: cover;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.header-title {
+  position: relative;
+  z-index: 2;
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 8px;
+  text-shadow: 0 4px 16px #1e90ff, 0 1px 0 #000;
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.center-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Unity 在底层 */
+  overflow: hidden;
+}
+
+.left-panel, .right-panel {
+  /* 使用 min/max 确保响应式 */
+  width: min(320px, 22vw);
+  min-width: 250px;
+  height: calc(100vh - 190px);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: absolute;
+  top: 80px;
+  z-index: 10; /* 浮在 Unity 之上 */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+}
+.left-panel::-webkit-scrollbar, .right-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.left-panel {
+  left: 15px;
+}
+
+.right-panel {
+  right: 15px;
+}
+
+.panel-section1 {
+  padding: 10px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+}
+
+.section-title1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 15px 0;
+  background: url('@/assets/img/225.png') no-repeat center;
+  background-size: cover;
+  height: 40px;
+}
+
+.title-text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.data-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.data-card {
+  background: rgba(0, 188, 212, 0.1);
+  border: 1px solid rgba(0, 188, 212, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-icon {
+  font-size: 24px;
+}
+
+.card-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.card-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.card-label {
+  font-size: 12px;
+  color: #cccccc;
+  white-space: nowrap;
+}
+</style>
 
 <style scoped>
 * {

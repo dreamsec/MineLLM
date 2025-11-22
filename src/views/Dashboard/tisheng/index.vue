@@ -1,33 +1,29 @@
 <template>
-  <div class="dashboard-container" >
+  <div class="dashboard-container">
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
-			<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-			<div class="header-title">提升机孪生平台</div>
-		</div>
-
+      <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
+      <div class="header-title">提升机孪生平台</div>
+    </div>
 
     <!-- 主体内容区 -->
     <div class="dashboard-main">
-      <!-- 中央3D区域 - 布满整个页面 -->
+      <!-- 中央3D区域 - 改为 Canvas -->
       <div class="center-panel">
-        <iframe
-          src="/NewElevator/index.html"
-          style="width:100%; height:100%; border:none; background:transparent; overflow:hidden;"
-          allowfullscreen
-          scrolling="no"
-        ></iframe>
+        <canvas
+          ref="canvasRef"
+          id="unity-canvas"
+          style="width: 100%; height: 100%; background: transparent;"
+        ></canvas>
       </div>
 
-      <!-- 左侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
-      <div  class="left-panel">
-        <!-- 智慧园区数据展示 -->
+      <!-- 左侧数据区 - 透明浮层 -->
+      <div class="left-panel">
         <div class="panel-section1">
           <div class="section-title1">
             <span class="title-text">提升机实时数据</span>
             <div class="title-line"></div>
           </div>
-
           <div class="data-cards">
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
@@ -38,20 +34,15 @@
             </div>
           </div>
         </div>
-
-
-
-
       </div>
 
-      <!-- 右侧数据区 - 透明浮层 (根据全屏状态控制显示) -->
-      <div  class="right-panel">
+      <!-- 右侧数据区 - 透明浮层 -->
+      <div class="right-panel">
         <div class="panel-section1">
           <div class="section-title1">
             <span class="title-text">运行参数</span>
             <div class="title-line"></div>
           </div>
-
           <div class="data-cards">
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">🔧</div>
@@ -64,23 +55,46 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-// 智慧楼宇可视化指挥中心
 defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, onMounted, onUnmounted, computed} from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { HoistRealtimeData } from '@/api/device/types/device'
 
+// ----------------------------------------------------------------------
+// 1. Unity 配置 (假设路径在 /NewElevator/Build/ 下)
+// ----------------------------------------------------------------------
+const UNITY_CONFIG = {
+  loaderUrl: "/NewElevator/Build/NewElevator.loader.js", // 请确认文件名
+  dataUrl: "/NewElevator/Build/NewElevator.data",       // 请确认文件名
+  frameworkUrl: "/NewElevator/Build/NewElevator.framework.js", // 请确认文件名
+  codeUrl: "/NewElevator/Build/NewElevator.wasm",       // 请确认文件名
+  streamingAssetsUrl: "StreamingAssets",
+  productVersion: "0.1",
+  companyName: "DefaultCompany",
+  productName: "My Project",
+}
 
+const UNITY_TARGET_OBJ = "SendMessageelevator" // ★请确认Unity场景中接收数据的物体名称
+const UNITY_METHOD_NAME = "UpdateelevatorTexts"     // ★请确认Unity脚本中接收数据的函数名称
 
+declare global {
+  interface Window {
+    createUnityInstance: any;
+  }
+}
+
+// ----------------------------------------------------------------------
+// 2. 业务数据定义
+// ----------------------------------------------------------------------
 const hoistData = ref<HoistRealtimeData | null>(null)
+
 const leftDefs = [
   { key: 'actual_speed', label: '实际速度', unit: 'm/s' },
   { key: 'speed_setpoint', label: '设定速度', unit: 'm/s' },
@@ -166,6 +180,7 @@ const leftItems = computed(() => leftDefs.map(def => ({
     ? '--'
     : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
 })))
+
 const rightItems = computed(() => rightDefs.map(def => ({
   ...def,
   value: hoistData.value?.[def.key as keyof HoistRealtimeData] == null
@@ -173,24 +188,124 @@ const rightItems = computed(() => rightDefs.map(def => ({
     : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
 })))
 
+// ----------------------------------------------------------------------
+// 3. Unity 交互逻辑
+// ----------------------------------------------------------------------
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let unityInstance: any = null
 let refreshTimer: number | undefined
+
+/**
+ * 格式化数据发送给 Unity
+ * 示例格式：主罐深度|副罐深度|实际速度|载重|模式(自动/手动/检修)|报警状态
+ */
+function formatDataForUnity(data: HoistRealtimeData): string {
+  if (!data) return "";
+
+  const values = [
+    // --- 电机部分 (Motor) ---
+    data.motor_current || 0,        // 0: 电机电流
+    data.excitation_current || 0,   // 1: 励磁电流
+    data.motor_temp_max || 0,       // 2: 电机最高温度
+
+    // --- 天轮部分 (Sheave) ---
+    data.sheave_temp_max || 0,      // 3: 天轮最高温度
+    data.main_shaft_temp_max || 0,  // 4: 主轴最高温度
+    data.brake_oil_pressure || 0,   // 5: 制动油压
+
+    // --- 笼罐部分 (Cage/Skip) ---
+    data.main_skip_depth || 0,      // 6: 主罐深度
+    data.vice_skip_depth || 0,      // 7: 副罐深度
+    data.actual_speed || 0,         // 8: 实际速度
+    data.load_weight || 0,          // 9: 载重
+
+    // 状态位 (0或1)
+    data.auto_run ? 1 : 0,          // 10: 自动
+    data.fault_alarm ? 1 : 0,       // 11: 报警
+    data.manual_run ? 1 : 0         // 12: 手动
+  ];
+
+  // 拼接字符串：电机 | 天轮 | 笼罐
+  return "电机电流:" + values[0] + "A,励磁电流:" + values[1] + "A,电机最高温度:" + values[2] + "°C|天轮最高温度:" + values[3] + "°C,主轴最高温度:" + values[4] + "°C,制动油压:" + values[5] + "MPa|主罐深度:" + values[6] + "m,副罐深度:" + values[7] + "m,实际速度:" + values[8] + "m/s,载重:" + values[9] + "t,自动运行:" + values[10] + ",故障报警:" + values[11];
+}
 
 async function loadRealtime() {
   try {
     const res = await getRealtimeDataApi('TS001')
-    hoistData.value = res.data as HoistRealtimeData
-  } catch (e) {}
+    const data = res.data as HoistRealtimeData
+    hoistData.value = data
+
+    // 同步数据到 Unity
+    if (unityInstance) {
+      const msg = formatDataForUnity(data)
+      // console.log("Sending to Unity:", msg)
+      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
+function initUnity() {
+  if (!canvasRef.value) return
 
+  const script = document.createElement("script")
+  script.src = UNITY_CONFIG.loaderUrl
+
+  script.onload = () => {
+    const config = {
+      dataUrl: UNITY_CONFIG.dataUrl,
+      frameworkUrl: UNITY_CONFIG.frameworkUrl,
+      codeUrl: UNITY_CONFIG.codeUrl,
+      streamingAssetsUrl: UNITY_CONFIG.streamingAssetsUrl,
+      companyName: UNITY_CONFIG.companyName,
+      productName: UNITY_CONFIG.productName,
+      productVersion: UNITY_CONFIG.productVersion,
+    }
+
+    if (window.createUnityInstance) {
+      window.createUnityInstance(canvasRef.value, config)
+        .then((instance: any) => {
+          console.log("Unity Loaded Successfully")
+          unityInstance = instance
+          // 加载完成后立即发送一次数据
+          if (hoistData.value) {
+            const msg = formatDataForUnity(hoistData.value)
+            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+          }
+        })
+        .catch((err: any) => {
+          console.error("Unity Load Error:", err)
+        })
+    }
+  }
+
+  script.onerror = () => {
+    console.error("Failed to load Unity loader:", UNITY_CONFIG.loaderUrl)
+  }
+
+  document.body.appendChild(script)
+}
+
+// ----------------------------------------------------------------------
+// 4. 生命周期
+// ----------------------------------------------------------------------
 onMounted(() => {
   loadRealtime()
-  /*refreshTimer = window.setInterval(loadRealtime, 3000)*/
+  initUnity()
+  refreshTimer = window.setInterval(loadRealtime, 1000)
 })
 
-
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+  if (unityInstance) {
+    unityInstance = null
+  }
+})
 </script>
-
 <style scoped>
 * {
   margin: 0;
