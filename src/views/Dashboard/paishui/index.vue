@@ -2,21 +2,19 @@
   <div class="dashboard-container" >
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
-		<img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-		<div class="header-title">排水机孪生平台</div>
-	</div>
-
+      <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
+      <div class="header-title">排水机孪生平台</div>
+    </div>
 
     <!-- 主体内容区 -->
     <div class="dashboard-main">
-      <!-- 中央3D区域 - 布满整个页面 -->
+      <!-- 中央3D区域 - 改为 Canvas -->
       <div class="center-panel">
-        <iframe
-          src="/waterMachine/index.html"
-          style="width:100%; height:100%; border:none; background:transparent; overflow:hidden;"
-          allowfullscreen
-          scrolling="no"
-        ></iframe>
+        <canvas
+          ref="canvasRef"
+          id="unity-canvas"
+          style="width: 100%; height: 100%; background: transparent;"
+        ></canvas>
       </div>
 
       <!-- 左侧数据区 - 透明浮层 -->
@@ -127,7 +125,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -141,18 +138,38 @@ import {ref, onMounted, onUnmounted, computed} from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { PumpRealtimeData } from '@/api/device/types/device'
 
+// ----------------------------------------------------------------------
+// 1. Unity 配置 (假设路径在 /waterMachine/Build/ 下)
+// ----------------------------------------------------------------------
+const UNITY_CONFIG = {
+  loaderUrl: "/waterMachine/Build/waterMachine.loader.js",
+  dataUrl: "/waterMachine/Build/waterMachine.data",
+  frameworkUrl: "/waterMachine/Build/waterMachine.framework.js",
+  codeUrl: "/waterMachine/Build/waterMachine.wasm",
+  streamingAssetsUrl: "StreamingAssets",
+  productVersion: "0.1",
+  companyName: "DefaultCompany",
+  productName: "My Project",
+}
+
+const UNITY_TARGET_OBJ = "SendMessagepaishui" // Unity场景接收数据的物体名
+const UNITY_METHOD_NAME = "UpdateTMPTexts"   // Unity脚本接收数据的函数名
+
+declare global {
+  interface Window {
+    createUnityInstance: any;
+  }
+}
+
+// ----------------------------------------------------------------------
+// 2. 业务数据定义
+// ----------------------------------------------------------------------
 const pumpData = ref<PumpRealtimeData | null>(null)
+
 // 格式化状态值显示
 const formatStatusValue = (value: number | undefined | null): string => {
   if (value === null || value === undefined) return '--'
   return value === 1 ? '正常' : value === 0 ? '异常' : String(value)
-}
-
-// 格式化时间值显示
-const formatTimeValue = (hours: number | undefined | null, minutes: number | undefined | null): string => {
-  if (hours === null || hours === undefined) return '--'
-  if (minutes === null || minutes === undefined) return `${hours}h`
-  return `${hours}h ${minutes}m`
 }
 
 // 基本运行数据
@@ -226,7 +243,6 @@ const createItemsComputed = (defs: readonly { key: string; label: string; unit: 
   })))
 }
 
-// 生成各面板的计算属性
 const basicItems = createItemsComputed(basicDefs)
 const pumpItems = createItemsComputed(pumpDefs)
 const pressureItems = createItemsComputed(pressureDefs)
@@ -234,26 +250,301 @@ const motorItems = createItemsComputed(motorDefs)
 const valveItems = createItemsComputed(valveDefs)
 const statusItems = createItemsComputed(statusDefs)
 
+// ----------------------------------------------------------------------
+// 3. Unity 交互逻辑
+// ----------------------------------------------------------------------
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let unityInstance: any = null
 let refreshTimer: number | undefined
+
+/**
+ * 按照要求格式化数据发送给 Unity
+ */
+function formatDataForUnity(data: PumpRealtimeData): string {
+  if (!data) return "";
+
+  // 映射排水机数据到要求的格式数组中
+  // 注意：要求的格式中包含"排气压力"等可能属于压缩机的术语，
+  // 此处将排水机的 PosPressure 映射为 排气压力，NegPressure 映射为 分离压力 以保证数据传递
+  const values = [
+    //水泵
+    data.pump_fault||0,
+    data.pump_emergency_fault||0,
+    data.pump_overheat_fault||0,
+    data.vibration_fault||0,
+    //电机
+    data.motor_front_axis_temp||0,
+    data.motor_rear_axis_temp||0,
+    data.motor_phase_a_temp||0,
+    data.motor_phase_b_temp||0,
+    data.motor_phase_c_temp||0,
+    data.motor_vibration_1||0,
+    data.motor_vibration_2||0,
+    data.motor_overheat_fault||0,
+    //运行状态
+    data.runtime_hours||0,
+    data.runtime_minutes||0,
+    data.total_fault||0,
+    data.device_stop_status||0,
+    data.maintenance_status||0,
+    data.remote_status||0,
+    data.local_status||0,
+    data.semi_auto_status||0,
+    //阀门状态
+    data.main_valve_opening||0,
+    data.main_valve_open||0,
+    data.main_valve_closed||0,
+    data.main_valve_open_fault||0,
+    data.main_valve_closed_fault||0,
+    data.main_valve_overload_fault||0,
+    data.jet_ball_valve_status||0
+
+
+
+  ];
+
+  return "泵故障："+values[0]+",泵紧急故障："+values[1]+",泵过热故障："+values[2]+",振动故障："+values[3]+"|电机前温度："+values[4]+"°C,电机后温度："+values[5]+"°C,电机振动1："+values[9]+"mm/s,电机振动2："+values[10]+"mm/s,电机过热故障："+values[11]+"|累计运行："+values[12]+"h,运行分钟："+values[13]+"m,总故障数："+values[14]+"次,设备停止状态："+values[15]+",半自动状态："+values[19]+"|主阀开度："+values[20]+"%,主阀开启故障："+values[23]+",主阀关闭故障："+values[24]+",主阀过载故障："+values[25]+",喷射球阀状态："+values[26];
+}
+
 async function loadRealtime() {
   try {
     const res = await getRealtimeDataApi('PS001')
-    pumpData.value = res.data as PumpRealtimeData
-  } catch (e) {}
+    const data = res.data as PumpRealtimeData
+    pumpData.value = data
+
+    // 同步数据到 Unity
+    if (unityInstance) {
+      const msg = formatDataForUnity(data)
+      // console.log("Sending to Unity:", msg)
+      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
+function initUnity() {
+  if (!canvasRef.value) return
 
+  const script = document.createElement("script")
+  script.src = UNITY_CONFIG.loaderUrl
 
+  script.onload = () => {
+    const config = {
+      dataUrl: UNITY_CONFIG.dataUrl,
+      frameworkUrl: UNITY_CONFIG.frameworkUrl,
+      codeUrl: UNITY_CONFIG.codeUrl,
+      streamingAssetsUrl: UNITY_CONFIG.streamingAssetsUrl,
+      companyName: UNITY_CONFIG.companyName,
+      productName: UNITY_CONFIG.productName,
+      productVersion: UNITY_CONFIG.productVersion,
+    }
 
+    if (window.createUnityInstance) {
+      window.createUnityInstance(canvasRef.value, config)
+        .then((instance: any) => {
+          console.log("Unity Loaded Successfully")
+          unityInstance = instance
+          // 加载完成后立即发送一次数据
+          if (pumpData.value) {
+            const msg = formatDataForUnity(pumpData.value)
+            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+          }
+        })
+        .catch((err: any) => {
+          console.error("Unity Load Error:", err)
+        })
+    }
+  }
+
+  script.onerror = () => {
+    console.error("Failed to load Unity loader:", UNITY_CONFIG.loaderUrl)
+  }
+
+  document.body.appendChild(script)
+}
+
+// ----------------------------------------------------------------------
+// 4. 生命周期
+// ----------------------------------------------------------------------
 onMounted(() => {
   loadRealtime()
-  /*refreshTimer = window.setInterval(loadRealtime, 3000)*/
+  initUnity()
+  refreshTimer = window.setInterval(loadRealtime, 1000)
 })
 
-/*onUnmounted(() => {
-  if (refreshTimer) window.clearInterval(refreshTimer)
-})*/
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+  if (unityInstance) {
+    unityInstance = null
+  }
+})
 </script>
+
+<style scoped>
+/* 保持原有样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.dashboard-container {
+  width: 100%;
+  height: calc(100vh - 100px);
+  background: #001440;
+  color: #ffffff;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.dashboard-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.header-bg {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 85px;
+  object-fit: cover;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.header-title {
+  position: relative;
+  z-index: 2;
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 8px;
+  text-shadow: 0 4px 16px #1e90ff, 0 1px 0 #000;
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.center-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 左右面板样式 */
+.left-panel, .right-panel {
+  width: min(320px, 22vw);
+  min-width: 250px;
+  height: calc(100vh - 190px);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: absolute;
+  top: 80px;
+  z-index: 10;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.left-panel::-webkit-scrollbar, .right-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.left-panel {
+  left: 15px;
+}
+
+.right-panel {
+  right: 15px;
+}
+
+.panel-section {
+  padding: 10px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 15px 0;
+  background: url('@/assets/img/225.png') no-repeat center;
+  background-size: cover;
+  height: 40px;
+}
+
+.title-text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.data-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.data-card {
+  background: rgba(0, 188, 212, 0.1);
+  border: 1px solid rgba(0, 188, 212, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-icon {
+  font-size: 24px;
+}
+
+.card-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.card-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.card-label {
+  font-size: 12px;
+  color: #cccccc;
+  white-space: nowrap;
+}
+</style>
 
 <style scoped>
 * {
