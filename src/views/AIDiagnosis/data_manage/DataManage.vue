@@ -662,13 +662,13 @@ const train = (data: any) => {
         localStorage.setItem("createModelForm.from_data", "1")
         localStorage.setItem("createModelForm.datasetID", data.id)
         localStorage.setItem("createModelForm.datatypeID", data.datatype_id)
-        router.push({path: "/AIDiagnosis/model_manage"})
+        router.push({path: "/ai-diagnosis/model_manage"})
       } else if (res.code == 0) {
         localStorage.setItem("createModelForm.from_data", "1")
         localStorage.setItem("createModelForm.datasetID", data.id)
         localStorage.setItem("createModelForm.datatypeID", data.datatype_id)
         router.push({
-          path: "/AIDiagnosis/train"
+          path: "/ai-diagnosis/train"
         })
       }
     })
@@ -711,6 +711,7 @@ defineOptions({
         </div>
       </div>
     </div>
+
     <el-card
       style="margin-bottom: 20px; width: 96%; margin-left: 2%; background-color: rgb(216, 230, 241)"
       v-if="isVisible"
@@ -769,8 +770,11 @@ defineOptions({
         </div>
       </div>
     </el-card>
+
     <el-card>
       <div class="actions">
+
+        <!--搜索框-->
         <el-form ref="searchFormRef" :inline="true" :model="searchData" class="search-form">
           <el-form-item prop="dataset_name">
             <div class="input-with-icon" style="margin-right: 15px">
@@ -782,6 +786,8 @@ defineOptions({
             </div>
           </el-form-item>
         </el-form>
+
+        <!--创建数据集-->
         <el-button type="primary" bg size="default" @click="createType()" :icon="CirclePlus"
                    class="create-button">
           创建训练集
@@ -814,7 +820,11 @@ defineOptions({
             </div>
           </template>
         </el-dialog>
+
+
       </div>
+
+
       <!--数据集表单-->
       <div class="data_card" v-for="(item, index) in TableData" :key="index">
         <div class="data_table">
@@ -854,6 +864,8 @@ defineOptions({
               </el-dropdown>
             </div>
           </div>
+
+
           <el-table :data="item.data" row-key="id" v-show="isExpand && currentDatasetIdx == index">
             <el-table-column prop="dataset_name" label="版本名称" align="center"/>
             <el-table-column prop="upload_datetime" label="上传日期" align="center"/>
@@ -916,6 +928,9 @@ defineOptions({
           </el-table>
         </div>
       </div>
+
+
+
       <div class="pager-wrapper">
         <el-pagination
           background
@@ -929,6 +944,7 @@ defineOptions({
         />
       </div>
     </el-card>
+
     <!-- 扩充新版本的对话框 -->
     <el-dialog v-model="insertdialogVisible" title="扩充数据集" width="600"
                :before-close="handleClose">
@@ -1082,6 +1098,7 @@ defineOptions({
         </div>
       </template>
     </el-dialog>
+
     <!-- 创建新版本的对话框 -->
     <el-dialog v-model="dialogVisible" title="创建数据集" width="600" :before-close="handleClose">
       <el-form
@@ -1229,6 +1246,7 @@ defineOptions({
         </div>
       </template>
     </el-dialog>
+
     <!--  训练提示对话框  -->
     <el-dialog v-model="statusDialogVisible" :show-close="false" width="600px">
       <template #header="{ close, titleId, titleClass }">
