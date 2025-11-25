@@ -231,7 +231,7 @@ const uploadFileToServer1 = async (file: string | Blob, isLast: boolean) => {
   formData.append("resource", inserteVersionForm.resource || "")
 
   try {
-    const response = await fetch("/api/v1/data/insert", {
+    const response = await fetch("/api2/data/insert", {
       method: "POST",
       body: formData
     })
@@ -969,7 +969,7 @@ defineOptions({
           </div>
           <el-upload
             ref="upload"
-            action="/api/v1/data/insert"
+            action="/api2/data/insert"
             :data="{
               dataset_type: inserteVersionForm.dataset_type,
               dataset_name: inserteVersionForm.dataset_name,

@@ -56,6 +56,7 @@ const detectImageData: any = reactive({
 // 处理上传文件
 const onHandleUpload = (res: any) => {
   // 如果后端的数据没有以 data:image/jpeg;base64 则需要判断加上
+  console.log(res.data)
   const originalBase64 = res.data.originalBase64
   const resultBase64 = res.data.resultBase64
   detectImageData.detectResult = res.data.detectResult
