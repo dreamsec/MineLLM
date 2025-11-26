@@ -1028,9 +1028,28 @@ const previewDocument = async (doc: Document) => {
       }
     })
     const url = URL.createObjectURL(blob)
-    if (doc.mimeType?.startsWith('image/') || doc.mimeType === 'application/pdf' || doc.mimeType?.startsWith('text/')) {
-      previewUrl.value = url
-      showPreviewModal.value = true
+    const w = window.open('', '_blank')
+    if (w) {
+      const title = doc.title || '预览'
+      const mime = doc.mimeType || 'application/octet-stream'
+      const isImage = !!mime && mime.startsWith('image/')
+      const isPdf = mime === 'application/pdf'
+      const isText = !!mime && mime.startsWith('text/')
+      const container = isImage
+        ? `<img src="${url}" style="max-width:100%;height:auto;display:block;margin:0 auto;" />`
+        : `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+        <style>html,body{height:100%;margin:0;padding:0;background:#f5f5f5;} .topbar{padding:10px 16px;background:#fff;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-family:system-ui,-apple-system,Segoe UI,Roboto} .content{height:calc(100% - 48px);} .btn{padding:6px 12px;border:1px solid #1890ff;background:#1890ff;color:#fff;border-radius:4px;text-decoration:none}</style>
+      </head><body>
+        <div class="topbar"><div>${title}</div><div><a class="btn" href="${url}" download="${title}">下载</a></div></div>
+        <div class="content">${container}</div>
+      </body></html>`
+      w.document.write(html)
+      w.document.close()
+      // 在父窗口挂载关闭事件，避免在 SFC 中写入 <script> 标签导致解析错误
+      try {
+        w.addEventListener('beforeunload', () => { try { URL.revokeObjectURL(url) } catch (e) {} })
+      } catch (e) { /* noop */ }
     } else {
       const a = document.createElement('a')
       a.href = url
@@ -1045,6 +1064,8 @@ const previewDocument = async (doc: Document) => {
     downloadProgress.value = 0
   }
 }
+
+
 
 const downloadDocument = async (doc: Document) => {
   isDownloading.value = true
