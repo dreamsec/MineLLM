@@ -18,14 +18,11 @@ function createService(baseURL?: string) {
   // 响应拦截（可根据具体业务作出相应的调整）
   service.interceptors.response.use(
     (response) => {
-      // apiData 是 API 返回的数据
       const apiData = response.data as any
-      // 这个 Code 是和后端约定的业务 Code
-      const code = apiData.code
-      // 如果没有 Code, 代表这不是项目后端开发的 API
+      const code = apiData?.code
+      // 兼容无 code 的 RESTful 响应：直接返回 data（例如部分更新接口仅以 HTTP 200 表示成功）
       if (code === undefined) {
-        ElMessage.error("非本系统的接口")
-        return Promise.reject(new Error("非本系统的接口"))
+        return response.data
       } else {
         switch (code) {
           case 0:
@@ -115,12 +112,17 @@ function createService(baseURL?: string) {
 /** 创建请求方法 */
 function createRequestFunction(service: AxiosInstance, useSecondToken: boolean = false) {
   return function <T>(config: AxiosRequestConfig): Promise<T> {
+    const method = String(config.method || 'get').toLowerCase()
+    const isFormData = typeof FormData !== "undefined" && (config.data instanceof FormData)
+    const headers: Record<string, any> = {
+      Authorization: config.url?.includes('login') ? undefined : "Bearer " + (useSecondToken ? getToken2() : getToken()),
+    }
+    // 仅在需要时设置 Content-Type：POST/PUT/PATCH 且非 FormData
+    if ((method === 'post' || method === 'put' || method === 'patch') && !isFormData) {
+      headers["Content-Type"] = get(config, "headers.Content-Type", "application/json")
+    }
     const configDefault = {
-      headers: {
-        // 检查是否是登录请求，如果是则不添加Authorization头
-        Authorization: config.url?.includes('login') ? undefined : "Bearer " + (useSecondToken ? getToken2() : getToken()),
-        "Content-Type": get(config, "headers.Content-Type", "application/json")
-      },
+      headers,
       timeout: get(config, "timeout", 1000000),
       data: {}
     }

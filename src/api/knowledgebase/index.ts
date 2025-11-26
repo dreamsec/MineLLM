@@ -38,7 +38,11 @@ export function deleteKbContentTypeApi(name: string) {
 }
 
 // 上传文件（multipart/form-data）——字段需与 FileLibraryInForm 对齐
-export function uploadKbFileApi(form: KB.FileLibraryInForm, file: File | Blob) {
+export function uploadKbFileApi(
+  form: KB.FileLibraryInForm,
+  file: File | Blob,
+  onUploadProgress?: (e: ProgressEvent) => void
+) {
   const formData = new FormData()
   formData.append("filename", form.filename)
   formData.append("content_type_name", form.content_type_name)
@@ -49,7 +53,7 @@ export function uploadKbFileApi(form: KB.FileLibraryInForm, file: File | Blob) {
     url: `${BASE}`,
     method: "post",
     data: formData,
-    headers: { "Content-Type": undefined },
+    onUploadProgress,
     timeout: 1000 * 60 * 10
   })
 }
@@ -64,11 +68,12 @@ export function listKbFilesApi(params: KB.FileLibraryQueryForm) {
 }
 
 // 下载/预览文件（返回 Blob）
-export function downloadKbFileApi(id: number) {
+export function downloadKbFileApi(id: number, onDownloadProgress?: (e: ProgressEvent) => void) {
   return request<Blob>({
     url: `${BASE}/download/${id}`,
     method: "get",
-    responseType: "blob"
+    responseType: "blob",
+    onDownloadProgress
   })
 }
 
