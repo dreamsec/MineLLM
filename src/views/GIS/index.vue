@@ -115,6 +115,35 @@ const offsetY = ref(0);
 
 
 
+const mainBoxRef = ref<HTMLElement | null>(null);
+
+const handleDragStartCamera = (e: DragEvent) => {
+  e.dataTransfer?.setData('text/plain', 'camera');
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
+};
+
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+};
+
+const handleDropCamera = async (e: DragEvent) => {
+  e.preventDefault();
+  const kind = e.dataTransfer?.getData('text/plain');
+  if (kind !== 'camera') return;
+  const rect = mainBoxRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  const dropX = e.clientX - rect.left;
+  const dropY = e.clientY - rect.top;
+  const vx = Math.round((dropX - offsetX.value) / scale.value);
+  const vy = Math.round((dropY - offsetY.value) / scale.value);
+
+  // 记录临时选点坐标并打开“添加摄像头”弹窗，由用户填写配置后再保存
+  tempPosition.value = { vx, vy };
+  newCameraForm.value.x = vx;
+  newCameraForm.value.y = vy;
+  addDialogVisible.value = true;
+};
 // 获取摄像头列表数据的函数
 const fetchCameraData = async () => {
   try {
@@ -667,19 +696,18 @@ onActivated(() => {
             </label>
           </div>
 
-          <!-- 添加摄像头功能 -->
+          <!-- 拖拽添加摄像头 -->
           <div class="layer-item">
-            <div style="display:flex; gap:8px; width:100%;">
-              <el-button type="primary" size="small" width="50%" @click="startAddCamera" :disabled="isAddMode">
-                添加
-              </el-button>
-              <el-button type="danger" size="small" width="50%" @click="cancelAddCamera" :disabled="!isAddMode">
-                取消
-              </el-button>
+            <div class="layer-row">
+              <span style="color:#fff; font-size:13px;">拖拽添加摄像头</span>
+              <div
+                class="drag-camera-icon"
+                draggable="true"
+                title="拖到地图上以添加摄像头"
+                @dragstart="handleDragStartCamera"
+              >📹</div>
             </div>
-            <div style="margin-top:6px; color:#C0C4CC; font-size:12px;">
-              {{ isAddMode ? '提示：在地图上点击选择摄像头位置' : '点击“添加”进入选点模式' }}
-            </div>
+            <div class="drag-hint">拖动右侧图标到地图，松开后弹出配置窗口</div>
           </div>
 
           <!-- 删除/编辑选择模式 -->
@@ -738,6 +766,9 @@ onActivated(() => {
 
     <!-- 主地图区域 -->
     <div class="main-box"
+         ref="mainBoxRef"
+         @dragover="handleDragOver"
+         @drop="handleDropCamera"
          :style="{left: leftSidebarCollapsed ? '60px' : '320px', right: rightSidebarCollapsed ? '60px' : '320px'}">
       <!-- SVG底图容器 -->
       <div class="svg-container">
@@ -1288,34 +1319,60 @@ onActivated(() => {
       background: rgba(64, 158, 255, 0.05);
     }
 
+    .layer-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
     label {
       display: flex;
       align-items: center;
-      width: 100%; /* 占满容器宽度 */
+      flex: 1;
       cursor: pointer;
       color: #fff;
-      font-size: 13px; /* 统一内容字体大小 */
+      font-size: 13px;
       transition: all 0.2s ease;
 
       input[type="checkbox"] {
-        margin-right: 12px; /* 增加间距 */
+        margin-right: 12px;
         accent-color: #409EFF;
-        transform: scale(1.1); /* 稍微放大复选框 */
+        transform: scale(1.1);
         cursor: pointer;
       }
 
       span {
         color: #fff;
-        font-size: 13px; /* 统一内容字体大小 */
-        flex: 1; /* 文字占满剩余空间 */
+        font-size: 13px;
         font-weight: 500;
       }
 
       &:hover {
         color: #409EFF;
-        background: rgba(64, 158, 255, 0.1);
-        border-radius: 4px;
       }
+    }
+
+    .drag-camera-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #e8e8e8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      cursor: grab;
+      user-select: none;
+    }
+    .drag-camera-icon:active { cursor: grabbing; }
+
+    .drag-hint {
+      margin-top: 6px;
+      color: #c0c4cc;
+      font-size: 12px;
     }
   }
 }

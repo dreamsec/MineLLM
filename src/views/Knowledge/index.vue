@@ -202,20 +202,16 @@
 
                 <div class="doc-meta">
                   <div class="meta-item">
-                    <i class="fas fa-user"></i>
+                    <span class="emoji-icon">👤</span>
                     <span>{{ doc.author }}</span>
                   </div>
                   <div class="meta-item">
-                    <i class="fas fa-clock"></i>
+                    <span class="emoji-icon">⏰</span>
                     <span>{{ formatDate(doc.updateTime) }}</span>
                   </div>
                   <div class="meta-item">
-                    <i class="fas fa-eye"></i>
+                    <span class="emoji-icon">👁️</span>
                     <span>{{ doc.viewCount }}</span>
-                  </div>
-                  <div class="meta-item">
-                    <i class="fas fa-star"></i>
-                    <span>{{ doc.rating }}/5</span>
                   </div>
                 </div>
               </div>
@@ -236,7 +232,6 @@
               <div class="col-author">作者</div>
               <div class="col-update">更新时间</div>
               <div class="col-views">阅读</div>
-              <div class="col-rating">评分</div>
               <div class="col-actions">操作</div>
             </div>
 
@@ -258,25 +253,13 @@
               <div class="col-author">{{ doc.author }}</div>
               <div class="col-update">{{ formatDate(doc.updateTime) }}</div>
               <div class="col-views">{{ doc.viewCount }}</div>
-              <div class="col-rating">
-                <div class="rating-display">
-                  <span>{{ doc.rating }}/5</span>
-                  <div class="stars">
-                    <i
-                      v-for="n in 5"
-                      :key="n"
-                      :class="n <= doc.rating ? 'fas fa-star' : 'far fa-star'"
-                    ></i>
-                  </div>
-                </div>
-              </div>
               <div class="col-actions">
-                <button class="action-btn small" @click.stop="editDocument(doc)">编辑</button>
-                <button class="action-btn small" @click.stop="previewDocument(doc)">预览</button>
-                <button class="action-btn small" @click.stop="downloadDocument(doc)">下载</button>
-                <button class="action-btn small secondary" @click.stop="deleteDocument(doc.id)">
-                  删除
-                </button>
+                <div class="actions-grid">
+                  <button class="action-btn small edit" @click.stop="editDocument(doc)">🛠️ 编辑</button>
+                  <button class="action-btn small preview" @click.stop="previewDocument(doc)">👁️ 预览</button>
+                  <button class="action-btn small download" @click.stop="downloadDocument(doc)">⬇️ 下载</button>
+                  <button class="action-btn small delete" @click.stop="deleteDocument(doc.id)">🗑️ 删除</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1470,18 +1453,19 @@ const closePreview = () => {
 }
 
 .document-card {
-  background: #fafafa;
+  background: #ffffff;
   border: 1px solid #e8e8e8;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .document-card:hover {
   border-color: #1890ff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.18);
 }
 
 .doc-header {
@@ -1496,26 +1480,31 @@ const closePreview = () => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
+  border: 1px solid transparent;
 }
 
 .doc-type-badge.manual {
   background: rgba(24, 144, 255, 0.1);
   color: #1890ff;
+  border-color: #91caff;
 }
 
 .doc-type-badge.procedure {
   background: rgba(82, 196, 26, 0.1);
   color: #52c41a;
+  border-color: #b7eb8f;
 }
 
 .doc-type-badge.case {
   background: rgba(250, 173, 20, 0.1);
   color: #faad14;
+  border-color: #ffd591;
 }
 
 .doc-type-badge.standard {
   background: rgba(255, 107, 53, 0.1);
   color: #ff6b35;
+  border-color: #ffd0c2;
 }
 
 .doc-actions {
@@ -1583,7 +1572,7 @@ const closePreview = () => {
 .list-header,
 .list-item {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 80px 100px 120px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 80px 160px;
   gap: 16px;
   padding: 12px 16px;
   align-items: center;
@@ -1626,7 +1615,15 @@ const closePreview = () => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
+  border: 1px solid transparent;
 }
+
+/* 类型徽章配色与美化 */
+.type-badge.manual { background: #e6f4ff; color: #1677ff; border-color: #91caff; }
+.type-badge.procedure { background: #fffbe6; color: #faad14; border-color: #ffe58f; }
+.type-badge.case { background: #fff1f0; color: #f5222d; border-color: #ffccc7; }
+.type-badge.standard { background: rgba(255, 107, 53, 0.1); color: #ff6b35; border-color: #ffd0c2; }
+.type-badge:hover { filter: brightness(0.98); }
 
 .rating-display {
   display: flex;
@@ -1644,6 +1641,28 @@ const closePreview = () => {
   font-size: 10px;
   color: #faad14;
 }
+
+/* 列表视图操作按钮两行栅格布局 */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 32px;
+  gap: 8px;
+}
+.actions-grid .action-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.action-btn.edit { background: #e6f4ff; border: 1px solid #91caff; color: #1677ff; }
+.action-btn.preview { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+.action-btn.download { background: #fff7e6; border: 1px solid #ffd591; color: #fa8c16; }
+.action-btn.delete { background: #fff1f0; border: 1px solid #ffccc7; color: #f5222d; }
+.action-btn.edit:hover { background: #d0e9ff; }
+.action-btn.preview:hover { background: #eaffea; }
+.action-btn.download:hover { background: #ffefd6; }
+.action-btn.delete:hover { background: #ffeceb; }
 
 .pagination {
   display: flex;
