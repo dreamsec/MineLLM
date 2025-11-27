@@ -14,6 +14,8 @@ class FileContentType(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False, comment="文件内容类型名称")
+    fileCnt = Column(Integer, nullable=False, default=0, comment="文件数量")
+
 
 
 class UploadedFile(Base):
@@ -39,12 +41,15 @@ class FileInformationModel(BaseModel):
     FileCnt: int = 0 #文件总数
     today_cnt: int = 0 #今日新增
     read_cnt: int = 0 #总访问次数
+    
 
 class FileContentTypeModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int | None = None
     name: str
+    fileCnt: int = 0 #文件数量
+
 
 class FileLibraryModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -170,8 +175,8 @@ class FileLibraryTable(BaseCRUD[UploadedFile, FileLibraryModel, FileLibraryUpdat
             if not file:
                 return None
             return FileLibraryResponseModel.model_validate(file)
-    
-    def update_file_cnt(self, id: int) -> bool:
+      
+    def update_file_visit_cnt(self, id: int) -> bool:
         """更新文件访问次数"""
         with get_db() as db:
             file = db.query(UploadedFile).filter(UploadedFile.id == id).first()
@@ -179,9 +184,19 @@ class FileLibraryTable(BaseCRUD[UploadedFile, FileLibraryModel, FileLibraryUpdat
                 return False
             file.cnt = file.cnt + 1
             
-            print("update_file_cnt called!!!")
             db.commit()
             db.refresh(file)
+            return True
+    
+    def update_file_cnt(self, id: int,cnt: int) -> bool:
+        """更新文件数量"""
+        with get_db() as db:
+            fileType = db.query(FileContentType).filter(FileContentType.id == id).first()
+            if not fileType:
+                return False
+            fileType.fileCnt += cnt
+            db.commit()
+            db.refresh(fileType)
             return True
 
     def get_file_type_name_list(self) -> list[FileContentTypeModel] | None:

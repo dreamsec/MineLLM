@@ -698,15 +698,16 @@ const editDocument = (doc: Document) => {
   showEditDialog.value = true
 }
 
-const deleteDocument = async (docId: number) => {
-  // 删除文档改为真实调用后端 API
-  if (confirm('确定要删除这个文档吗？')) {
-    const res = await deleteKbFileApi(docId)
-    if ((res as any).code === 1) {
-      await fetchDocuments()
+  const deleteDocument = async (docId: number) => {
+    // 删除文档改为真实调用后端 API
+    if (confirm('确定要删除这个文档吗？')) {
+      const res = await deleteKbFileApi(docId)
+      if ((res as any).code === 1) {
+        await fetchDocuments()
+        await fetchCategories()
+      }
     }
   }
-}
 
 // 已移除编辑分类功能
 
@@ -742,6 +743,7 @@ const saveDocument = async () => {
       console.log('更新文档:', res)
       resetDocumentForm()
       await fetchDocuments()
+      await fetchCategories()
     }
   } else {
     const file = documentForm.file
@@ -925,8 +927,9 @@ const fetchCategories = async () => {
       id: ct.id,
       name: ct.name,
       icon: 'fas fa-folder',
-      docCount: 0,
-      description: ''
+      docCount: Number(ct.fileCnt) || 0,
+      description: '',
+      meta: ct
     }))
     // 构建 id->name 映射
     contentTypeMap.value = {}

@@ -5,6 +5,7 @@
 export interface FileContentTypeModel {
   id?: number
   name: string
+  fileCnt: number
 }
 
 export interface FileInformationModel {
@@ -64,4 +65,3 @@ export type UploadFileResponseData = IApiResponseData<FileLibraryResponseModel>
 export type GetFileByIdResponseData = IApiResponseData<FileLibraryResponseModel>
 export type UpdateFileResponseData = IApiResponseData<FileLibraryResponseModel>
 export type DeleteFileByIdResponseData = IApiResponseData<boolean>
-

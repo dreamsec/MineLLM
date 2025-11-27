@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Query, Request
+from fastapi import APIRouter, Depends, File, UploadFile, Query, Request, Form
 from typing import Annotated
 import os
 from datetime import datetime
@@ -20,7 +20,9 @@ from models.knowlege_base import (
 )
 
 # 绝对路径前缀
-BASE_FILE_DIR = r"D:\\Project\\YunWei\\back2\\AscentAI"
+#BASE_FILE_DIR = r"D:\\Project\\YunWei\\back2\\AscentAI"
+BASE_FILE_DIR = r"D:\program_1\back\AscentAI"
+
 UPLOAD_DIR = r"upload_knowlege_database"
 ALLOWED_TYPES = [
     "image/jpeg",
@@ -105,11 +107,22 @@ async def delete_file_content_type(
 
 @router.post("", response_model=Result[FileLibraryResponseModel], summary="上传文件")
 async def upload_file(
-    form: FileLibraryInForm= Depends(),
+    # form: FileLibraryInForm= Depends(),
+    filename: str = Form(..., description="文件名"),
+    content_type_name: str = Form(..., description="文件内容类型名称"),
+    author: str = Form(..., description="上传作者"),
+    abstract: str = Form(..., description="文件摘要"),
     file: UploadFile = File(...),
     current_user=Depends(require_permission("file:create"))
 ):
     """上传文件"""
+    # 手动创建Form对象
+    form = FileLibraryInForm(
+        filename=filename,
+        content_type_name=content_type_name,
+        author=author,
+        abstract=abstract
+    )
 
     # 文件类型校验
     if file.content_type not in ALLOWED_TYPES:  
@@ -148,6 +161,7 @@ async def upload_file(
         "filepath": relative_path,
         "size": size,
         "mime_type": file.content_type,
+        "abstract": form.abstract,
         "author": form.author,
         "content_type_id": content_type_id
     }
@@ -156,6 +170,10 @@ async def upload_file(
 
     if not db_obj:
         return Result.error(msg="文件上传失败")
+
+    # 更新文件内容类型数量
+    if not Files.update_file_cnt(content_type_id, 1):
+        return Result.error(msg="文件数量更新失败")
 
     return Result.success(FileLibraryResponseModel.model_validate(db_obj))
 
@@ -187,7 +205,7 @@ def download_file_by_id(
     if not os.path.exists(abs_path):
         return Result.error(msg="文件本体不存在")
     # 更新文件访问次数
-    Files.update_file_cnt(id)
+    Files.update_file_visit_cnt(id)
     # 返回文件
     return FileResponse(
         path=abs_path,
@@ -225,10 +243,15 @@ def update_file(
         if form.content_type_id not in [ct.id for ct in content_type]:
             return Result.error(msg="文件更新失败，文件内容类型不存在")
 
+        # 更新文件内容类型数量
+        Files.update_file_cnt(old.content_type_id, -1)
+        Files.update_file_cnt(form.content_type_id, 1)
+        
+
     if form.filename is not None:
-        # 校验文件名是否存在
+        # 校验文件名是否已存在（排除当前正在更新的文件）
         file_obj = Files.get_file_by_file_name(form.filename)
-        if file_obj:
+        if file_obj and file_obj.id != id:  # 只有当找到的文件不是当前正在更新的文件时才报错
             return Result.error(msg="文件名已存在")
 
         old_path = old.filepath
@@ -271,10 +294,13 @@ def delete_file(
         # 删除本地文件
         if os.path.exists(abs_path):
             os.remove(abs_path)
-
+        else:
+            return Result.error(msg="文件删除失败，文件本体不存在")
         # 删除数据库记录
         result = Files.delete_by_id(id)
         if not result:
             return Result.error(msg="文件删除失败")
+        # 更新文件内容类型数量
+        Files.update_file_cnt(file_obj.content_type_id, -1)
 
     return Result.success()
