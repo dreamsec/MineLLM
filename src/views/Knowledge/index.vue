@@ -729,9 +729,10 @@ const deleteCategory = async (categoryId: number) => {
 const saveDocument = async () => {
   const cat = categories.value.find(c => String(c.id) === String(documentForm.categoryId))
   const contentTypeName = cat?.name || ''
+  const stripExtension = (name: string) => (name || '').replace(/\.[^.\s]+$/, '')
   if (showEditDialog.value) {
     const res = await updateKbFileApi(documentForm.id as number, {
-      filename: documentForm.filename,
+      filename: stripExtension(documentForm.filename || ''),
       content_type_id: Number(documentForm.categoryId),
       filepath: null,
       abstract: documentForm.abstract
@@ -751,7 +752,7 @@ const saveDocument = async () => {
     isUploading.value = true
     uploadProgress.value = 0
     const res = await uploadKbFileApi({
-      filename: documentForm.filename || file.name,
+      filename: stripExtension(documentForm.filename || file.name),
       content_type_name: contentTypeName,
       author: documentForm.author,
       abstract: documentForm.abstract
@@ -784,7 +785,7 @@ const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   const f = target.files?.[0] || null
   documentForm.file = f
-  if (f) documentForm.filename = f.name
+  if (f) documentForm.filename = (f.name || '').replace(/\.[^.\s]+$/, '')
 }
 
 const removeAttachment = (index: number) => {
@@ -832,7 +833,7 @@ const executeImport = async () => {
     const cat = categories.value.find(c => String(c.id) === String(item.category))
     const contentTypeName = cat?.name || ''
     const res = await uploadKbFileApi({
-      filename: item.file.name,
+      filename: (item.file.name || '').replace(/\.[^.\s]+$/, ''),
       content_type_name: contentTypeName,
       author: '当前用户',
       abstract: '批量导入'
