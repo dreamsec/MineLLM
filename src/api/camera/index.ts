@@ -56,3 +56,11 @@ export function deleteCameraApi(params: Camera.DeleteCameraRequestParams) {
     method: "delete"
   })
 }
+
+/** 获取摄像头实时流地址 */
+export function getCameraStreamApi(id: number) {
+  return request<Camera.GetCameraStreamResponseData>({
+    url: `/api/v1/camera/${id}/stream`,
+    method: "get"
+  })
+}

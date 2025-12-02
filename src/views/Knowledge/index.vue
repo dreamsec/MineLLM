@@ -691,7 +691,7 @@ const viewDocument = (doc: Document) => {
 const editDocument = (doc: Document) => {
   documentForm.id = doc.id
   documentForm.filename = doc.title
-  documentForm.categoryId = doc.categoryId
+  documentForm.categoryId = doc.
   documentForm.author = doc.author
   documentForm.abstract = doc.summary
   documentForm.file = null

@@ -147,3 +147,13 @@ export interface DeleteCameraRequestParams {
 }
 // 删除摄像头响应数据类型
 export type DeleteCameraResponseData = IApiResponseData<string>
+
+// 摄像头实时流响应字段（后端返回 Result[dict]，此处对齐为可拓展结构）
+export interface CameraStreamData {
+  // 可播放的地址（可能为 HLS.m3u8 / WebRTC 业务URL / MP4 等）
+  play_url: string
+  id: number
+}
+
+// 获取摄像头实时流响应类型
+export type GetCameraStreamResponseData = IApiResponseData<CameraStreamData>

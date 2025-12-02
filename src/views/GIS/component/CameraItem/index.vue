@@ -5,6 +5,7 @@ import { VideoCamera, InfoFilled, Loading, Warning } from '@element-plus/icons-v
 import { ElMessage } from 'element-plus';
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import WebRTCVideo from '@/components/WebRTCVideo/index.vue';
+import { getCameraStreamApi } from '@/api/camera'
 
 interface Camera {
   id: number;
@@ -134,6 +135,7 @@ const showContextMenu = (event: MouseEvent, item: Camera) => {
 const dialogVisible = ref<boolean>(false);
 const videoError = ref<boolean>(false);
 const isVideoLoading = ref<boolean>(false);
+const streamUrl = ref<string>('');
 
 // 打开视频预览弹窗
 const openVideoDialog = () => {
@@ -141,6 +143,24 @@ const openVideoDialog = () => {
   videoError.value = false;
   if (props.item.rtsp) {
     isVideoLoading.value = true;
+    // 调用后端摄像头实时流接口，获取可播放地址
+    getCameraStreamApi(props.item.id)
+      .then(res => {
+        const data: any = (res as any).data || {}
+        // 兼容多种可能字段名
+        const url = data.play_url
+        console.log(1)
+        console.log(url)
+        streamUrl.value = url
+      })
+      .catch(err => {
+        console.error('获取摄像头实时流地址失败', err)
+        streamUrl.value = props.item.rtsp
+        videoError.value = false
+      })
+      .finally(() => {
+        isVideoLoading.value = false
+      })
   }
 };
 
@@ -176,8 +196,9 @@ const isValidRtspUrl = (url: string): boolean => {
 // 复制RTSP地址
 const copyRtspUrl = async () => {
   try {
-    if (props.item.rtsp) {
-      await navigator.clipboard.writeText(props.item.rtsp);
+    const toCopy = streamUrl.value || props.item.rtsp
+    if (toCopy) {
+      await navigator.clipboard.writeText(toCopy);
       ElMessage.success('RTSP地址已复制到剪贴板');
     }
   } catch (error) {
@@ -293,9 +314,9 @@ const getModelLabel = (value: string): string => {
   >
     <div class="video-container">
       <WebRTCVideo
-        v-if="dialogVisible && props.item.rtsp"
+        v-if="dialogVisible "
         :camera-id="props.item.id"
-        :rtsp-url="props.item.rtsp"
+        :rtspUrl="streamUrl"
         :width="videoWidth"
         :height="videoHeight"
         :show-controls="true"
@@ -573,4 +594,3 @@ const getModelLabel = (value: string): string => {
   text-align: right;
 }
 </style>
-
