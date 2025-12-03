@@ -41,8 +41,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'select', item: Camera): void
+  (e: 'select', item: Camera): void;
+  (e: 'alarm', data: { camera: Camera, info: any }): void;
 }>()
+
+// 处理人员检测事件
+const handlePersonDetected = (info: any) => {
+  emit('alarm', {
+    camera: props.item,
+    info
+  });
+};
 
 // 图标源
 const imagesLoaded = ref(false);
@@ -322,6 +331,7 @@ const getModelLabel = (value: string): string => {
         :show-controls="true"
         :autoplay="true"
         ref="webRtcVideoRef"
+        @person-detected="handlePersonDetected"
       />
 
       <!-- 如果没有RTSP地址 -->

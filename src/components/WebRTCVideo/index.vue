@@ -118,6 +118,8 @@ const closeWebSocket = () => {
   }
 };
 
+const emit = defineEmits(['person-detected']);
+
 const drawDetections = (payload: any) => {
   const canvas = canvasRef.value;
   const container = containerRef.value;
@@ -127,8 +129,6 @@ const drawDetections = (payload: any) => {
   if (!ctx) return;
 
   // 确保画布尺寸与容器一致（视觉清晰度）
-  // 注意：这里我们在 WebSocket 消息到来时检查尺寸，也可以在 ResizeObserver 中做
-  // 但每一帧检查一次开销不大，且能保证实时对齐
   if (canvas.width !== container.clientWidth || canvas.height !== container.clientHeight) {
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
@@ -147,10 +147,19 @@ const drawDetections = (payload: any) => {
   ctx.lineWidth = 2;
   ctx.font = '16px Arial';
 
+  let hasPerson = false;
+  let personInfo = null;
+
   data.forEach((item: any) => {
     const [x1, y1, x2, y2] = item.box;
     const label = item.label;
     const conf = Math.round(item.conf * 100);
+
+    // 检测到人
+    if (label === 'person') {
+      hasPerson = true;
+      personInfo = { label, conf, box: item.box };
+    }
 
     // 转换坐标
     const drawX = x1 * scaleX;
@@ -174,6 +183,10 @@ const drawDetections = (payload: any) => {
     ctx.fillStyle = '#fff';
     ctx.fillText(text, drawX + 5, drawY - 5);
   });
+
+  if (hasPerson) {
+    emit('person-detected', personInfo);
+  }
 };
 
 // ———————————————————————————————————————————————————————————————— 视频播放逻辑

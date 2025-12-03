@@ -531,6 +531,37 @@ const realtimeAlerts = ref([
 ]);
 
 // 环境监测数据
+// ————————————————————————————————————————————————————————————————————————————— 报警弹窗逻辑
+const alarmVisible = ref(false);
+const alarmData = ref({
+  cameraName: '',
+  time: '',
+  conf: 0
+});
+
+const handleAlarm = (data: { camera: any, info: any }) => {
+  // 简单的防抖：如果当前已经有弹窗且未处理，可以选择忽略或更新
+  // 这里选择更新并显示
+  alarmData.value = {
+    cameraName: data.camera.name,
+    time: new Date().toLocaleTimeString(),
+    conf: data.info.conf
+  };
+  alarmVisible.value = true;
+
+  // 播放报警音效（可选）
+  // playAlarmSound();
+};
+
+const closeAlarm = () => {
+  alarmVisible.value = false;
+};
+
+const handleAlarmConfirm = () => {
+  ElMessage.success('报警已处理');
+  closeAlarm();
+};
+
 const gasConcentration = ref(0.3);
 const temperature = ref(28);
 const humidity = ref(65);
@@ -577,6 +608,18 @@ const initPanZoom = () => {
     // 确保svg-pan-zoom只初始化一次
     if (svgTiger.value) {
       svgTiger.value.destroy();
+    }
+
+    // 强制设置SVG对齐方式为左上角，防止容器变宽导致地图居中而产生坐标偏移
+    try {
+      const embedEl = svgElement as HTMLEmbedElement;
+      // 某些浏览器或环境下可能需要稍作等待，但此处是在handleSVGLoad后调用的，应已就绪
+      const svgDoc = embedEl.getSVGDocument();
+      if (svgDoc && svgDoc.documentElement) {
+        svgDoc.documentElement.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+      }
+    } catch (e) {
+      console.warn('无法修改SVG对齐方式:', e);
     }
 
     // 初始化 svg-pan-zoom
@@ -663,9 +706,10 @@ const handleSVGLoad = async () => {
 
 // ————————————————————————————————————————————————————————————————————————————— 生命周期
 onActivated(() => {
-  offsetX.value = 0;
-  offsetY.value = 0;
-  scale.value = 1;
+  // 保持之前的视图状态，不要重置
+  // offsetX.value = 0;
+  // offsetY.value = 0;
+  // scale.value = 1;
   // 获取摄像头数据
   fetchCameraData();
 });
@@ -769,7 +813,7 @@ onActivated(() => {
          ref="mainBoxRef"
          @dragover="handleDragOver"
          @drop="handleDropCamera"
-         :style="{left: leftSidebarCollapsed ? '60px' : '320px', right: rightSidebarCollapsed ? '60px' : '320px'}">
+         :style="{left: leftSidebarCollapsed ? '60px' : '320px', right: '0px'}">
       <!-- SVG底图容器 -->
       <div class="svg-container">
         <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 100%;"
@@ -797,93 +841,38 @@ onActivated(() => {
             :offsetX="offsetX"
             :offsetY="offsetY"
             :select-mode="isDeleteMode ? 'delete' : (isEditMode ? 'edit' : (isViewMode ? 'view' : 'none'))"
-            @select="onCameraSelected"/>
+            @select="onCameraSelected"
+            @alarm="handleAlarm"/>
         </template>
       </div>
     </div>
 
-    <!-- 右侧边栏 -->
-    <div class="right-sidebar" :class="{ 'collapsed': rightSidebarCollapsed }">
-      <div class="sidebar-header">
-        <button class="collapse-btn" @click="toggleRightSidebar">
-          <span class="icon">{{ rightSidebarCollapsed ? '◀' : '▶' }}</span>
-        </button>
-        <span v-if="!rightSidebarCollapsed">监控面板</span>
+    <!-- 报警弹窗组件 -->
+    <Teleport to="body">
+      <div v-if="alarmVisible" class="alarm-popup">
+        <div class="alarm-header">
+          <span class="alarm-title">⚠️ 人员入侵告警</span>
+          <button class="close-btn" @click="closeAlarm">×</button>
+        </div>
+        <div class="alarm-content">
+          <div class="alarm-info-row">
+            <span class="label">位置:</span>
+            <span class="value">{{ alarmData.cameraName }}</span>
+          </div>
+          <div class="alarm-info-row">
+            <span class="label">时间:</span>
+            <span class="value">{{ alarmData.time }}</span>
+          </div>
+          <div class="alarm-info-row">
+            <span class="label">类型:</span>
+            <span class="value warning-text">检测到人员 ({{ alarmData.conf }}%)</span>
+          </div>
+          <div class="alarm-actions">
+            <el-button type="danger" size="small" @click="handleAlarmConfirm">立即处理</el-button>
+          </div>
+        </div>
       </div>
-
-      <div class="sidebar-content" v-if="!rightSidebarCollapsed">
-        <!-- 人员定位面板 -->
-        <div class="panel personnel-panel">
-          <h4>人员定位</h4>
-          <div class="personnel-stats">
-            <div class="stat-item">
-              <span class="stat-number">{{ personnelCount.total }}</span>
-              <span class="stat-label">总人数</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ personnelCount.underground }}</span>
-              <span class="stat-label">井下人数</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ personnelCount.surface }}</span>
-              <span class="stat-label">地面人数</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 实时告警面板 -->
-        <div class="panel alert-panel">
-          <h4>实时告警</h4>
-          <div class="alert-list">
-            <div class="alert-item" v-for="alert in realtimeAlerts" :key="alert.id"
-                 :class="alert.level">
-              <div class="alert-time">{{ alert.time }}</div>
-              <div class="alert-message">{{ alert.message }}</div>
-              <div class="alert-location">{{ alert.location }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 环境监测面板 -->
-        <div class="panel environment-panel">
-          <h4>环境监测</h4>
-          <div class="env-item">
-            <span class="env-label">瓦斯浓度:</span>
-            <span class="env-value" :class="{ 'danger': gasConcentration > 0.5 }">
-              {{ gasConcentration }}%
-            </span>
-          </div>
-          <div class="env-item">
-            <span class="env-label">温度:</span>
-            <span class="env-value">{{ temperature }}°C</span>
-          </div>
-          <div class="env-item">
-            <span class="env-label">湿度:</span>
-            <span class="env-value">{{ humidity }}%</span>
-          </div>
-          <div class="env-item">
-            <span class="env-label">风速:</span>
-            <span class="env-value">{{ windSpeed }}m/s</span>
-          </div>
-        </div>
-
-        <!-- 视频监控面板 -->
-        <!-- <div class="panel video-panel">
-          <h4>视频监控</h4>
-          <div class="video-preview">
-            <div class="video-item" v-for="video in videoFeeds" :key="video.id">
-              <div class="video-thumbnail">
-                <span class="camera-icon">📹</span>
-              </div>
-              <div class="video-info">
-                <div class="video-name">{{ video.name }}</div>
-                <div class="video-status" :class="video.status">{{ video.statusText }}</div>
-              </div>
-            </div>
-          </div>
-        </div> -->
-      </div>
-    </div>
+    </Teleport>
 
     <!-- 加载遮罩 -->
     <div v-if="!isSVGLoaded" class="loading-overlay">
@@ -1043,7 +1032,7 @@ onActivated(() => {
   will-change: transform;
   top: clamp(80px, 8vh, 120px); /* 标题高度 */
   left: 320px; /* 左侧边栏宽度 */
-  right: 320px; /* 右侧边栏宽度 */
+  right: 0px; /* 右侧边栏宽度 */
   bottom: 0;
   transition: left 0.3s ease, right 0.3s ease;
   z-index: 1;
@@ -2096,5 +2085,97 @@ canvas {
   }
 
   /* 超宽屏优化 - 滚动条样式已移除 */
+}
+
+/* 报警弹窗样式 */
+.alarm-popup {
+  position: fixed;
+  top: 140px;
+  right: 20px;
+  width: 300px;
+  background: rgba(0, 20, 60, 0.95);
+  border: 1px solid #F56C6C;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  overflow: hidden;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.alarm-header {
+  background: linear-gradient(90deg, rgba(245, 108, 108, 0.2), transparent);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(245, 108, 108, 0.3);
+
+  .alarm-title {
+    color: #F56C6C;
+    font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #909399;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+}
+
+.alarm-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alarm-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+
+  .label {
+    color: #909399;
+  }
+
+  .value {
+    color: #fff;
+    font-weight: 500;
+
+    &.warning-text {
+      color: #F56C6C;
+      font-weight: bold;
+    }
+  }
+}
+
+.alarm-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>
