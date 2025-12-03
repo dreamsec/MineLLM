@@ -1,5 +1,5 @@
 <template>
-  <div class="webrtc-player">
+  <div class="webrtc-player" ref="containerRef">
     <video
       ref="videoElement"
       class="video-js"
@@ -11,6 +11,11 @@
       :width="width"
       :height="height"
     ></video>
+
+    <canvas
+      ref="canvasRef"
+      class="overlay-canvas"
+    ></canvas>
 
     <div v-if="isLoading" class="loading-overlay">
       <el-icon class="is-loading"><Loading /></el-icon>
@@ -25,13 +30,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { Loading, Warning } from '@element-plus/icons-vue';
 
 const props = defineProps({
-  rtspUrl: { // 这里接收的是后端返回的 http://...:8889/cam_x 地址
+  rtspUrl: {
     type: String,
     required: true
+  },
+  cameraId: {
+    type: Number,
+    default: 0
   },
   width: {
     type: [Number, String],
@@ -47,10 +56,127 @@ const props = defineProps({
   }
 });
 
+const containerRef = ref<HTMLElement | null>(null);
 const videoElement = ref<HTMLVideoElement | null>(null);
+const canvasRef = ref<HTMLCanvasElement | null>(null);
 const isLoading = ref(true);
 const errorMsg = ref('');
 let peerConnection: RTCPeerConnection | null = null;
+let ws: WebSocket | null = null;
+let resizeObserver: ResizeObserver | null = null;
+
+// ———————————————————————————————————————————————————————————————— WebSocket AI 检测绘制
+const initWebSocket = () => {
+  if (!props.cameraId) return;
+
+  // 构造 WebSocket 地址
+  // 假设 API 基础路径是 /api/v1，则 WS 地址为 ws://host/api/v1/camera/{id}/ws
+  // 注意：如果项目使用了 vite proxy，这里可能需要特殊处理，或者直接用 location.host
+  // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  // const host = window.location.host;
+  // const wsUrl = `${protocol}//${host}/api/v1/camera/${props.cameraId}/ws`;
+  const wsUrl = `ws://localhost:9000/api/v1/camera/${props.cameraId}/ws`;
+
+  console.log('正在强制连接后端 AI WS:', wsUrl); // 加个日志方便确认
+
+  console.log('Connecting to AI WS:', wsUrl);
+
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log('AI WebSocket Connected');
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      drawDetections(payload);
+    } catch (e) {
+      console.error('WS Parse Error:', e);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log('AI WebSocket Closed');
+  };
+
+  ws.onerror = (err) => {
+    console.warn('AI WebSocket Error:', err);
+  };
+};
+
+const closeWebSocket = () => {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  // 清空画布
+  const canvas = canvasRef.value;
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+  }
+};
+
+const drawDetections = (payload: any) => {
+  const canvas = canvasRef.value;
+  const container = containerRef.value;
+  if (!canvas || !container) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // 确保画布尺寸与容器一致（视觉清晰度）
+  // 注意：这里我们在 WebSocket 消息到来时检查尺寸，也可以在 ResizeObserver 中做
+  // 但每一帧检查一次开销不大，且能保证实时对齐
+  if (canvas.width !== container.clientWidth || canvas.height !== container.clientHeight) {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+  }
+
+  // 清除上一帧
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const { width: origW, height: origH, data } = payload;
+  if (!data || !Array.isArray(data)) return;
+
+  // 计算缩放比例
+  const scaleX = canvas.width / origW;
+  const scaleY = canvas.height / origH;
+
+  ctx.lineWidth = 2;
+  ctx.font = '16px Arial';
+
+  data.forEach((item: any) => {
+    const [x1, y1, x2, y2] = item.box;
+    const label = item.label;
+    const conf = Math.round(item.conf * 100);
+
+    // 转换坐标
+    const drawX = x1 * scaleX;
+    const drawY = y1 * scaleY;
+    const drawW = (x2 - x1) * scaleX;
+    const drawH = (y2 - y1) * scaleY;
+
+    // 绘制框
+    ctx.strokeStyle = '#00ff00'; // 绿色框
+    ctx.strokeRect(drawX, drawY, drawW, drawH);
+
+    // 绘制背景标签
+    const text = `${label} ${conf}%`;
+    const textMetrics = ctx.measureText(text);
+    const textHeight = 20; // 近似高度
+
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+    ctx.fillRect(drawX, drawY - textHeight, textMetrics.width + 10, textHeight);
+
+    // 绘制文字
+    ctx.fillStyle = '#fff';
+    ctx.fillText(text, drawX + 5, drawY - 5);
+  });
+};
+
+// ———————————————————————————————————————————————————————————————— 视频播放逻辑
 
 // 动态加载 HLS.js
 const loadHlsFromCdn = async (): Promise<any> => {
@@ -90,6 +216,8 @@ const startPlay = async () => {
         video.src = props.rtspUrl;
         await video.play().catch(() => {});
         isLoading.value = false;
+        // 播放成功后启动 WS
+        initWebSocket();
         return;
       }
 
@@ -101,6 +229,8 @@ const startPlay = async () => {
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(() => {});
           isLoading.value = false;
+          // 播放成功后启动 WS
+          initWebSocket();
         });
         hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
           if (data.fatal) {
@@ -113,7 +243,6 @@ const startPlay = async () => {
     } catch (e) {
       console.error(e);
     }
-    // 如果HLS处理失败，继续往下尝试（虽然不太可能）
   }
 
   // 2. 处理普通 HTTP 视频 (mp4等)
@@ -121,36 +250,31 @@ const startPlay = async () => {
     if (videoElement.value) {
       videoElement.value.src = props.rtspUrl;
       isLoading.value = false;
+      initWebSocket();
     }
     return;
   }
 
   // 3. 处理 WebRTC (WHEP)
-  // 假设是 MediaMTX 或类似支持 WHEP 的服务
   try {
-    // 1. 创建 RTCPeerConnection
     peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
 
-    // 2. 监听远程流 (MediaMTX 发回来的视频)
     peerConnection.ontrack = (event) => {
       if (videoElement.value) {
         videoElement.value.srcObject = event.streams[0];
-        isLoading.value = false; // 画面来了，关闭加载动画
+        isLoading.value = false;
+        initWebSocket();
       }
     };
 
-    // 3. 添加 Transceiver
     peerConnection.addTransceiver('video', { direction: 'recvonly' });
     peerConnection.addTransceiver('audio', { direction: 'recvonly' });
 
-    // 4. 创建 Offer
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    // 5. 发送 Offer 给 MediaMTX (通过 HTTP POST)
-    // 优先尝试直接 POST，如果 404 则尝试追加 /whep (MediaMTX 规范)
     let postUrl = props.rtspUrl;
 
     let res = await fetch(postUrl, {
@@ -173,7 +297,6 @@ const startPlay = async () => {
       throw new Error(`连接服务器失败: ${res.status} (${postUrl})`);
     }
 
-    // 6. 拿到 Answer 并设置
     const answerSdp = await res.text();
     await peerConnection.setRemoteDescription(new RTCSessionDescription({
       type: 'answer',
@@ -197,18 +320,34 @@ const stopPlay = () => {
     videoElement.value.srcObject = null;
     videoElement.value.src = '';
   }
+  closeWebSocket();
 };
 
 // 生命周期
 onMounted(() => {
   startPlay();
+
+  // 监听容器大小变化，调整 Canvas
+  if (containerRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      const canvas = canvasRef.value;
+      const container = containerRef.value;
+      if (canvas && container) {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+      }
+    });
+    resizeObserver.observe(containerRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
   stopPlay();
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
 });
 
-// 监听 URL 变化
 watch(() => props.rtspUrl, () => {
   stopPlay();
   setTimeout(() => startPlay(), 500);
@@ -230,6 +369,16 @@ video {
   width: 100%;
   height: 100%;
   object-fit: contain; /* 保持比例 */
+}
+
+.overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 让鼠标事件穿透到视频控件 */
+  z-index: 5; /* 在视频之上，但在loading/error之下 */
 }
 
 .loading-overlay, .error-overlay {
