@@ -42,6 +42,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  modelName: {
+    type: String,
+    default: 'yolov8n'
+  },
   width: {
     type: [Number, String],
     default: '100%'
@@ -68,6 +72,10 @@ let resizeObserver: ResizeObserver | null = null;
 // ———————————————————————————————————————————————————————————————— WebSocket AI 检测绘制
 const initWebSocket = () => {
   if (!props.cameraId) return;
+  if (props.modelName === 'none') {
+    console.log('模型选择为none，不建立WS连接');
+    return;
+  }
 
   // 构造 WebSocket 地址
   // 假设 API 基础路径是 /api/v1，则 WS 地址为 ws://host/api/v1/camera/{id}/ws
@@ -75,7 +83,7 @@ const initWebSocket = () => {
   // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   // const host = window.location.host;
   // const wsUrl = `${protocol}//${host}/api/v1/camera/${props.cameraId}/ws`;
-  const wsUrl = `ws://localhost:9000/api/v1/camera/${props.cameraId}/ws`;
+  const wsUrl = `ws://localhost:9000/api/v1/camera/${props.cameraId}/ws?model_name=${props.modelName}`;
 
   console.log('正在强制连接后端 AI WS:', wsUrl); // 加个日志方便确认
 
@@ -119,6 +127,15 @@ const closeWebSocket = () => {
 };
 
 const emit = defineEmits(['person-detected']);
+
+// 监听模型变化，重新连接 WebSocket
+watch(() => props.modelName, (newVal) => {
+  console.log('Model changed to:', newVal);
+  closeWebSocket();
+  if (newVal !== 'none') {
+    initWebSocket();
+  }
+});
 
 const drawDetections = (payload: any) => {
   const canvas = canvasRef.value;

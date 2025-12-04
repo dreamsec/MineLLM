@@ -2,6 +2,7 @@
 import {ref, onActivated, nextTick, onMounted, onBeforeUnmount} from 'vue'
 // 图标资源
 import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图片作为底图
+import cameraIcon from '@/assets/img/camera.png';
 import {throttle} from "lodash";
 import svgPanZoom from 'svg-pan-zoom';
 import CameraItem from './component/CameraItem/index.vue';
@@ -611,16 +612,32 @@ const initPanZoom = () => {
     }
 
     // 强制设置SVG对齐方式为左上角，防止容器变宽导致地图居中而产生坐标偏移
-    try {
-      const embedEl = svgElement as HTMLEmbedElement;
-      // 某些浏览器或环境下可能需要稍作等待，但此处是在handleSVGLoad后调用的，应已就绪
-      const svgDoc = embedEl.getSVGDocument();
-      if (svgDoc && svgDoc.documentElement) {
-        svgDoc.documentElement.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+    const setSVGAlign = () => {
+      try {
+        const embedEl = svgElement as HTMLEmbedElement;
+        const svgDoc = embedEl.getSVGDocument();
+        if (svgDoc && svgDoc.documentElement) {
+          if (svgDoc.documentElement.getAttribute('preserveAspectRatio') !== 'xMinYMin meet') {
+             svgDoc.documentElement.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+             console.log('成功修正SVG对齐方式为左上角');
+             return true;
+          }
+          return true;
+        }
+      } catch (e) {
+        // 忽略错误
       }
-    } catch (e) {
-      console.warn('无法修改SVG对齐方式:', e);
-    }
+      return false;
+    };
+
+    setSVGAlign();
+
+    const alignInterval = setInterval(() => {
+      if (setSVGAlign()) {
+        clearInterval(alignInterval);
+      }
+    }, 100);
+    setTimeout(() => clearInterval(alignInterval), 3000);
 
     // 初始化 svg-pan-zoom
     svgTiger.value = svgPanZoom('#svg-trigger', {
@@ -749,7 +766,9 @@ onActivated(() => {
                 draggable="true"
                 title="拖到地图上以添加摄像头"
                 @dragstart="handleDragStartCamera"
-              >📹</div>
+              >
+                <img :src="cameraIcon" draggable="false" />
+              </div>
             </div>
             <div class="drag-hint">拖动右侧图标到地图，松开后弹出配置窗口</div>
           </div>
@@ -1344,17 +1363,20 @@ onActivated(() => {
     }
 
     .drag-camera-icon {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid #e8e8e8;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      background: transparent;
       cursor: grab;
       user-select: none;
+
+      img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+      }
     }
     .drag-camera-icon:active { cursor: grabbing; }
 

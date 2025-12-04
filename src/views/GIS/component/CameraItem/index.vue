@@ -249,10 +249,9 @@ const videoHeight = computed(() => {
 // 模型选项数据
 const modelOptions = ref([
   { value: 'none', label: '无检测' },
-  { value: 'fire', label: '火焰检测' },
-  { value: 'helmet', label: '安全帽检测' },
+  { value: 'door', label: '风门检测' },
+  { value: 'coal', label: '箕斗余煤' },
   { value: 'person', label: '人员检测' },
-  { value: 'smoke', label: '烟雾检测' }
 ]);
 
 // 当前选中的模型
@@ -325,6 +324,7 @@ const getModelLabel = (value: string): string => {
       <WebRTCVideo
         v-if="dialogVisible "
         :camera-id="props.item.id"
+        :model-name="selectedModel"
         :rtspUrl="streamUrl"
         :width="videoWidth"
         :height="videoHeight"
