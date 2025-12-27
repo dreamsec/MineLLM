@@ -40,7 +40,7 @@ export function getChatSessionMessages(sessionId: string) {
 
 /** 删除会话 */
 export function deleteChatSession(sessionId: string) {
-  return request({
+  return request<IApiResponseData<null>>({
     url: `/api/v1/chat/delete_session`,
     method: "delete",
     params:  { session_id: sessionId }

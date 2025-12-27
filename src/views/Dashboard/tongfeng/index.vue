@@ -258,9 +258,9 @@ onMounted(() => {
   initUnity()
 
   // 启动 1秒 轮询
-  // refreshTimer = window.setInterval(() => {
-  //   loadRealtimeAndSync()
-  // }, 1000)
+  refreshTimer = window.setInterval(() => {
+    loadRealtimeAndSync()
+  }, 1000)
 })
 
 onUnmounted(() => {

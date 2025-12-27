@@ -293,7 +293,7 @@ function initUnity() {
 onMounted(() => {
   loadRealtime()
   initUnity()
-  // refreshTimer = window.setInterval(loadRealtime, 1000)
+  refreshTimer = window.setInterval(loadRealtime, 1000)
 })
 
 onUnmounted(() => {

@@ -287,6 +287,23 @@ interface toolDetail {
   },
 }
 
+interface ToolStreamPayload {
+  tool_call_id: string
+  content: string
+  session_id: string
+  tool_calls?: [toolDetail]
+  parent_message_id?: number
+}
+
+const isToolStreamPayload = (value: unknown): value is ToolStreamPayload => {
+  if (!value || typeof value !== 'object') return false
+  return (
+    'tool_call_id' in value &&
+    'content' in value &&
+    'session_id' in value
+  )
+}
+
 // 定义类型接口
 interface Message {
   id: number,
@@ -470,7 +487,7 @@ const sendMessage = async () => {
   })
 
   if (currentSessionId.value === "-1"){
-    await newChatSessionId({model_name:"qwen-plus",title:"新对话"}).then((res) => {
+    await newChatSessionId({model_name:"qwen3:32b",title:"新对话"}).then((res) => {
       currentSessionId.value = res.data.session_id
     })
   }
@@ -513,6 +530,28 @@ const sendMessage = async () => {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+
+    const startThinking = () => {
+      startTime.value = Date.now()
+      currentTime.value = Date.now()
+      thinkingTimer = window.setInterval(() => {
+        currentTime.value = Date.now()
+      }, 100)
+      overThink.value = true
+      currentThinkStepIndex++
+      toggleSection(aiMessage.id, `thinking-${currentThinkStepIndex}`) // 默认展开思考部分
+    }
+
+    const finishThinking = (aiMessageIndex: number, sessionId?: string) => {
+      if (!overThink.value) return
+      const finalDuration = (Date.now() - startTime.value) / 1000
+      const finalTime = `${finalDuration.toFixed(1)}s`
+      // 仅更新计时，不追加内容
+      addMessagePart(aiMessageIndex, 'thinking', '', sessionId || currentSessionId.value || '', currentThinkStepIndex, finalTime)
+      clearInterval(thinkingTimer)
+      overThink.value = false
+    }
+
     while (true) {
       const {done, value} = await reader.read();
       if (done) break;
@@ -526,55 +565,62 @@ const sendMessage = async () => {
         if (line.trim() === '') continue;
         try {
           const result = JSON.parse(line);
-          const response = result.data;
-          console.log(response)
+          const payload = result.data;
+          console.log(payload)
           const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
           if (aiMessageIndex !== -1) {
-            if (response?.tool_call_id){
+            // 1) 工具调用：后端可能返回对象结构
+            if (isToolStreamPayload(payload)) {
               currentThinkStepIndex++
               // 处理工具响应
-              addMessagePart(aiMessageIndex, 'tool', response.content,response.session_id,currentThinkStepIndex, undefined, response.tool_calls,response.tool_call_id,response.parent_message_id)
+              addMessagePart(
+                aiMessageIndex,
+                'tool',
+                payload.content,
+                payload.session_id,
+                currentThinkStepIndex,
+                undefined,
+                payload.tool_calls,
+                payload.tool_call_id,
+                payload.parent_message_id,
+              )
               toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
             }
-            else if (response?.includes('<think>')) {
-              startTime.value = Date.now()
-              currentTime.value = Date.now()
-              thinkingTimer =  setInterval(() => {
-                currentTime.value = Date.now()
-              }, 100)
-              // 处理开始标签
-              overThink.value = true
-              currentThinkStepIndex++
-              const thinkingContent = response.replace('<think>', '').trim()
-              if (thinkingContent) {
-                addMessagePart(aiMessageIndex, 'thinking', thinkingContent,response.session_id, currentThinkStepIndex)
-              }
-              toggleSection(aiMessage.id, `thinking-${currentThinkStepIndex}`) // 默认展开新的思考部分
-            }
-            else if (response?.includes('</think>')) {
-              // 处理结束标签前的思考内容
-              if (overThink.value) {
-                const contentBeforeEndTag = response.split('</think>')[0].trim()
-                const finalDuration = (Date.now() - startTime.value) / 1000
-                const finalTime = `${finalDuration.toFixed(1)}s`
-                if (overThink.value) {
-                  addMessagePart(aiMessageIndex, 'thinking',contentBeforeEndTag,response.session_id,currentThinkStepIndex,finalTime)
-                }
-              }
-              clearInterval(thinkingTimer)
-              overThink.value = false
-              // 处理 </think> 后的回复内容
-              const contentAfterEndTag = response.split('</think>')[1]
-              if (contentAfterEndTag && contentAfterEndTag.trim()) {
-                addMessagePart(aiMessageIndex, 'response', contentAfterEndTag.trim())
-              }
-            }
-            else if (overThink.value) {
-              addMessagePart(aiMessageIndex, 'thinking', response,response.session_id,currentThinkStepIndex)
-            }
             else {
-              if (response !== '\n\n' && response !== null){
-                addMessagePart(aiMessageIndex, 'response', response)
+              // 2) 普通流式文本（字符串 token）
+              const text = String(payload ?? '')
+              if (!text || text === '\n\n') continue
+
+              // 兼容后端“每个 token 都包一层 <think>...</think>”的情况：都追加到同一个思考块
+              const isThinkWrapped = text.includes('<think>') && text.includes('</think>')
+              const isThinkStartOnly = text.includes('<think>') && !text.includes('</think>')
+              const isThinkEndOnly = !text.includes('<think>') && text.includes('</think>')
+
+              if (isThinkWrapped) {
+                if (!overThink.value) startThinking()
+                const inner = text.replace('<think>', '').replace('</think>', '')
+                if (inner) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentSessionId.value || '', currentThinkStepIndex)
+                }
+                // 这里不结束思考：直到收到非 think 文本再结束
+              } else if (isThinkStartOnly) {
+                if (!overThink.value) startThinking()
+                const inner = text.replace('<think>', '')
+                if (inner.trim()) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentSessionId.value || '', currentThinkStepIndex)
+                }
+              } else if (isThinkEndOnly) {
+                const inner = text.replace('</think>', '')
+                if (inner.trim()) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentSessionId.value || '', currentThinkStepIndex)
+                }
+                finishThinking(aiMessageIndex)
+              } else if (overThink.value) {
+                // 只要收到非 think 文本，就认为思考结束并进入最终回答流
+                finishThinking(aiMessageIndex)
+                addMessagePart(aiMessageIndex, 'response', text)
+              } else {
+                addMessagePart(aiMessageIndex, 'response', text)
               }
             }
           }
@@ -782,7 +828,8 @@ const scrollToBottom = () => {
   }
 }
 
-const formatTime = (timestamp: number) => {
+const formatTime = (timestamp?: number) => {
+  if (!timestamp) return ''
   const date = new Date(timestamp)
   return date.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
@@ -890,21 +937,22 @@ const loadSession = async (sessionId: string) => {
         // 确保正确识别用户和助手消息
         const messageType = msg.role === 'user' ? 'user' : 'assistant'
 
-        const messageData: any = {
-          id: index + 1,
+        const messageData: Message = {
+          id: Date.now() + index,
           type: messageType,
           content: msg.content || '',
-
-        }
-
-        // 对于助手消息，需要创建parts数组结构以便正确渲染
-        if (messageType === 'assistant') {
-          messageData.parts = [{
-            id: msg.id || `part-${index}`,
-            type: 'response' as const,
-            content: msg.content || '',
-            stepIndex: 0
-          }]
+          timestamp: Date.now(),
+          parts: messageType === 'assistant'
+            ? [
+              {
+                id: Date.now() + index + 1000,
+                session_id: msg.session_id,
+                type: 'response',
+                content: msg.content || '',
+                stepIndex: 0,
+              },
+            ]
+            : undefined,
         }
 
         messages.value.push(messageData)
@@ -929,7 +977,7 @@ const deleteSession = async (sessionId: string) => {
 
   try {
     // 调用后端API删除会话
-    const response = await deleteChatSession(sessionId)
+    const response: IApiResponseData<null> = await deleteChatSession(sessionId)
 
     if (response.code === 1) {
       // 后端删除成功后，更新本地状态
@@ -957,7 +1005,7 @@ const deleteSession = async (sessionId: string) => {
 // 生命周期
 onMounted(async () => {
   try {
-    const response = await getChatSessionList()
+    const response: IApiResponseData<ChatSession[]> = await getChatSessionList()
     if (response.code === 1 && response.data) {
       chatSessions.value = response.data
     }

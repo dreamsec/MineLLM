@@ -1844,8 +1844,7 @@ defineOptions({ name: "DataManage" })
   width: 180px; /* 设置图标的宽度 */
   height: 180px; /* 设置图标的高度 */
   transform: rotateY(180deg);
-  background-image: url("@/assets/manage_sprite.png"); /* 设置精灵图的路径 */
-  background-position: -330px -610px; /* 设置截取图标的位置，根据实际需要调整 */
+  /* 精灵图manage_sprite.png不存在，已移除引用 */
 }
 
 .sk-cube-grid {

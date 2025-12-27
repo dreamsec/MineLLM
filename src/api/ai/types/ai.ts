@@ -67,7 +67,7 @@ export interface GetChatSessionListResponseData {
   created_at: string
   updated_at: string
 }
-export type GetChatSessionListResponse = IApiResponseData<GetChatSessionListResponseData>
+export type GetChatSessionListResponse = IApiResponseData<GetChatSessionListResponseData[]>
 
 export type GetNewChatSessionIdResponseData = IApiResponseData<newChatSessionIdResponseData>
 
