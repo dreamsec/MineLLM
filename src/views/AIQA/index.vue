@@ -71,6 +71,12 @@
                 <!-- 修改AI消息显示部分 -->
                 <div v-else class="ai-message">
                   <div>
+                    <div v-if="message.modelLoading" class="model-loading">
+                      <span class="model-loading-text">模型加载中（首次可能需要 1–2 秒）</span>
+                      <div class="typing-indicator" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                      </div>
+                    </div>
                     <!-- 按照parts数组顺序直接渲染 -->
                     <div v-for="part in message.parts" :key="`part-${part.id}`" class="content-part">
                       <!-- 思考部分 -->
@@ -258,6 +264,14 @@
 import {nextTick, onMounted, reactive, ref, watch} from 'vue'
 import { ElMessage } from 'element-plus'
 import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession} from '@/api/ai/index.ts'
+import MarkdownIt from 'markdown-it'
+import DOMPurify from 'dompurify'
+
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+})
 
 
 // 定义组件名称
@@ -311,6 +325,7 @@ interface Message {
   content: string
   timestamp?: number
   loading?: boolean
+  modelLoading?: boolean
   liked?: boolean
   parts?: MessagePart[]
 }
@@ -499,11 +514,23 @@ const sendMessage = async () => {
     content: '',
     timestamp: new Date().getTime(),
     loading: true,
+    modelLoading: false,
     liked: false,
     parts: []
   }
   messages.value.push(aiMessage)
   isLoading.value = true
+
+  // 如果首包迟迟不来（例如首次加载模型到显卡），显示“模型加载中”提示
+  const warmupTimer = window.setTimeout(() => {
+    const idx = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+    if (idx !== -1) {
+      const msg = messages.value[idx]
+      if (msg.loading && (msg.parts?.length || 0) === 0) {
+        msg.modelLoading = true
+      }
+    }
+  }, 300)
 
   let currentThinkStepIndex = 0 // 用于跟踪思考步骤
 
@@ -569,6 +596,12 @@ const sendMessage = async () => {
           console.log(payload)
           const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
           if (aiMessageIndex !== -1) {
+            // 一旦开始收到任何流式数据，就认为“模型加载”阶段结束
+            clearTimeout(warmupTimer)
+            if (messages.value[aiMessageIndex].modelLoading) {
+              messages.value[aiMessageIndex].modelLoading = false
+            }
+
             // 1) 工具调用：后端可能返回对象结构
             if (isToolStreamPayload(payload)) {
               currentThinkStepIndex++
@@ -629,8 +662,15 @@ const sendMessage = async () => {
         }
       }
     }
+
+    // 流结束，结束加载状态
+    const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+    if (aiMessageIndex !== -1) {
+      messages.value[aiMessageIndex].loading = false
+      messages.value[aiMessageIndex].modelLoading = false
+    }
+    isLoading.value = false
   })
-  isLoading.value = false
 }
 
 
@@ -848,11 +888,8 @@ const formatDate = (timestamp: number) => {
 }
 
 const formatAIResponse = (content: string) => {
-  // 格式化AI回答，支持markdown样式
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br>')
+  // 将模型输出按 Markdown 渲染，并进行 XSS 清洗
+  return DOMPurify.sanitize(md.render(content || ''))
 }
 
 const copyMessage = async (content: string) => {
@@ -1275,6 +1312,80 @@ watch(inputText, () => {
   border: 1px solid #e6f7ff;
   color: #333333;
   line-height: 1.6;
+}
+
+.model-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.model-loading-text {
+  font-size: 13px;
+  color: #666666;
+}
+
+.ai-message :deep(h1),
+.ai-message :deep(h2),
+.ai-message :deep(h3),
+.ai-message :deep(h4),
+.ai-message :deep(h5),
+.ai-message :deep(h6) {
+  margin: 10px 0 6px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.ai-message :deep(h3) {
+  color: #1890ff;
+}
+
+.ai-message :deep(p) {
+  margin: 6px 0;
+}
+
+.ai-message :deep(ul),
+.ai-message :deep(ol) {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.ai-message :deep(li) {
+  margin: 4px 0;
+}
+
+.ai-message :deep(hr) {
+  border: none;
+  border-top: 1px solid #e8e8e8;
+  margin: 12px 0;
+}
+
+.ai-message :deep(code) {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.ai-message :deep(pre) {
+  margin: 8px 0;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.ai-message :deep(pre code) {
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .ai-message :deep(strong) {
