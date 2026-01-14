@@ -470,10 +470,29 @@ onUnmounted(() => {
   top: 80px;
   z-index: 10;
   overflow-y: auto;
-  scrollbar-width: none;
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE/旧 Edge */
+  scrollbar-color: transparent transparent; /* Firefox 进一步兜底 */
 }
-.left-panel::-webkit-scrollbar, .right-panel::-webkit-scrollbar {
-  display: none;
+.left-panel::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.left-panel::-webkit-scrollbar-thumb,
+.right-panel::-webkit-scrollbar-thumb,
+.left-panel::-webkit-scrollbar-track,
+.right-panel::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.left-panel::-webkit-scrollbar-button,
+.right-panel::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .left-panel {
