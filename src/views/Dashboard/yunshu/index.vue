@@ -28,7 +28,7 @@
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ item.display }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -47,7 +47,7 @@
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">📊</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ item.display }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -60,6 +60,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatDecimal } from '@/utils/format'
+
 defineOptions({
   name: 'DashboardIndex'
 })
@@ -96,38 +98,53 @@ declare global {
 // ----------------------------------------------------------------------
 const conveyorData = ref<ConveyorRealtimeData | null>(null)
 
+type Def<K extends keyof ConveyorRealtimeData> = {
+  key: K
+  label: string
+  unit?: string
+  format?: (v: ConveyorRealtimeData[K]) => string
+}
+
+const formatYN = (v: unknown) => (v == null ? '--' : Number(v) ? '是' : '否')
+const formatRunStop = (v: unknown) => (v == null ? '--' : Number(v) ? '运行' : '停止')
+const formatShield = (v: unknown) => (v == null ? '--' : Number(v) ? '已屏蔽' : '未屏蔽')
+const formatNum = (v: unknown) => (v == null ? '--' : String(formatDecimal(v as any)))
+
 const leftDefs = [
-  { key: 'belt_speed', label: '皮带速度', unit: 'm/s' },
-  { key: 'load_capacity', label: '输送能力', unit: 't/h' },
-  { key: 'motor_voltage', label: '电机电压', unit: 'V' },
-  { key: 'motor_current', label: '电机电流', unit: 'A' },
-  { key: 'motor_power', label: '电机功率', unit: 'kW' },
-  { key: 'motor_temperature', label: '电机温度', unit: '°C' },
-  { key: 'gearbox_temperature', label: '齿轮箱温度', unit: '°C' }
-] as const
+  { key: 'belt_speed', label: '皮带速度', unit: 'm/s', format: formatNum },
+  { key: 'belt_tension', label: '皮带张力', unit: '', format: formatNum },
+  { key: 'motor_current_1', label: '1#电机电流', unit: 'A', format: formatNum },
+  { key: 'motor_temp_1', label: '1#电机温度', unit: '°C', format: formatNum },
+  { key: 'motor_current_2', label: '2#电机电流', unit: 'A', format: formatNum },
+  { key: 'motor_temp_2', label: '2#电机温度', unit: '°C', format: formatNum },
+  { key: 'drum_temp', label: '滚筒温度', unit: '°C', format: formatNum },
+] satisfies readonly Def<keyof ConveyorRealtimeData>[]
 
 const rightDefs = [
-  { key: 'bearing_temperature', label: '轴承温度', unit: '°C' },
-  { key: 'belt_tension', label: '皮带张力', unit: 'kN' },
-  { key: 'vibration_value', label: '振动', unit: 'mm/s' },
-  { key: 'belt_deviation', label: '皮带跑偏', unit: 'mm' },
-  { key: 'running_hours', label: '累计运行', unit: 'h' },
-  { key: 'transport_direction', label: '运输方向', unit: '' }
-] as const
+  { key: 'motor_overheat_1', label: '1#电机超温', unit: '', format: formatYN },
+  { key: 'motor_overheat_2', label: '2#电机超温', unit: '', format: formatYN },
+  { key: 'motor_overheat_3', label: '3#电机超温', unit: '', format: formatYN },
+  { key: 'motor_running_2', label: '2#电机运行', unit: '', format: formatRunStop },
+  { key: 'drum_overheat', label: '滚筒超温', unit: '', format: formatYN },
+  { key: 'coal_piling', label: '堆煤保护', unit: '', format: formatYN },
+  { key: 'smoke_protection', label: '烟雾保护', unit: '', format: formatYN },
+  { key: 'emergency_stop', label: '急停', unit: '', format: formatYN },
+  { key: 'motor_overheat_shield_1', label: '1#超温屏蔽', unit: '', format: formatShield },
+] satisfies readonly Def<keyof ConveyorRealtimeData>[]
 
-const leftItems = computed(() => leftDefs.map(def => ({
-  ...def,
-  value: conveyorData.value?.[def.key as keyof ConveyorRealtimeData] == null
-    ? '--'
-    : String(conveyorData.value?.[def.key as keyof ConveyorRealtimeData])
-})))
+const leftItems = computed(() =>
+  leftDefs.map((def) => {
+    const v = conveyorData.value?.[def.key]
+    return { ...def, display: def.format ? def.format(v) : formatNum(v) }
+  })
+)
 
-const rightItems = computed(() => rightDefs.map(def => ({
-  ...def,
-  value: conveyorData.value?.[def.key as keyof ConveyorRealtimeData] == null
-    ? '--'
-    : String(conveyorData.value?.[def.key as keyof ConveyorRealtimeData])
-})))
+const rightItems = computed(() =>
+  rightDefs.map((def) => {
+    const v = conveyorData.value?.[def.key]
+    return { ...def, display: def.format ? def.format(v) : formatNum(v) }
+  })
+)
 
 // ----------------------------------------------------------------------
 // 3. Unity 交互逻辑
@@ -141,25 +158,31 @@ let refreshTimer: number | undefined
  * 格式：键值对字符串拼接，用 | 分隔不同区域，用 , 分隔同区域数据
  */
 function formatDataForUnity(data: ConveyorRealtimeData): string {
-  if (!data) return "";
+  if (!data) return ''
 
-  const values = [
-    data.belt_speed || 0,           // 0
-    data.load_capacity || 0,        // 1
-    data.motor_voltage || 0,        // 2
-    data.motor_current || 0,        // 3
-    data.motor_power || 0,          // 4
-    data.motor_temperature || 0,    // 5
-    data.gearbox_temperature || 0,  // 6
-    data.bearing_temperature || 0,  // 7
-    data.belt_tension || 0,         // 8
-    data.vibration_value || 0,      // 9
-    data.belt_deviation || 0,       // 10
-    data.running_hours || 0         // 11
-  ];
+  const n = (v: unknown) => (v == null ? 0 : Number(v))
 
-  return "皮带速度:" + values[0] + "m/s,输送能力:" + values[1] + "t/h,皮带张力:" + values[8] + "kN|电机电压:" + values[2] + "V,电机电流:" + values[3] + "A,电机功率:" + values[4] + "kW,电机温度:" + values[5] +
-  "°C,齿轮箱温度:" + values[6] + "°C,轴承温度:" + values[7] + "°C|";
+  // 分组：运行数据 | 电机数据 | 保护/状态
+  const runText =
+    `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}`
+
+  const motorText =
+    `1#电机:${n(data.motor_current_1)}A/${n(data.motor_temp_1)}°C,` +
+    `2#电机:${n(data.motor_current_2)}A/${n(data.motor_temp_2)}°C,` +
+    `3#电机:${n(data.motor_current_3)}A/${n(data.motor_temp_3)}°C,` +
+    `滚筒温度:${n(data.drum_temp)}°C`
+
+  const statusText =
+    `急停:${Number(data.emergency_stop) ? '是' : '否'},` +
+    `堆煤:${Number(data.coal_piling) ? '是' : '否'},` +
+    `烟雾:${Number(data.smoke_protection) ? '是' : '否'},` +
+    `滚筒超温:${Number(data.drum_overheat) ? '是' : '否'},` +
+    `1#超温:${Number(data.motor_overheat_1) ? '是' : '否'},` +
+    `2#超温:${Number(data.motor_overheat_2) ? '是' : '否'},` +
+    `3#超温:${Number(data.motor_overheat_3) ? '是' : '否'},` +
+    `2#运行:${Number(data.motor_running_2) ? '运行' : '停止'}`
+
+  return `${runText}|${motorText}|${statusText}|`
 }
 
 async function loadRealtime() {

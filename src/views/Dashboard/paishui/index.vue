@@ -29,7 +29,7 @@
             <div class="data-card" v-for="item in basicItems" :key="item.key">
               <div class="card-icon">⚡</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -46,7 +46,7 @@
             <div class="data-card" v-for="item in pumpItems" :key="item.key">
               <div class="card-icon">💧</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -63,7 +63,7 @@
             <div class="data-card" v-for="item in pressureItems" :key="item.key">
               <div class="card-icon">📊</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -83,7 +83,7 @@
             <div class="data-card" v-for="item in motorItems" :key="item.key">
               <div class="card-icon">🔧</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -100,7 +100,7 @@
             <div class="data-card" v-for="item in valveItems" :key="item.key">
               <div class="card-icon">🚪</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -117,7 +117,7 @@
             <div class="data-card" v-for="item in statusItems" :key="item.key">
               <div class="card-icon">✅</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -129,6 +129,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDecimal } from '@/utils/format'
 // 智慧楼宇可视化指挥中心
 defineOptions({
   name: 'DashboardIndex'
@@ -715,6 +716,13 @@ onUnmounted(() => {
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
   box-shadow: 0 8px 18px rgba(0,0,0,0.25), inset 0 0 30px rgba(0, 188, 212, 0.06);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.panel-section::-webkit-scrollbar,
+.panel-section1::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Webkit */
 }
 
 /* 数据卡片 */

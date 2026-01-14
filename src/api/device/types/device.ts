@@ -1,5 +1,3 @@
-
-
 // 设备数据接口 - 定义单个设备的完整数据结构
 // 该接口对应后端返回的单个设备数据格式
 export interface DeviceData {
@@ -325,7 +323,7 @@ export interface PumpRealtimeData extends BaseRealtimeData {
   motor_rear_axis_temp?: number;
   motor_front_axis_temp?: number;
   motor_overheat_fault?: number;
-  
+
   // 泵相关
   pump_fault?: number;
   pump_emergency_fault?: number;
@@ -335,13 +333,13 @@ export interface PumpRealtimeData extends BaseRealtimeData {
   pump_run_feedback?: number;
   pump_front_axis_temp?: number;
   pump_rear_axis_temp?: number;
-  
+
   // 压力相关
   pos_pressure?: number;
   neg_pressure?: number;
   pos_pressure_fault?: number;
   neg_pressure_fault?: number;
-  
+
   // 阀门相关
   main_valve_close_feedback?: number;
   main_valve_overload_fault?: number;
@@ -352,7 +350,7 @@ export interface PumpRealtimeData extends BaseRealtimeData {
   main_valve_open?: number;
   main_valve_open_fault?: number;
   jet_ball_valve_status?: number;
-  
+
   // 运行状态相关
   semi_auto_status?: number;
   runtime_reset_button?: number;
@@ -365,7 +363,7 @@ export interface PumpRealtimeData extends BaseRealtimeData {
   runtime?: number;
   local_status?: number;
   vibration_fault?: number;
-  
+
   // 为兼容旧版接口保留的字段（实际应使用上述新字段）
   positive_pressure?: number;
   negative_pressure?: number;
@@ -378,20 +376,38 @@ export interface PumpRealtimeData extends BaseRealtimeData {
 
 // 运输机实时数据接口
 export interface ConveyorRealtimeData extends BaseRealtimeData {
-  // 运输机特有数据字段
+  // ===================== 电机 1 =====================
+  motor_current_1?: number;
+  motor_temp_1?: number;
+  motor_overheat_1?: number;
+  motor_overheat_shield_1?: number;
+
+  // ===================== 电机 2 =====================
+  motor_current_2?: number;
+  motor_temp_2?: number;
+  motor_overheat_2?: number;
+  motor_running_2?: number;
+
+  // ===================== 电机 3 =====================
+  motor_current_3?: number;
+  motor_temp_3?: number;
+  motor_overheat_3?: number;
+
+  // ===================== 皮带与滚筒 =====================
   belt_speed?: number;
-  load_capacity?: number;
-  motor_current?: number;
-  motor_voltage?: number;
-  motor_power?: number;
-  motor_temperature?: number;
-  gearbox_temperature?: number;
-  bearing_temperature?: number;
   belt_tension?: number;
-  vibration_value?: number;
-  belt_deviation?: number;
-  running_hours?: number;
-  transport_direction?: string;
+  drum_temp?: number;
+  drum_overheat?: number;
+
+  // ===================== 保护与状态 =====================
+  coal_piling?: number;
+  smoke_protection?: number;
+  emergency_stop?: number;
+
+  // 旧字段已按后端新结构移除：
+  // load_capacity, motor_current, motor_voltage, motor_power, motor_temperature,
+  // gearbox_temperature, bearing_temperature, vibration_value, belt_deviation,
+  // running_hours, transport_direction
 }
 
 // 设备实时数据联合类型

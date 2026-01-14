@@ -28,7 +28,7 @@
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -47,7 +47,7 @@
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">🔧</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -66,6 +66,7 @@ defineOptions({
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { HoistRealtimeData } from '@/api/device/types/device'
+import { formatDecimal } from '@/utils/format'
 
 // ----------------------------------------------------------------------
 // 1. Unity 配置 (假设路径在 /NewElevator/Build/ 下)

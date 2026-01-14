@@ -29,7 +29,7 @@
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -48,7 +48,7 @@
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">🔧</div>
               <div class="card-content">
-                <div class="card-value">{{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -60,6 +60,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatDecimal } from '@/utils/format'
+
 defineOptions({
   name: 'DashboardIndex'
 })
