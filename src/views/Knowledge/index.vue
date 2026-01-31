@@ -701,10 +701,19 @@ const editDocument = (doc: Document) => {
   const deleteDocument = async (docId: number) => {
     // 删除文档改为真实调用后端 API
     if (confirm('确定要删除这个文档吗？')) {
-      const res = await deleteKbFileApi(docId)
-      if ((res as any).code === 1) {
-        await fetchDocuments()
-        await fetchCategories()
+      try {
+        const res = await deleteKbFileApi(docId)
+        if ((res as any).code === 1) {
+          await fetchDocuments()
+          await fetchCategories()
+        } else {
+          alert('删除文档失败: ' + ((res as any).message || '未知错误，可能是文件已在后端被删除'))
+          // 即便失败也尝试刷新一下，以防状态不一致
+          await fetchDocuments()
+        }
+      } catch (e) {
+        console.error('删除文档异常:', e)
+        alert('删除操作异常')
       }
     }
   }
@@ -715,16 +724,20 @@ const deleteCategory = async (categoryId: number) => {
   // 根据 id 找到名称，后端删除接口以 name 删除
   const cat = categories.value.find(c => c.id === categoryId)
   if (!cat) return
-  if (confirm('确定要删除这个分类吗？确保分类下没有文档。')) {
-    const res = await deleteKbContentTypeApi(cat.name)
-    if ((res as any).code === 1) {
-      await fetchCategories()
-      await fetchDocuments()
-    } else {
-      alert('删除分类失败，确保分类下没有文档。')
+  if (confirm('确定要删除这个分类[' + cat.name + ']吗？确保分类下没有文档。')) {
+    try {
+      const res = await deleteKbContentTypeApi(cat.name)
+      if ((res as any).code === 1) {
+        await fetchCategories()
+        await fetchDocuments()
+      } else {
+        alert('删除分类失败: ' + ((res as any).message || '请确保分类下没有文档'))
+      }
+    } catch (e) {
+      console.error('删除分类异常:', e)
+      alert('删除分类请求异常')
     }
   }
-
 }
 
 const saveDocument = async () => {
@@ -1522,6 +1535,12 @@ const closePreview = () => {
   font-size: 16px;
   font-weight: 600;
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .doc-summary {

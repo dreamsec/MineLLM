@@ -118,9 +118,17 @@ const offsetY = ref(0);
 
 const mainBoxRef = ref<HTMLElement | null>(null);
 
+// 拖拽状态
+const isDragging = ref(false);
+
 const handleDragStartCamera = (e: DragEvent) => {
+  isDragging.value = true;
   e.dataTransfer?.setData('text/plain', 'camera');
   if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
+};
+
+const handleDragEndCamera = () => {
+  isDragging.value = false;
 };
 
 const handleDragOver = (e: DragEvent) => {
@@ -130,6 +138,7 @@ const handleDragOver = (e: DragEvent) => {
 
 const handleDropCamera = async (e: DragEvent) => {
   e.preventDefault();
+  isDragging.value = false;
   const kind = e.dataTransfer?.getData('text/plain');
   if (kind !== 'camera') return;
   const rect = mainBoxRef.value?.getBoundingClientRect();
@@ -671,14 +680,14 @@ const initPanZoom = () => {
     // 设置初始缩放和偏移
     setTimeout(() => {
       if (svgTiger.value) {
-        // 设置初始缩放倍数为1.5倍
-        svgTiger.value.zoom(1.5);
+        // 设置初始缩放倍数
+        svgTiger.value.zoom(9.047156060638505);
         // 设置初始偏移
-        svgTiger.value.pan({x: 50, y: 120});
+        svgTiger.value.pan({x: -3508.437833819267, y: -2458.49846377436});
         // 更新状态变量
-        scale.value = 1.5;
-        offsetX.value = 50;
-        offsetY.value = 120;
+        scale.value = 9.047156060638505;
+        offsetX.value = -3508.437833819267;
+        offsetY.value = -2458.49846377436;
       }
     }, 100);
   } catch (error) {
@@ -766,6 +775,7 @@ onActivated(() => {
                 draggable="true"
                 title="拖到地图上以添加摄像头"
                 @dragstart="handleDragStartCamera"
+                @dragend="handleDragEndCamera"
               >
                 <img :src="cameraIcon" draggable="false" />
               </div>
@@ -834,7 +844,7 @@ onActivated(() => {
          @drop="handleDropCamera"
          :style="{left: leftSidebarCollapsed ? '60px' : '320px', right: '0px'}">
       <!-- SVG底图容器 -->
-      <div class="svg-container">
+      <div class="svg-container" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }">
         <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 100%;"
                :src="surfaceImage" @load="handleSVGLoad"/>
       </div>
