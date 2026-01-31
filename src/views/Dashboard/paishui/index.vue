@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
       <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-      <div class="header-title">排水机孪生平台</div>
+      <div class="header-title">排水泵孪生平台</div>
     </div>
 
     <!-- 主体内容区 -->
@@ -17,108 +17,22 @@
         ></canvas>
       </div>
 
-      <!-- 左侧数据区 - 透明浮层 -->
-      <div class="left-panel">
-        <!-- 基本运行数据 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">基本运行数据</span>
-            <div class="title-line"></div>
+      <!-- 下方三台泵实时数据卡片 -->
+      <div class="bottom-panel">
+        <div class="pump-card" v-for="code in PUMP_CODES" :key="code">
+          <div class="pump-card-header">
+            <div class="pump-card-title">{{ code }} 实时数据</div>
+            <div class="pump-card-time">采集时间：{{ formatTime(pumpByCode[code]?.collected_at) }}</div>
           </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in basicItems" :key="item.key">
-              <div class="card-icon">⚡</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 泵状态数据 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">泵状态数据</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in pumpItems" :key="item.key">
-              <div class="card-icon">💧</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 压力数据 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">压力数据</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in pressureItems" :key="item.key">
-              <div class="card-icon">📊</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧数据区 - 透明浮层 -->
-      <div class="right-panel">
-        <!-- 电机数据 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">电机数据</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in motorItems" :key="item.key">
-              <div class="card-icon">🔧</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 阀门状态 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">阀门状态</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in valveItems" :key="item.key">
-              <div class="card-icon">🚪</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 运行状态 -->
-        <div class="panel-section">
-          <div class="section-title">
-            <span class="title-text">运行状态</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in statusItems" :key="item.key">
-              <div class="card-icon">✅</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in pumpPairsByCode[code]" :key="`${code}-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span v-if="it.type === 'bool'" class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  {{ formatMetricInline(it) }}
+                </div>
               </div>
             </div>
           </div>
@@ -135,7 +49,7 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import {ref, onMounted, onUnmounted, computed} from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { PumpRealtimeData } from '@/api/device/types/device'
 
@@ -156,106 +70,126 @@ const UNITY_CONFIG = {
 const UNITY_TARGET_OBJ = "SendMessagepaishui" // Unity场景接收数据的物体名
 const UNITY_METHOD_NAME = "UpdateTMPTexts"   // Unity脚本接收数据的函数名
 
+type UnityInstance = {
+  SendMessage: (gameObject: string, methodName: string, message: string) => void
+}
+
 declare global {
   interface Window {
-    createUnityInstance: any;
+    createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
   }
 }
 
 // ----------------------------------------------------------------------
-// 2. 业务数据定义
+// 2. 业务数据定义（PS001~PS003）
 // ----------------------------------------------------------------------
-const pumpData = ref<PumpRealtimeData | null>(null)
+const PUMP_CODES = ['PS001', 'PS002', 'PS003'] as const
+type PumpCode = typeof PUMP_CODES[number]
 
-// 格式化状态值显示
-const formatStatusValue = (value: number | undefined | null): string => {
-  if (value === null || value === undefined) return '--'
-  return value === 1 ? '正常' : value === 0 ? '异常' : String(value)
+const pumpByCode = reactive<Record<PumpCode, PumpRealtimeData | null>>({
+  PS001: null,
+  PS002: null,
+  PS003: null
+})
+
+type MetricDef = { key: string; label: string; unit?: string; type?: 'number' | 'bool' | 'text' }
+type MetricItem = MetricDef & { value: unknown }
+
+function toBool(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase()
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on'
+  }
+  return false
 }
 
-// 基本运行数据
-const basicDefs = [
-  { key: 'voltage', label: '电压', unit: 'V' },
-  { key: 'current', label: '电流', unit: 'A' },
-  { key: 'current_fault', label: '电流故障', unit: '', formatter: formatStatusValue },
-  { key: 'pump_run_feedback', label: '泵运行反馈', unit: '', formatter: formatStatusValue }
-] as const
-
-// 泵状态数据
-const pumpDefs = [
-  { key: 'pump_fault', label: '泵故障', unit: '', formatter: formatStatusValue },
-  { key: 'pump_emergency_fault', label: '泵紧急故障', unit: '', formatter: formatStatusValue },
-  { key: 'pump_overheat_fault', label: '泵过热故障', unit: '', formatter: formatStatusValue },
-  { key: 'vibration_fault', label: '振动故障', unit: '', formatter: formatStatusValue }
-] as const
-
-// 压力数据
-const pressureDefs = [
-  { key: 'pos_pressure', label: '正压', unit: 'MPa' },
-  { key: 'neg_pressure', label: '负压', unit: 'MPa' },
-  { key: 'pos_pressure_fault', label: '正压故障', unit: '', formatter: formatStatusValue },
-  { key: 'neg_pressure_fault', label: '负压故障', unit: '', formatter: formatStatusValue }
-] as const
-
-// 电机数据
-const motorDefs = [
-  { key: 'motor_front_axis_temp', label: '电机前温度', unit: '°C' },
-  { key: 'motor_rear_axis_temp', label: '电机后温度', unit: '°C' },
-  { key: 'motor_phase_a_temp', label: 'A相温度', unit: '°C' },
-  { key: 'motor_phase_b_temp', label: 'B相温度', unit: '°C' },
-  { key: 'motor_phase_c_temp', label: 'C相温度', unit: '°C' },
-  { key: 'motor_vibration_1', label: '电机振动1', unit: 'mm/s' },
-  { key: 'motor_vibration_2', label: '电机振动2', unit: 'mm/s' },
-  { key: 'motor_overheat_fault', label: '电机过热故障', unit: '', formatter: formatStatusValue }
-] as const
-
-// 阀门状态
-const valveDefs = [
-  { key: 'main_valve_opening', label: '主阀开度', unit: '%' },
-  { key: 'main_valve_open', label: '主阀开启', unit: '', formatter: formatStatusValue },
-  { key: 'main_valve_closed', label: '主阀关闭', unit: '', formatter: formatStatusValue },
-  { key: 'main_valve_open_fault', label: '主阀开启故障', unit: '', formatter: formatStatusValue },
-  { key: 'main_valve_closed_fault', label: '主阀关闭故障', unit: '', formatter: formatStatusValue },
-  { key: 'main_valve_overload_fault', label: '主阀过载故障', unit: '', formatter: formatStatusValue },
-  { key: 'jet_ball_valve_status', label: '喷射球阀状态', unit: '', formatter: formatStatusValue }
-] as const
-
-// 运行状态
-const statusDefs = [
-  { key: 'runtime_hours', label: '累计运行', unit: 'h' },
-  { key: 'runtime_minutes', label: '运行分钟', unit: 'm' },
-  { key: 'total_fault', label: '总故障数', unit: '次' },
-  { key: 'device_stop_status', label: '设备停止状态', unit: '', formatter: formatStatusValue },
-  { key: 'maintenance_status', label: '维护状态', unit: '', formatter: formatStatusValue },
-  { key: 'remote_status', label: '远程状态', unit: '', formatter: formatStatusValue },
-  { key: 'local_status', label: '本地状态', unit: '', formatter: formatStatusValue },
-  { key: 'semi_auto_status', label: '半自动状态', unit: '', formatter: formatStatusValue }
-] as const
-
-// 计算各数据面板的展示数据
-const createItemsComputed = (defs: readonly { key: string; label: string; unit: string; formatter?: (value: any) => string }[]) => {
-  return computed(() => defs.map(def => ({
-    ...def,
-    value: pumpData.value?.[def.key as keyof PumpRealtimeData] == null
-      ? '--'
-      : def.formatter
-        ? def.formatter(pumpData.value[def.key as keyof PumpRealtimeData])
-        : String(pumpData.value[def.key as keyof PumpRealtimeData])
-  })))
+function formatTime(value?: string) {
+  if (!value) return '--'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleString()
 }
 
-const basicItems = createItemsComputed(basicDefs)
-const pumpItems = createItemsComputed(pumpDefs)
-const pressureItems = createItemsComputed(pressureDefs)
-const motorItems = createItemsComputed(motorDefs)
-const valveItems = createItemsComputed(valveDefs)
-const statusItems = createItemsComputed(statusDefs)
+function formatMetricInline(item: MetricItem) {
+  const v = item.value
+  if (v === null || v === undefined || v === '') return '--'
+  if (item.type === 'bool') return toBool(v) ? '是' : '否'
+  if (typeof v === 'number') {
+    const val = formatDecimal(v)
+    return item.unit ? `${val}${item.unit}` : val
+  }
+  return String(v)
+}
+
+function pairMetrics(items: MetricItem[]): MetricItem[][] {
+  const res: MetricItem[][] = []
+  for (let i = 0; i < items.length; i += 2) {
+    const a = items[i]
+    const b = items[i + 1]
+    res.push(b ? [a, b] : [a])
+  }
+  return res
+}
+
+const pumpMetricDefs = [
+  { key: 'current', label: '电流', unit: 'A', type: 'number' },
+  { key: 'pos_pressure', label: '正压', unit: 'MPa', type: 'number' },
+  { key: 'neg_pressure', label: '负压', unit: 'MPa', type: 'number' },
+  { key: 'total_run_time', label: '累计运行', type: 'text' },
+
+  { key: 'motor_temp_u', label: '电机U温', unit: '℃', type: 'number' },
+  { key: 'motor_temp_v', label: '电机V温', unit: '℃', type: 'number' },
+  { key: 'motor_temp_w', label: '电机W温', unit: '℃', type: 'number' },
+  { key: 'motor_front_axis_temp', label: '电机前轴温', unit: '℃', type: 'number' },
+  { key: 'motor_rear_axis_temp', label: '电机后轴温', unit: '℃', type: 'number' },
+  { key: 'pump_front_axis_temp', label: '水泵前轴温', unit: '℃', type: 'number' },
+  { key: 'pump_rear_axis_temp', label: '水泵后轴温', unit: '℃', type: 'number' },
+
+  { key: 'run_status', label: '运行状态', type: 'bool' },
+  { key: 'run_feedback', label: '运行反馈', type: 'bool' },
+  { key: 'standby_status', label: '备用', type: 'bool' },
+  { key: 'maintenance_status', label: '检修', type: 'bool' },
+  { key: 'forbid_start', label: '禁起', type: 'bool' },
+  { key: 'total_fault', label: '总故障', type: 'bool' }
+] as const satisfies readonly MetricDef[]
+
+function buildItems(code: PumpCode, defs: readonly MetricDef[]): MetricItem[] {
+  const data = pumpByCode[code]
+  const dict = (data ?? {}) as Record<string, unknown>
+  return defs.map(def => {
+    if (def.key === 'total_run_time') {
+      const h = dict.total_run_hours as number | undefined
+      const m = dict.total_run_minutes as number | undefined
+      const has = (h !== null && h !== undefined) || (m !== null && m !== undefined)
+      return { ...def, value: has ? `${h ?? 0}h${m ?? 0}m` : '--' }
+    }
+    return { ...def, value: dict[def.key] }
+  })
+}
+
+const pumpItemsByCode = computed(() => {
+  return {
+    PS001: buildItems('PS001', pumpMetricDefs),
+    PS002: buildItems('PS002', pumpMetricDefs),
+    PS003: buildItems('PS003', pumpMetricDefs)
+  } satisfies Record<PumpCode, MetricItem[]>
+})
+
+const pumpPairsByCode = computed(() => {
+  return {
+    PS001: pairMetrics(pumpItemsByCode.value.PS001),
+    PS002: pairMetrics(pumpItemsByCode.value.PS002),
+    PS003: pairMetrics(pumpItemsByCode.value.PS003)
+  } satisfies Record<PumpCode, MetricItem[][]>
+})
 
 // ----------------------------------------------------------------------
 // 3. Unity 交互逻辑
 // ----------------------------------------------------------------------
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let unityInstance: any = null
+let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
 /**
@@ -309,14 +243,20 @@ function formatDataForUnity(data: PumpRealtimeData): string {
 
 async function loadRealtime() {
   try {
-    const res = await getRealtimeDataApi('PS001')
-    const data = res.data as PumpRealtimeData
-    pumpData.value = data
+    const results = await Promise.allSettled(PUMP_CODES.map(code => getRealtimeDataApi(code)))
+    results.forEach((r, idx) => {
+      const code = PUMP_CODES[idx]
+      if (r.status === 'fulfilled') {
+        pumpByCode[code] = r.value.data as PumpRealtimeData
+      } else {
+        console.error(`获取数据失败(${code})`, r.reason)
+      }
+    })
 
-    // 同步数据到 Unity
-    if (unityInstance) {
+    // 同步数据到 Unity：默认同步 PS001，避免破坏现有 Unity 逻辑
+    const data = pumpByCode.PS001
+    if (unityInstance && data) {
       const msg = formatDataForUnity(data)
-      // console.log("Sending to Unity:", msg)
       unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
     }
   } catch (e) {
@@ -325,7 +265,8 @@ async function loadRealtime() {
 }
 
 function initUnity() {
-  if (!canvasRef.value) return
+  const canvas = canvasRef.value
+  if (!canvas) return
 
   const script = document.createElement("script")
   script.src = UNITY_CONFIG.loaderUrl
@@ -342,17 +283,18 @@ function initUnity() {
     }
 
     if (window.createUnityInstance) {
-      window.createUnityInstance(canvasRef.value, config)
-        .then((instance: any) => {
+      window.createUnityInstance(canvas, config)
+        .then((instance) => {
           console.log("Unity Loaded Successfully")
           unityInstance = instance
           // 加载完成后立即发送一次数据
-          if (pumpData.value) {
-            const msg = formatDataForUnity(pumpData.value)
-            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+          const data = pumpByCode.PS001
+          if (data) {
+            const msg = formatDataForUnity(data)
+            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
           }
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error("Unity Load Error:", err)
         })
     }
@@ -716,6 +658,134 @@ onUnmounted(() => {
   height: 100%;
   z-index: 1; /* 确保3D模型在底层 */
   overflow: hidden;
+}
+
+/* 底部三台泵卡片 */
+.bottom-panel {
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  bottom: 16px;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  pointer-events: none; /* 不挡 3D 交互；卡片内需要交互可再开启 */
+}
+
+.pump-card {
+  pointer-events: auto;
+  padding: 12px 12px 10px;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.10), rgba(0, 188, 212, 0.05));
+  box-shadow: 0 10px 22px rgba(0,0,0,0.22), inset 0 0 30px rgba(0, 188, 212, 0.06);
+  backdrop-filter: blur(10px);
+  min-width: 0;
+}
+
+.pump-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pump-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(30, 144, 255, 0.35);
+  white-space: nowrap;
+}
+
+.pump-card-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 28px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.18);
+}
+
+.kv-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+.kv-value {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 62%;
+  justify-content: flex-end;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dot.on {
+  background: #49f343;
+  box-shadow: 0 0 10px rgba(73, 243, 67, 0.55);
+}
+
+.dot.off {
+  background: #ff3d00;
+  box-shadow: 0 0 10px rgba(255, 61, 0, 0.45);
+}
+
+@media (max-width: 1400px) {
+  .bottom-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 820px) {
+  .kv-item { height: 26px; padding: 4px 9px; }
+  .kv-label { font-size: 9px; }
+  .kv-value { font-size: 10px; }
+  .pump-card-title { font-size: 15px; }
 }
 
 /* 面板区域 */

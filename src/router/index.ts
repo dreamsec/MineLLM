@@ -92,7 +92,7 @@ export const constantRoutes: RouteRecordRaw[] = [
             name: 'Paishui',
             component: () => import('../views/Dashboard/paishui/index.vue'),
             meta: {
-              title: '排水机',
+              title: '排水泵',
               hideInMenu: true,
             },
           },
@@ -101,7 +101,7 @@ export const constantRoutes: RouteRecordRaw[] = [
             name: 'Yunshu',
             component: () => import('../views/Dashboard/yunshu/index.vue'),
             meta: {
-              title: '运输机',
+              title: '皮带机',
               hideInMenu: true,
             },
           },

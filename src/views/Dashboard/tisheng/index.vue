@@ -28,7 +28,9 @@
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
               <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value" :class="item.bool === null ? '' : item.bool ? 'value-true' : 'value-false'">
+                  {{ item.display }}<span v-if="item.unit && item.bool === null"> {{ item.unit }}</span>
+                </div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -47,7 +49,9 @@
             <div class="data-card" v-for="item in rightItems" :key="item.key">
               <div class="card-icon">🔧</div>
               <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
+                <div class="card-value" :class="item.bool === null ? '' : item.bool ? 'value-true' : 'value-false'">
+                  {{ item.display }}<span v-if="item.unit && item.bool === null"> {{ item.unit }}</span>
+                </div>
                 <div class="card-label">{{ item.label }}</div>
               </div>
             </div>
@@ -87,8 +91,12 @@ const UNITY_METHOD_NAME = "UpdateelevatorTexts"     // ★请确认Unity脚本�
 
 declare global {
   interface Window {
-    createUnityInstance: any;
+    createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
   }
+}
+
+type UnityInstance = {
+  SendMessage: (targetObject: string, methodName: string, param: string) => void;
 }
 
 // ----------------------------------------------------------------------
@@ -96,60 +104,129 @@ declare global {
 // ----------------------------------------------------------------------
 const hoistData = ref<HoistRealtimeData | null>(null)
 
+type BoolLike = boolean | number | string | null | undefined
+function toBool(value: BoolLike): boolean | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase()
+    if (v === '') return null
+    if (v === '0' || v === 'false' || v === 'off' || v === 'no') return false
+    if (v === '1' || v === 'true' || v === 'on' || v === 'yes') return true
+  }
+  return null
+}
+
+const booleanKeys = new Set<keyof HoistRealtimeData>([
+  // 速度状态
+  'speed_status_1', 'speed_status_2', 'speed_status_3', 'speed_status_4', 'deceleration',
+  // 位置开关
+  'main_skip_overwind', 'main_skip_stop_point', 'main_skip_deceleration_point', 'main_skip_monitor_2m', 'main_skip_calibration_point',
+  'vice_skip_overwind', 'vice_skip_stop_point', 'vice_skip_deceleration_point', 'vice_skip_monitor_2m', 'vice_skip_calibration_point',
+  // 运行模式
+  'auto_run', 'semi_auto_run', 'manual_run', 'simple_run', 'repair_mode',
+  // 操作状态
+  'lift_person', 'lift_material', 'heavy_load_down', 'handle_zero_position',
+  // 设备状态
+  'inverter_enable', 'inverter_running', 'main_fan_run', 'external_water_cooling_run', 'main_transformer_merge', 'excitation_merge',
+  // 故障与报警
+  'emergency_stop', 'fault_stop', 'fault_alarm', 'primary_hoist_fault', 'start_condition_insufficient',
+  // 信号位
+  'signal_0', 'signal_2', 'signal_3', 'signal_4', 'signal_5'
+])
+
+function formatDisplayValue(key: keyof HoistRealtimeData, value: unknown): { display: string; bool: boolean | null } {
+  if (value === null || value === undefined) return { display: '--', bool: null }
+  if (booleanKeys.has(key)) {
+    const b = toBool(value as BoolLike)
+    if (b === null) return { display: '--', bool: null }
+    return { display: b ? '是' : '否', bool: b }
+  }
+  return { display: formatDecimal(value as number | string), bool: null }
+}
+
 const leftDefs = [
   { key: 'actual_speed', label: '实际速度', unit: 'm/s' },
-  { key: 'speed_setpoint', label: '设定速度', unit: 'm/s' },
+  { key: 'speed_setpoint', label: '速度给定', unit: 'm/s' },
   { key: 'guide_wheel_speed', label: '导向轮速度', unit: 'm/s' },
-  { key: 'deceleration', label: '减速度', unit: '' },
-  { key: 'speed_diff', label: '速度差', unit: '' },
+  { key: 'speed_diff', label: '速度差', unit: 'm/s' },
   { key: 'travel_diff', label: '行程差', unit: 'm' },
+  { key: 'main_skip_depth', label: '主箕斗深度', unit: 'm' },
+  { key: 'vice_skip_depth', label: '副箕斗深度', unit: 'm' },
   { key: 'load_weight', label: '载重', unit: 't' },
   { key: 'motor_current', label: '电机电流', unit: 'A' },
-  { key: 'brake_air_pressure', label: '制动气压', unit: 'MPa' },
-  { key: 'brake_oil_pressure', label: '制动油压', unit: 'MPa' },
-  { key: 'brake_oil_temp', label: '制动油温', unit: '°C' },
+  { key: 'excitation_current', label: '励磁电流', unit: 'A' },
+  { key: 'brake_oil_pressure', label: '闸控油压', unit: 'MPa' },
+  { key: 'brake_oil_temp', label: '闸控油温', unit: '°C' },
   { key: 'wellhead_temp', label: '井口温度', unit: '°C' },
   { key: 'motor_temp_max', label: '电机最高温度', unit: '°C' },
   { key: 'sheave_temp_max', label: '天轮最高温度', unit: '°C' },
   { key: 'main_shaft_temp_max', label: '主轴最高温度', unit: '°C' }
 ] as const
 const rightDefs = [
+  // 速度(数值)
   { key: 'plc_speed_1', label: 'PLC速度1', unit: 'm/s' },
   { key: 'plc_speed_2', label: 'PLC速度2', unit: 'm/s' },
-  { key: 'speed_1', label: '速度1', unit: 'm/s' },
-  { key: 'speed_2', label: '速度2', unit: 'm/s' },
-  { key: 'speed_3', label: '速度3', unit: 'm/s' },
-  { key: 'speed_4', label: '速度4', unit: 'm/s' },
-  { key: 'vice_skip_depth', label: '副罐笼深度', unit: 'm' },
-  { key: 'vice_skip_overwind', label: '副罐笼过卷', unit: 'm' },
-  { key: 'vice_skip_deceleration_point', label: '副罐笼减速点', unit: 'm' },
-  { key: 'vice_skip_stop_point', label: '副罐笼停车点', unit: 'm' },
-  { key: 'vice_skip_monitor_2m', label: '副罐笼监控2m', unit: 'm' },
-  { key: 'main_skip_depth', label: '主罐笼深度', unit: 'm' },
-  { key: 'main_skip_overwind', label: '主罐笼过卷', unit: 'm' },
-  { key: 'main_skip_stop_point', label: '主罐笼停车点', unit: 'm' },
-  { key: 'main_skip_deceleration_point', label: '主罐笼减速点', unit: 'm' },
-  { key: 'main_skip_monitor_2m', label: '主罐笼监控2m', unit: 'm' },
-  { key: 'auto_run', label: '自动运行', unit: '' },
+  { key: 'handle_set_speed_check', label: '手柄给定判速', unit: 'm/s' },
+
+  // 速度(状态)
+  { key: 'speed_status_1', label: '速度状态1', unit: '' },
+  { key: 'speed_status_2', label: '速度状态2', unit: '' },
+  { key: 'speed_status_3', label: '速度状态3', unit: '' },
+  { key: 'speed_status_4', label: '速度状态4', unit: '' },
+  { key: 'deceleration', label: '减速', unit: '' },
+
+  // 位置开关量(主箕斗)
+  { key: 'main_skip_overwind', label: '主箕斗过卷', unit: '' },
+  { key: 'main_skip_stop_point', label: '主箕斗停点', unit: '' },
+  { key: 'main_skip_deceleration_point', label: '主箕斗减速点', unit: '' },
+  { key: 'main_skip_monitor_2m', label: '主箕斗2M监视点', unit: '' },
+  { key: 'main_skip_calibration_point', label: '主箕斗校正点', unit: '' },
+
+  // 位置开关量(副箕斗)
+  { key: 'vice_skip_overwind', label: '副箕斗过卷', unit: '' },
+  { key: 'vice_skip_stop_point', label: '副箕斗停点', unit: '' },
+  { key: 'vice_skip_deceleration_point', label: '副箕斗减速点', unit: '' },
+  { key: 'vice_skip_monitor_2m', label: '副箕斗2M监视点', unit: '' },
+  { key: 'vice_skip_calibration_point', label: '副箕斗校正点', unit: '' },
+
+  // 运行模式
+  { key: 'auto_run', label: '全自动运行', unit: '' },
   { key: 'semi_auto_run', label: '半自动运行', unit: '' },
-  { key: 'simple_run', label: '简易运行', unit: '' },
   { key: 'manual_run', label: '手动运行', unit: '' },
-  { key: 'repair_mode', label: '检修模式', unit: '' },
-  { key: 'emergency_stop', label: '急停', unit: '' },
-  { key: 'fault_stop', label: '故障停机', unit: '' },
-  { key: 'fault_alarm', label: '故障报警', unit: '' },
-  { key: 'start_condition_insufficient', label: '启动条件不足', unit: '' },
-  { key: 'lift_person', label: '提升人员', unit: '' },
-  { key: 'lift_material', label: '提升物料', unit: '' },
+  { key: 'simple_run', label: '简易运行', unit: '' },
+  { key: 'repair_mode', label: '检修', unit: '' },
+
+  // 操作状态
+  { key: 'lift_person', label: '提人', unit: '' },
+  { key: 'lift_material', label: '提物', unit: '' },
+  { key: 'heavy_load_down', label: '重载下放', unit: '' },
   { key: 'handle_zero_position', label: '手柄零位', unit: '' },
-  { key: 'handle_set_speed_check', label: '手柄设定速度校验', unit: '' },
-  { key: 'excitation_merge', label: '励磁合闸', unit: '' },
-  { key: 'excitation_current', label: '励磁电流', unit: 'A' },
+
+  // 设备状态
+  { key: 'inverter_enable', label: '变频允许', unit: '' },
+  { key: 'inverter_running', label: '变频运行', unit: '' },
+  { key: 'main_fan_run', label: '主风机运行', unit: '' },
+  { key: 'external_water_cooling_run', label: '外水冷运行', unit: '' },
+  { key: 'main_transformer_merge', label: '主变合', unit: '' },
+  { key: 'excitation_merge', label: '励磁变合', unit: '' },
+
+  // 故障与报警
+  { key: 'emergency_stop', label: '紧急停车', unit: '' },
+  { key: 'fault_stop', label: '事故停车', unit: '' },
+  { key: 'fault_alarm', label: '事故报警', unit: '' },
+  { key: 'primary_hoist_fault', label: '一次提升故障', unit: '' },
+  { key: 'start_condition_insufficient', label: '开车条件不足', unit: '' },
+
+  // 信号位
   { key: 'signal_0', label: '信号0', unit: '' },
   { key: 'signal_2', label: '信号2', unit: '' },
   { key: 'signal_3', label: '信号3', unit: '' },
   { key: 'signal_4', label: '信号4', unit: '' },
   { key: 'signal_5', label: '信号5', unit: '' },
+
+  // 温度明细
   { key: 'motor_temp_1', label: '电机温度1', unit: '°C' },
   { key: 'motor_temp_2', label: '电机温度2', unit: '°C' },
   { key: 'motor_temp_3', label: '电机温度3', unit: '°C' },
@@ -175,25 +252,30 @@ const rightDefs = [
   { key: 'main_shaft_temp_3', label: '主轴温度3', unit: '°C' },
   { key: 'main_shaft_temp_4', label: '主轴温度4', unit: '°C' }
 ] as const
-const leftItems = computed(() => leftDefs.map(def => ({
-  ...def,
-  value: hoistData.value?.[def.key as keyof HoistRealtimeData] == null
-    ? '--'
-    : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
-})))
+const leftItems = computed(() => leftDefs.map(def => {
+  let raw = hoistData.value?.[def.key as keyof HoistRealtimeData]
+  // 特殊处理：井口温度需除以10
+  if (def.key === 'wellhead_temp' && raw != null) {
+    const num = Number(raw)
+    if (!isNaN(num)) {
+      raw = num / 10
+    }
+  }
+  const { display, bool } = formatDisplayValue(def.key as keyof HoistRealtimeData, raw)
+  return { ...def, display, bool }
+}))
 
-const rightItems = computed(() => rightDefs.map(def => ({
-  ...def,
-  value: hoistData.value?.[def.key as keyof HoistRealtimeData] == null
-    ? '--'
-    : String(hoistData.value?.[def.key as keyof HoistRealtimeData])
-})))
+const rightItems = computed(() => rightDefs.map(def => {
+  const raw = hoistData.value?.[def.key as keyof HoistRealtimeData]
+  const { display, bool } = formatDisplayValue(def.key as keyof HoistRealtimeData, raw)
+  return { ...def, display, bool }
+}))
 
 // ----------------------------------------------------------------------
 // 3. Unity 交互逻辑
 // ----------------------------------------------------------------------
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let unityInstance: any = null
+let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
 /**
@@ -202,6 +284,8 @@ let refreshTimer: number | undefined
  */
 function formatDataForUnity(data: HoistRealtimeData): string {
   if (!data) return "";
+
+  const bool01 = (v: BoolLike) => (toBool(v) ? 1 : 0)
 
   const values = [
     // --- 电机部分 (Motor) ---
@@ -221,9 +305,9 @@ function formatDataForUnity(data: HoistRealtimeData): string {
     data.load_weight || 0,          // 9: 载重
 
     // 状态位 (0或1)
-    data.auto_run ? 1 : 0,          // 10: 自动
-    data.fault_alarm ? 1 : 0,       // 11: 报警
-    data.manual_run ? 1 : 0         // 12: 手动
+    bool01(data.auto_run),          // 10: 自动
+    bool01(data.fault_alarm),       // 11: 报警
+    bool01(data.manual_run)         // 12: 手动
   ];
 
   // 拼接字符串：电机 | 天轮 | 笼罐
@@ -248,7 +332,8 @@ async function loadRealtime() {
 }
 
 function initUnity() {
-  if (!canvasRef.value) return
+  const canvas = canvasRef.value
+  if (!canvas) return
 
   const script = document.createElement("script")
   script.src = UNITY_CONFIG.loaderUrl
@@ -265,17 +350,17 @@ function initUnity() {
     }
 
     if (window.createUnityInstance) {
-      window.createUnityInstance(canvasRef.value, config)
-        .then((instance: any) => {
+      window.createUnityInstance(canvas, config)
+        .then((instance: UnityInstance) => {
           console.log("Unity Loaded Successfully")
           unityInstance = instance
           // 加载完成后立即发送一次数据
           if (hoistData.value) {
             const msg = formatDataForUnity(hoistData.value)
-            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+            instance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
           }
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error("Unity Load Error:", err)
         })
     }
@@ -613,6 +698,16 @@ article::-webkit-scrollbar {
   overflow-y: visible; /* 自身不滚动，交给父容器滚动 */
   overflow-x: hidden; /* 隐藏水平滚动条 */
   align-content: start; /* 卡片从顶部开始排列 */
+}
+
+.card-value.value-true {
+  color: #22c55e;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+}
+
+.card-value.value-false {
+  color: #ef4444;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
 }
 
 :deep(.right-panel .data-cards) {

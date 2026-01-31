@@ -18,39 +18,52 @@
         ></canvas>
       </div>
 
-      <!-- 左侧数据区 - 透明浮层 -->
-      <div class="left-panel">
-        <div class="panel-section1">
-          <div class="section-title1">
-            <span class="title-text">压风机实时数据</span>
-            <div class="title-line"></div>
-          </div>
-          <!-- 数据卡片组 -->
-          <div class="data-cards">
-            <div class="data-card" v-for="item in leftItems" :key="item.key">
-              <div class="card-icon">⚙️</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+      <!-- 底部横向 7 台压风机卡片（从左到右） -->
+      <div class="bottom-panel">
+        <div class="bottom-panel-title">压风机系统（点击卡片切换 3D 显示设备）</div>
+        <div class="unit-row">
+          <div
+            v-for="unit in units"
+            :key="unit.code"
+            class="unit-card"
+            :class="{ active: unit.code === activeUnityCode }"
+            @click="activeUnityCode = unit.code"
+          >
+            <div class="unit-card-header">
+              <div class="unit-code">{{ unit.code }}</div>
+              <div class="unit-status-dots">
+                <span class="dot" :class="dotClass(unit.data?.comm_status)"></span>
+                <span class="dot" :class="dotClass(unit.data?.running_feedback)"></span>
+                <span class="dot" :class="dotClass(unit.data?.fault_exist, true)"></span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- 右侧数据区 - 透明浮层 -->
-      <div class="right-panel">
-        <div class="panel-section1">
-          <div class="section-title1">
-            <span class="title-text">运行参数</span>
-            <div class="title-line"></div>
-          </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in rightItems" :key="item.key">
-              <div class="card-icon">🔧</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+            <div class="unit-subheader">
+              <span class="subitem">通讯</span>
+              <span class="subitem">运行</span>
+              <span class="subitem">故障</span>
+              <span class="unit-time">{{ formatCollectedAt(unit.data?.collected_at) }}</span>
+            </div>
+
+            <div class="unit-scroll">
+              <div class="unit-groups">
+                <div v-for="group in fieldGroups" :key="group.title" class="group-block">
+                  <div class="group-title">{{ group.title }}</div>
+                  <div class="field-grid">
+                    <div
+                      v-for="field in group.fields"
+                      :key="String(field.key)"
+                      class="field-row"
+                      :class="fieldRowClass(field)"
+                    >
+                      <div class="field-label">{{ field.label }}</div>
+                      <div class="field-value" :class="fieldValueClass(unit.data, field)">
+                        {{ formatFieldValue(unit.data, field) }}
+                        <span v-if="field.unit && field.kind !== 'boolean'"> {{ field.unit }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -68,7 +81,7 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { CompressorRealtimeData } from '@/api/device/types/device'
 
@@ -91,58 +104,194 @@ const UNITY_CONFIG = {
 const UNITY_TARGET_OBJ = "SendMessageYaFeng" // Unity场景中挂载脚本的物体名称
 const UNITY_METHOD_NAME = "UpdateTMPTexts"   // Unity脚本中接收字符串的 public 方法名
 
+type UnityInstance = {
+  SendMessage: (gameObject: string, methodName: string, message: string) => void
+}
+
 declare global {
   interface Window {
-    createUnityInstance: any;
+    createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
   }
 }
 
 // ----------------------------------------------------------------------
 // 2. 业务数据定义
 // ----------------------------------------------------------------------
-const compressorData = ref<CompressorRealtimeData | null>(null)
+type BooleanLike = boolean | number | null | undefined
 
-const leftDefs = [
-  { key: 'exhaust_pressure', label: '排气压力', unit: 'MPa' },
-  { key: 'voltage', label: '电压', unit: 'V' },
-  { key: 'current', label: '电流', unit: 'A' },
-  { key: 'unit_exhaust_temp', label: '机组排气温度', unit: '°C' },
-  { key: 'main_exhaust_temp', label: '主排气温度', unit: '°C' },
-  { key: 'running_temp', label: '运行温度', unit: '°C' },
-  { key: 'coolant_temp', label: '冷却液温度', unit: '°C' },
-  { key: 'intake_vacuum', label: '进气真空', unit: 'kPa' },
-  { key: 'separation_pressure', label: '分离压力', unit: 'MPa' },
-  { key: 'separation_diff_pressure', label: '分离差压', unit: 'MPa' }
-] as const
+type FieldDef = {
+  key: keyof CompressorRealtimeData
+  label: string
+  unit?: string
+  kind?: 'number' | 'boolean'
+  fullRow?: boolean
+}
 
-const rightDefs = [
-  { key: 'standby_status', label: '待机状态', unit: '' },
-  { key: 'current_run_time', label: '当前运行时长', unit: 'h' },
-  { key: 'motor_vibration', label: '电机振动', unit: 'mm/s' },
-  { key: 'main_vibration', label: '主振动', unit: 'mm/s' },
-  { key: 'analog_alarm_airbag_temp', label: '模拟报警气囊温度', unit: '°C' },
-  { key: 'analog_current_airbag_temp', label: '模拟电流气囊温度', unit: '°C' }
-] as const
+type FieldGroupDef = {
+  title: string
+  open?: boolean
+  fields: FieldDef[]
+}
 
-const leftItems = computed(() => leftDefs.map(def => ({
-  ...def,
-  value: compressorData.value?.[def.key as keyof CompressorRealtimeData] == null
-    ? '--'
-    : String(compressorData.value?.[def.key as keyof CompressorRealtimeData])
-})))
+const EQUIPMENT_CODES = Array.from({ length: 7 }, (_, i) => `YF${String(i + 1).padStart(3, '0')}`)
+const activeUnityCode = ref<string>(EQUIPMENT_CODES[0])
 
-const rightItems = computed(() => rightDefs.map(def => ({
-  ...def,
-  value: compressorData.value?.[def.key as keyof CompressorRealtimeData] == null
-    ? '--'
-    : String(compressorData.value?.[def.key as keyof CompressorRealtimeData])
-})))
+const unitState = ref<Record<string, { data: CompressorRealtimeData | null; error: string | null }>>(
+  Object.fromEntries(EQUIPMENT_CODES.map(code => [code, { data: null, error: null }]))
+)
+
+const units = computed(() => EQUIPMENT_CODES.map(code => ({ code, ...unitState.value[code] })))
+
+const fieldGroups: FieldGroupDef[] = [
+  {
+    title: '实时运行监测（温度）',
+    open: true,
+    fields: [
+      { key: 'unit_exhaust_temp', label: '机组排气温度', unit: '°C', kind: 'number' },
+      { key: 'host_exhaust_temp', label: '主机排气温度', unit: '°C', kind: 'number' },
+      { key: 'air_tank_temp', label: '风包温度', unit: '°C', kind: 'number' },
+      { key: 'coolant_temp', label: '冷却剂温度', unit: '°C', kind: 'number' },
+      { key: 'running_temp', label: '运行温度', unit: '°C', kind: 'number' }
+    ]
+  },
+  {
+    title: '实时运行监测（压力/真空）',
+    fields: [
+      { key: 'exhaust_pressure', label: '排气压力', unit: 'MPa', kind: 'number' },
+      { key: 'separation_pressure', label: '分离压力', unit: 'MPa', kind: 'number' },
+      { key: 'separation_diff_pressure', label: '分离压差', unit: 'MPa', kind: 'number' },
+      { key: 'intake_vacuum', label: '进气真空', unit: 'kPa', kind: 'number' }
+    ]
+  },
+  {
+    title: '实时运行监测（电气/振动/时间）',
+    fields: [
+      { key: 'voltage', label: '电压', unit: 'V', kind: 'number' },
+      { key: 'current', label: '电流', unit: 'A', kind: 'number' },
+      { key: 'host_vibration', label: '主机振动', unit: 'mm/s', kind: 'number' },
+      { key: 'motor_vibration', label: '电机振动', unit: 'mm/s', kind: 'number' },
+      { key: 'current_run_time', label: '当次运行时间', unit: 'h', kind: 'number' },
+      { key: 'host_run_time', label: '主机运行时间', unit: 'h', kind: 'number' },
+      { key: 'host_load_time', label: '主机加载时间', unit: 'h', kind: 'number' }
+    ]
+  },
+  {
+    title: '设备/模式状态',
+    fields: [
+      { key: 'standby_status', label: '待机状态', kind: 'boolean' },
+      { key: 'running_feedback', label: '运行反馈', kind: 'boolean' },
+      { key: 'fault_exist', label: '故障存在', kind: 'boolean' },
+      { key: 'comm_status', label: '通信状态', kind: 'boolean' },
+      { key: 'auto_manual_mode', label: '手自动模式', kind: 'boolean' },
+      { key: 'remote_mode', label: '远控模式', kind: 'boolean' },
+      { key: 'local_mode', label: '就地模式', kind: 'boolean' },
+      { key: 'load_unload_mode', label: '加卸载模式', kind: 'boolean' },
+      { key: 'auto_toggle_status', label: '自动投退状态', kind: 'boolean' }
+    ]
+  },
+  {
+    title: '控制指令',
+    fields: [
+      { key: 'start_btn', label: '启动按钮', kind: 'boolean' },
+      { key: 'stop_btn', label: '停止按钮', kind: 'boolean' },
+      { key: 'load_btn', label: '加载按钮', kind: 'boolean' },
+      { key: 'unload_btn', label: '卸载按钮', kind: 'boolean' },
+      { key: 'auto_btn', label: '自动按钮', kind: 'boolean' },
+      { key: 'manual_btn', label: '手动按钮', kind: 'boolean' },
+      { key: 'auto_toggle_btn', label: '自动投退按钮', kind: 'boolean' }
+    ]
+  },
+  {
+    title: '排污阀系统',
+    fields: [
+      { key: 'drain_valve_open', label: '排污阀开状态', kind: 'boolean' },
+      { key: 'drain_valve_close', label: '排污阀关状态', kind: 'boolean' },
+      { key: 'drain_valve_manual_open_btn', label: '排污阀手动开按钮', kind: 'boolean' },
+      { key: 'drain_valve_manual_close_btn', label: '排污阀手动关按钮', kind: 'boolean' },
+      { key: 'drain_valve_manual_stop_btn', label: '排污阀手动停按钮', kind: 'boolean' },
+      { key: 'drain_valve_mode_btn_status', label: '排污阀手自动按钮状态', kind: 'number', fullRow: true },
+      { key: 'drain_valve_interval_setting', label: '排污阀时间间隔设定', kind: 'number', fullRow: true },
+      { key: 'drain_valve_duration_setting', label: '排污阀时长设定', kind: 'number', fullRow: true }
+    ]
+  },
+  {
+    title: '保护设定与投退',
+    fields: [
+      { key: 'air_tank_temp_alarm_setting', label: '风包温度报警值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'air_tank_temp_trip_setting', label: '风包温度跳闸值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'air_tank_temp_protect_active', label: '风包温度保护投退状态', kind: 'boolean' },
+      { key: 'air_tank_temp_protect_btn', label: '风包温度保护投退按钮', kind: 'number', fullRow: true },
+
+      { key: 'host_temp_alarm_setting', label: '主机温度报警值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'host_temp_trip_setting', label: '主机温度跳闸值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'host_temp_protect_active', label: '主机温度保护投退状态', kind: 'boolean' },
+      { key: 'host_temp_protect_btn', label: '主机温度保护投退按钮', kind: 'number', fullRow: true },
+
+      { key: 'exhaust_temp_alarm_setting', label: '排气温度报警值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'exhaust_temp_trip_setting', label: '排气温度跳闸值设定', unit: '°C', kind: 'number', fullRow: true },
+      { key: 'exhaust_temp_protect_active', label: '排气温度保护投退状态', kind: 'boolean' },
+      { key: 'exhaust_temp_protect_btn', label: '排气温度保护投退按钮', kind: 'number', fullRow: true },
+
+      { key: 'vibration_alarm_setting', label: '振动报警值设定', unit: 'mm/s', kind: 'number', fullRow: true },
+      { key: 'vibration_trip_setting', label: '振动跳闸值设定', unit: 'mm/s', kind: 'number', fullRow: true },
+      { key: 'vibration_protect_active', label: '振动保护投退状态', kind: 'boolean' },
+      { key: 'vibration_protect_btn', label: '振动保护投退按钮', kind: 'number', fullRow: true }
+    ]
+  }
+]
+
+function fieldRowClass(field: FieldDef): string {
+  // 长字段独占一行：优先使用手动标记，其次用 label 长度做兜底
+  // 中文字符计数：7+ 一般就会比较挤，独占一行更清晰
+  const isFull = field.fullRow === true || field.label.length >= 6
+  return isFull ? 'full-row' : ''
+}
+
+function toBool(value: BooleanLike): boolean | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  return null
+}
+
+function formatCollectedAt(value: string | null | undefined): string {
+  if (!value) return '--'
+  return value
+}
+
+function formatFieldValue(data: CompressorRealtimeData | null, field: FieldDef): string {
+  if (!data) return '--'
+  const raw = data[field.key]
+  if (raw === null || raw === undefined || raw === '') return '--'
+
+  if (field.kind === 'boolean') {
+    const b = toBool(raw as BooleanLike)
+    if (b === null) return '--'
+    return b ? '开' : '关'
+  }
+
+  return formatDecimal(raw as number | string | null | undefined)
+}
+
+function fieldValueClass(data: CompressorRealtimeData | null, field: FieldDef): string {
+  if (field.kind !== 'boolean') return ''
+  const b = toBool((data?.[field.key] ?? null) as BooleanLike)
+  if (b === null) return 'is-unknown'
+  return b ? 'is-on' : 'is-off'
+}
+
+function dotClass(value: BooleanLike, invert = false): string {
+  const b = toBool(value)
+  if (b === null) return 'dot-unknown'
+  const normalized = invert ? !b : b
+  return normalized ? 'dot-on' : 'dot-off'
+}
 
 // ----------------------------------------------------------------------
 // 3. Unity 集成与核心逻辑
 // ----------------------------------------------------------------------
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let unityInstance: any = null
+let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
 /**
@@ -157,36 +306,39 @@ function formatDataForUnity(data: CompressorRealtimeData): string {
   const values = [
     data.voltage || 0,
     data.current || 0,
-    data.main_vibration || 0,
     data.motor_vibration || 0,
+
+    data.host_vibration || 0,
 
     data.exhaust_pressure || 0,
     data.running_temp || 0,
-    data.main_exhaust_temp || 0,
+    data.host_exhaust_temp || 0,
     data.separation_pressure || 0,
 
   ];
 
-  return "电压：" + values[0] + "V,电流：" + values[1] +  "A,主振动：" + values[2] + "mm/s,电机振动：" + values[3] + "mm/s|排气压力：" + values[4] + "Mpa,运行温度" + values[5] + "°C,主排气温度：" + values[6] + "°C,分离压力：" + values[7] + "Mpa";
+  return "电压：" + values[0] + "V,电流：" + values[1] + "A,电机振动：" + values[2] + "mm/s,主机振动：" + values[3] + "mm/s|排气压力：" + values[4] + "Mpa,运行温度" + values[5] + "°C,主机排气温度：" + values[6] + "°C,分离压力：" + values[7] + "Mpa";
 }
 
 /**
  * 获取数据并同步给 Unity
  */
-async function loadRealtime() {
-  try {
-    const res = await getRealtimeDataApi('YF001')
-    const data = res.data as CompressorRealtimeData
-    compressorData.value = data
-
-    // 如果 Unity 实例已加载，发送数据
-    if (unityInstance) {
-      const msg = formatDataForUnity(data)
-      // console.log('发送数据给 Unity:', msg)
-      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+async function loadAllRealtime() {
+  await Promise.allSettled(EQUIPMENT_CODES.map(async (code) => {
+    try {
+      const res = await getRealtimeDataApi(code)
+      unitState.value[code].data = res.data as CompressorRealtimeData
+      unitState.value[code].error = null
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '加载失败'
+      unitState.value[code].error = message
     }
-  } catch (e) {
-    console.error(e)
+  }))
+
+  const active = unitState.value[activeUnityCode.value]?.data
+  if (unityInstance && active) {
+    const msg = formatDataForUnity(active)
+    unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
   }
 }
 
@@ -194,7 +346,8 @@ async function loadRealtime() {
  * 初始化 Unity 实例
  */
 function initUnity() {
-  if (!canvasRef.value) return
+  const canvas = canvasRef.value
+  if (!canvas) return
 
   const script = document.createElement("script")
   script.src = UNITY_CONFIG.loaderUrl
@@ -211,18 +364,19 @@ function initUnity() {
     }
 
     if (window.createUnityInstance) {
-      window.createUnityInstance(canvasRef.value, config)
-        .then((instance: any) => {
+      window.createUnityInstance(canvas, config)
+        .then((instance) => {
           console.log("Unity Load Success")
           unityInstance = instance
           // 加载完成后立即推送一次当前数据
-          if (compressorData.value) {
-            const msg = formatDataForUnity(compressorData.value)
+          const active = unitState.value[activeUnityCode.value]?.data
+          if (active && unityInstance) {
+            const msg = formatDataForUnity(active)
             unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
           }
         })
-        .catch((msg: any) => {
-          console.error("Unity Load Error:", msg)
+        .catch((err: unknown) => {
+          console.error("Unity Load Error:", err)
         })
     }
   }
@@ -239,13 +393,21 @@ function initUnity() {
 // ----------------------------------------------------------------------
 onMounted(() => {
   // 1. 先获取一次数据
-  loadRealtime()
+  loadAllRealtime()
 
   // 2. 初始化 Unity
   initUnity()
 
   // 3. 开启轮询 (参考代码是3秒)
-  refreshTimer = window.setInterval(loadRealtime, 1000)
+  refreshTimer = window.setInterval(loadAllRealtime, 2000)
+})
+
+watch(activeUnityCode, () => {
+  const active = unitState.value[activeUnityCode.value]?.data
+  if (unityInstance && active) {
+    const msg = formatDataForUnity(active)
+    unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+  }
 })
 
 onUnmounted(() => {
@@ -580,6 +742,207 @@ article::-webkit-scrollbar {
   height: 100%;
   z-index: 1; /* 确保3D模型在底层 */
   overflow: hidden;
+}
+
+/* 底部 7 卡片布局 */
+.bottom-panel {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.bottom-panel-title {
+  margin: 0 0 6px 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.10), rgba(0, 188, 212, 0.05));
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+.unit-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
+  padding-bottom: 2px;
+}
+
+.unit-card {
+  border: 1px solid rgba(0, 188, 212, 0.28);
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(0, 188, 212, 0.10), rgba(0, 188, 212, 0.04));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.25), inset 0 0 30px rgba(0, 188, 212, 0.05);
+  padding: 6px;
+  cursor: pointer;
+  user-select: none;
+  height: 275px;
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-card.active {
+  border-color: rgba(30, 144, 255, 0.75);
+  box-shadow: 0 10px 24px rgba(30, 144, 255, 0.20), inset 0 0 40px rgba(30, 144, 255, 0.10);
+}
+
+.unit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.unit-code {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.unit-status-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.dot-on {
+  background: #34d399;
+}
+
+.dot-off {
+  background: #ef4444;
+}
+
+.dot-unknown {
+  background: #94a3b8;
+}
+
+.unit-subheader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 4px;
+}
+
+.subitem {
+  width: 26px;
+  text-align: center;
+}
+
+.unit-time {
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.70);
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unit-scroll {
+  flex: 1;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.group-block {
+  margin-bottom: 5px;
+}
+
+.group-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 3px 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  margin-bottom: 3px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 6px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 6px;
+  align-items: baseline;
+  padding: 1px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+}
+
+.field-row.full-row {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.70);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.field-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+}
+
+@media (max-width: 1600px) {
+  .unit-card {
+    height: 255px;
+    padding: 5px;
+  }
+  .bottom-panel-title {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+  .group-title,
+  .field-label,
+  .field-value,
+  .unit-subheader,
+  .unit-time {
+    font-size: 9px;
+  }
+}
+
+.field-value.is-on {
+  color: #34d399;
+}
+
+.field-value.is-off {
+  color: #ef4444;
+}
+
+.field-value.is-unknown {
+  color: #cbd5e1;
 }
 
 /* 面板区域 */

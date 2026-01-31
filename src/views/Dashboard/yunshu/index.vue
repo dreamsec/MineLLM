@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
       <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-      <div class="header-title">皮带运输机孪生平台</div>
+      <div class="header-title">皮带机孪生平台</div>
     </div>
 
     <!-- 主体内容区 -->
@@ -24,6 +24,9 @@
             <span class="title-text">基本运行数据</span>
             <div class="title-line"></div>
           </div>
+          <div class="collected-at" v-if="conveyorData?.collected_at" style="text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.72); margin-bottom: 10px;">
+            采集时间：{{ formatTime(conveyorData.collected_at) }}
+          </div>
           <div class="data-cards">
             <div class="data-card" v-for="item in leftItems" :key="item.key">
               <div class="card-icon">⚙️</div>
@@ -43,12 +46,50 @@
             <span class="title-text">监测状态数据</span>
             <div class="title-line"></div>
           </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in rightItems" :key="item.key">
-              <div class="card-icon">📊</div>
-              <div class="card-content">
-                <div class="card-value">{{ item.display }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+
+          <div class="sub-title">系统控制状态</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in controlStatusPairs" :key="`ctrl-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.label">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <!-- 状态类：绿色代表好(运行)，红色代表坏(停止/否) -->
+                  <span class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">电机运行监测</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in motorStatusPairs" :key="`motor-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.label">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <!-- 对于超温报警(alarm type)，绿色代表False(正常)，红色代表True(报警) -->
+                  <!-- 对于运行状态(status type)，绿色代表True(运行)，红色代表False(停止) -->
+                   <span class="dot"
+                    :class="it.type === 'alarm'
+                      ? (toBool(it.value) ? 'off' : 'on')
+                      : (toBool(it.value) ? 'on' : 'off')">
+                   </span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">安全保护与故障</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in alarmPairs" :key="`alarm-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.label">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <!-- 报警类：绿色代表False(正常)，红色代表True(报警) -->
+                  <span class="dot" :class="toBool(it.value) ? 'off' : 'on'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -87,9 +128,13 @@ const UNITY_CONFIG = {
 const UNITY_TARGET_OBJ = "SendMessageBelt" // ★请确认Unity场景中接收数据的物体名称
 const UNITY_METHOD_NAME = "UpdateBeltTexts" // ★请确认Unity脚本中接收数据的函数名称
 
+type UnityInstance = {
+  SendMessage: (gameObject: string, methodName: string, message: string) => void
+}
+
 declare global {
   interface Window {
-    createUnityInstance: any;
+    createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
   }
 }
 
@@ -108,29 +153,29 @@ type Def<K extends keyof ConveyorRealtimeData> = {
 const formatYN = (v: unknown) => (v == null ? '--' : Number(v) ? '是' : '否')
 const formatRunStop = (v: unknown) => (v == null ? '--' : Number(v) ? '运行' : '停止')
 const formatShield = (v: unknown) => (v == null ? '--' : Number(v) ? '已屏蔽' : '未屏蔽')
-const formatNum = (v: unknown) => (v == null ? '--' : String(formatDecimal(v as any)))
+const formatNum = (v: unknown) => (v == null ? '--' : String(formatDecimal(v as number | string)))
+
+const formatTime = (v: string | null | undefined) => {
+  if (!v) return '--'
+  const d = new Date(v)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 const leftDefs = [
   { key: 'belt_speed', label: '皮带速度', unit: 'm/s', format: formatNum },
-  { key: 'belt_tension', label: '皮带张力', unit: '', format: formatNum },
+  { key: 'belt_tension', label: '皮带张力', unit: 'N', format: formatNum },
+  { key: 'feeder_coal_level', label: '给煤机煤位', unit: 'm', format: formatNum },
   { key: 'motor_current_1', label: '1#电机电流', unit: 'A', format: formatNum },
   { key: 'motor_temp_1', label: '1#电机温度', unit: '°C', format: formatNum },
   { key: 'motor_current_2', label: '2#电机电流', unit: 'A', format: formatNum },
   { key: 'motor_temp_2', label: '2#电机温度', unit: '°C', format: formatNum },
+  { key: 'motor_current_3', label: '3#电机电流', unit: 'A', format: formatNum },
+  { key: 'motor_temp_3', label: '3#电机温度', unit: '°C', format: formatNum },
   { key: 'drum_temp', label: '滚筒温度', unit: '°C', format: formatNum },
 ] satisfies readonly Def<keyof ConveyorRealtimeData>[]
 
-const rightDefs = [
-  { key: 'motor_overheat_1', label: '1#电机超温', unit: '', format: formatYN },
-  { key: 'motor_overheat_2', label: '2#电机超温', unit: '', format: formatYN },
-  { key: 'motor_overheat_3', label: '3#电机超温', unit: '', format: formatYN },
-  { key: 'motor_running_2', label: '2#电机运行', unit: '', format: formatRunStop },
-  { key: 'drum_overheat', label: '滚筒超温', unit: '', format: formatYN },
-  { key: 'coal_piling', label: '堆煤保护', unit: '', format: formatYN },
-  { key: 'smoke_protection', label: '烟雾保护', unit: '', format: formatYN },
-  { key: 'emergency_stop', label: '急停', unit: '', format: formatYN },
-  { key: 'motor_overheat_shield_1', label: '1#超温屏蔽', unit: '', format: formatShield },
-] satisfies readonly Def<keyof ConveyorRealtimeData>[]
+const rightDefs = [] satisfies readonly Def<keyof ConveyorRealtimeData>[]
 
 const leftItems = computed(() =>
   leftDefs.map((def) => {
@@ -139,18 +184,88 @@ const leftItems = computed(() =>
   })
 )
 
+/*
 const rightItems = computed(() =>
   rightDefs.map((def) => {
     const v = conveyorData.value?.[def.key]
     return { ...def, display: def.format ? def.format(v) : formatNum(v) }
   })
 )
+*/
+
+
+const toBool = (v: any) => !!Number(v)
+
+// Group 1: 运行控制监测 (Control Status)
+// 每行两个
+const controlStatusPairs = computed(() => {
+  const d = conveyorData.value
+  const items = [
+    { label: '系统运行', value: d?.is_running, type: 'status' },
+    { label: '系统电源', value: d?.has_power, type: 'status' },
+    { label: '集控模式', value: d?.is_remote_control, type: 'status' },
+    { label: '检修模式', value: d?.is_maintenance_mode, type: 'status' },
+    { label: '给煤机运行', value: d?.feeder_running, type: 'status' },
+    { label: '松闸状态', value: d?.brake_status, type: 'status' },
+  ]
+  const rows = []
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2))
+  }
+  return rows
+})
+
+// Group 2: 电机状态 (Motor Status) - 分行显示每台电机
+const motorStatusPairs = computed(() => {
+  const d = conveyorData.value
+  return [
+    [
+      { label: '1#电机运行', value: d?.motor_running_1, type: 'status' },
+      { label: '1#电机超温', value: d?.motor_overheat_1, type: 'alarm' },
+    ],
+    [
+      { label: '2#电机运行', value: d?.motor_running_2, type: 'status' },
+      { label: '2#电机超温', value: d?.motor_overheat_2, type: 'alarm' },
+    ],
+    [
+      { label: '3#电机运行', value: d?.motor_running_3, type: 'status' },
+      { label: '3#电机超温', value: d?.motor_overheat_3, type: 'alarm' },
+    ]
+  ]
+})
+
+// Group 3: 报警保护 (Safety & Alarms)
+const alarmPairs = computed(() => {
+  const d = conveyorData.value
+  const items = [
+    { label: '滚筒超温', value: d?.drum_overheat, type: 'alarm' },
+    { label: '闸故障', value: d?.brake_fault, type: 'alarm' },
+    { label: '堆煤保护', value: d?.coal_piling_alarm, type: 'alarm' },
+    { label: '烟雾保护', value: d?.smoke_alarm, type: 'alarm' },
+    { label: '纵撕保护', value: d?.tear_alarm, type: 'alarm' },
+    { label: '跑偏保护', value: d?.deviation_alarm, type: 'alarm' },
+    { label: '打滑保护', value: d?.skid_alarm, type: 'alarm' },
+    { label: '急停动作', value: d?.emergency_stop, type: 'alarm' },
+  ]
+  const rows = []
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2))
+  }
+  return rows
+})
+
+// Helper to format inline text
+const formatMetricInline = (it: {label: string, value: any, type: string}) => {
+  if (it.type === 'status') return toBool(it.value) ? '是/运行' : '否/停止'
+  if (it.type === 'alarm') return toBool(it.value) ? '报警' : '正常' // 报警为 True 是坏事
+  return '--'
+}
 
 // ----------------------------------------------------------------------
 // 3. Unity 交互逻辑
 // ----------------------------------------------------------------------
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let unityInstance: any = null
+let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
 /**
@@ -174,13 +289,15 @@ function formatDataForUnity(data: ConveyorRealtimeData): string {
 
   const statusText =
     `急停:${Number(data.emergency_stop) ? '是' : '否'},` +
-    `堆煤:${Number(data.coal_piling) ? '是' : '否'},` +
-    `烟雾:${Number(data.smoke_protection) ? '是' : '否'},` +
+    `堆煤:${Number(data.coal_piling_alarm) ? '是' : '否'},` +
+    `烟雾:${Number(data.smoke_alarm) ? '是' : '否'},` +
     `滚筒超温:${Number(data.drum_overheat) ? '是' : '否'},` +
     `1#超温:${Number(data.motor_overheat_1) ? '是' : '否'},` +
     `2#超温:${Number(data.motor_overheat_2) ? '是' : '否'},` +
     `3#超温:${Number(data.motor_overheat_3) ? '是' : '否'},` +
-    `2#运行:${Number(data.motor_running_2) ? '运行' : '停止'}`
+    `1#运行:${Number(data.motor_running_1) ? '运行' : '停止'},` +
+    `2#运行:${Number(data.motor_running_2) ? '运行' : '停止'},` +
+    `3#运行:${Number(data.motor_running_3) ? '运行' : '停止'}`
 
   return `${runText}|${motorText}|${statusText}|`
 }
@@ -203,7 +320,8 @@ async function loadRealtime() {
 }
 
 function initUnity() {
-  if (!canvasRef.value) return
+  const canvas = canvasRef.value
+  if (!canvas) return
 
   const script = document.createElement("script")
   script.src = UNITY_CONFIG.loaderUrl
@@ -220,17 +338,17 @@ function initUnity() {
     }
 
     if (window.createUnityInstance) {
-      window.createUnityInstance(canvasRef.value, config)
-        .then((instance: any) => {
+      window.createUnityInstance(canvas, config)
+        .then((instance) => {
           console.log("Unity Loaded Successfully")
           unityInstance = instance
           // 加载完成后立即发送一次数据
           if (conveyorData.value) {
             const msg = formatDataForUnity(conveyorData.value)
-            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
           }
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error("Unity Load Error:", err)
         })
     }
@@ -337,8 +455,9 @@ onUnmounted(() => {
 
 /* 左右面板样式 */
 .left-panel, .right-panel {
-  width: min(320px, 22vw);
-  min-width: 250px;
+  width: min(400px, 26vw);
+  min-width: 320px;
+  max-width: 480px;
   height: calc(100vh - 190px);
   display: flex;
   flex-direction: column;
@@ -362,12 +481,109 @@ onUnmounted(() => {
 }
 
 .panel-section1 {
-  padding: 10px;
+  padding: 10px 10px 20px 10px; /* 增加底部内边距，防止内容溢出 */
   backdrop-filter: blur(8px);
+  /* height: auto;  removed height: 35% */
+  /*flex: 1;  removed flex: 1 */
+  height: auto;
+  flex: 0 0 auto; /* 禁止缩小，撑开内容 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
   border: 1px solid rgba(0, 188, 212, 0.25);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
   box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+}
+
+.sub-title {
+  margin: 10px 0 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.18);
+  border-left: 3px solid rgba(0, 188, 212, 0.75);
+  border-radius: 6px;
+}
+
+.kv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 32px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.18);
+  overflow: hidden;
+}
+
+.kv-label {
+  flex: 1 1 46%;
+  font-size: 10px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+.kv-value {
+  flex: 0 1 54%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  justify-content: flex-end;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kv-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0;
+  vertical-align: middle;
+}
+
+.dot.on {
+  background: #49f343;
+  box-shadow: 0 0 10px rgba(73, 243, 67, 0.65);
+}
+
+.dot.off {
+  background: #ff3d00;
+  box-shadow: 0 0 10px rgba(255, 61, 0, 0.55);
 }
 
 .section-title1 {
@@ -1078,10 +1294,19 @@ article::-webkit-scrollbar {
 
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .left-panel, .right-panel {
+    width: min(320px, 28vw);
+    min-width: 260px;
+  }
+   .kv-row {
+    grid-template-columns: 1fr;
+  }
+}
 /* 大屏幕优化 */
 @media (min-width: 1600px) {
   .left-panel, .right-panel {
-    width: min(350px, 20vw);
+    width: min(450px, 25vw);
   }
 }
 

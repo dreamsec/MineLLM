@@ -4,7 +4,7 @@
  * @param precision 保留的小数位数，默认2位
  * @returns 格式化后的字符串，如果无效则返回 '--'
  */
-export const formatDecimal = (value: number | string | null | undefined, precision: number = 4): string => {
+export const formatDecimal = (value: number | string | null | undefined, precision: number = 2): string => {
   if (value === null || value === undefined || value === '') {
     return '--'
   }

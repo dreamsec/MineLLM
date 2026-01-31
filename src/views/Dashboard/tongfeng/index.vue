@@ -22,15 +22,66 @@
       <div class="left-panel">
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">通风机实时数据</span>
+            <span class="title-text">TF001 实时数据</span>
             <div class="title-line"></div>
           </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in leftItems" :key="item.key">
-              <div class="card-icon">⚙️</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+          <div class="collected-at">采集时间：{{ formatTime(ventilatorByCode.TF001?.collected_at) }}</div>
+
+          <div class="sub-title">通风参数 / 变频</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf001AirPairs" :key="`tf001-air-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span v-if="it.type === 'bool'" class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">1级电机</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf001Motor1Pairs" :key="`tf001-m1-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value"><span class="kv-text">{{ formatMetricInline(it) }}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">2级电机</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf001Motor2Pairs" :key="`tf001-m2-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value"><span class="kv-text">{{ formatMetricInline(it) }}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">运行状态</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf001StatusPairs" :key="`tf001-st-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">报警 / 故障</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf001AlarmPairs" :key="`tf001-al-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span class="dot" :class="toBool(it.value) ? 'off' : 'on'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -41,15 +92,66 @@
       <div class="right-panel">
         <div class="panel-section1">
           <div class="section-title1">
-            <span class="title-text">运行参数</span>
+            <span class="title-text">TF002 实时数据</span>
             <div class="title-line"></div>
           </div>
-          <div class="data-cards">
-            <div class="data-card" v-for="item in rightItems" :key="item.key">
-              <div class="card-icon">🔧</div>
-              <div class="card-content">
-                <div class="card-value">{{ formatDecimal(item.value) }}<span v-if="item.unit"> {{ item.unit }}</span></div>
-                <div class="card-label">{{ item.label }}</div>
+          <div class="collected-at">采集时间：{{ formatTime(ventilatorByCode.TF002?.collected_at) }}</div>
+
+          <div class="sub-title">通风参数 / 变频</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf002AirPairs" :key="`tf002-air-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span v-if="it.type === 'bool'" class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">1级电机</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf002Motor1Pairs" :key="`tf002-m1-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value"><span class="kv-text">{{ formatMetricInline(it) }}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">2级电机</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf002Motor2Pairs" :key="`tf002-m2-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value"><span class="kv-text">{{ formatMetricInline(it) }}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">运行状态</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf002StatusPairs" :key="`tf002-st-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-title">报警 / 故障</div>
+          <div class="kv-rows">
+            <div class="kv-row" v-for="(pair, idx) in tf002AlarmPairs" :key="`tf002-al-${idx}`">
+              <div class="kv-item" v-for="it in pair" :key="it.key">
+                <div class="kv-label">{{ it.label }}</div>
+                <div class="kv-value">
+                  <span class="dot" :class="toBool(it.value) ? 'off' : 'on'"></span>
+                  <span class="kv-text">{{ formatMetricInline(it) }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -66,7 +168,7 @@ defineOptions({
   name: 'DashboardIndex'
 })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { VentilatorRealtimeData } from '@/api/device/types/device'
 
@@ -94,55 +196,148 @@ const UNITY_METHOD_NAME = "UpdateTMPTexts"
 // TODO: 请在此处替换为您Unity脚本中实际的第二个函数名称
 const UNITY_METHOD_NAME_2 = "UpdateOtherFunction"
 
+type UnityInstance = {
+  SendMessage: (gameObject: string, methodName: string, message: string) => void
+}
+
 declare global {
   interface Window {
-    createUnityInstance: any;
+    createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
   }
 }
 
 // ----------------------------------------------------------------------
 // 2. 业务数据定义
 // ----------------------------------------------------------------------
-const ventilatorData = ref<VentilatorRealtimeData | null>(null)
+const EQUIPMENT_CODES = ['TF001', 'TF002'] as const
+type EquipmentCode = typeof EQUIPMENT_CODES[number]
 
-// 左侧字段定义
-const leftDefs = [
-  { key: 'air_speed', label: '风速', unit: 'm/s' },
-  { key: 'air_volume', label: '风量', unit: 'm³/s' },
-  { key: 'total_pressure', label: '总压', unit: 'Pa' },
-  { key: 'neg_pressure', label: '负压', unit: 'Pa' },
-  { key: 'exhaust_mode', label: '排风模式', unit: '' },
-  { key: 'vfd_run_freq', label: '变频器频率', unit: 'Hz' }
-] as const
+const ventilatorByCode = reactive<Record<EquipmentCode, VentilatorRealtimeData | null>>({
+  TF001: null,
+  TF002: null
+})
 
-// 右侧字段定义
-const rightDefs = [
-  { key: 'motor1_voltage', label: '电机1电压', unit: 'V' },
-  { key: 'motor1_current', label: '电机1电流', unit: 'A' },
-  { key: 'motor2_voltage', label: '电机2电压', unit: 'V' },
-  { key: 'motor2_current', label: '电机2电流', unit: 'A' },
-  { key: 'motor1_horiz_vibration', label: '电机1水平振动', unit: 'mm/s' },
-  { key: 'motor1_vert_vibration', label: '电机1垂直振动', unit: 'mm/s' },
-  { key: 'motor2_horiz_vibration', label: '电机2水平振动', unit: 'mm/s' },
-  { key: 'motor2_vert_vibration', label: '电机2垂直振动', unit: 'mm/s' },
-  { key: 'alarm', label: '告警', unit: '' },
-  { key: 'standby', label: '待机', unit: '' },
-] as const
+type MetricDef = { key: string; label: string; unit?: string; type?: 'number' | 'bool' | 'text' }
+type MetricItem = MetricDef & { value: unknown }
 
-const leftItems = computed(() => leftDefs.map(def => ({
-  ...def,
-  value: ventilatorData.value?.[def.key as keyof VentilatorRealtimeData] ?? '--'
-})))
-const rightItems = computed(() => rightDefs.map(def => ({
-  ...def,
-  value: ventilatorData.value?.[def.key as keyof VentilatorRealtimeData] ?? '--'
-})))
+function toBool(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase()
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on'
+  }
+  return false
+}
+
+function formatTime(value?: string) {
+  if (!value) return '--'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleString()
+}
+
+function formatMetricInline(item: MetricItem) {
+  const v = item.value
+  if (v === null || v === undefined || v === '') return '--'
+  if (item.type === 'bool') return toBool(v) ? '是' : '否'
+  if (typeof v === 'number') {
+    const val = formatDecimal(v)
+    return item.unit ? `${val}${item.unit}` : val
+  }
+  return String(v)
+}
+
+function pairMetrics(items: MetricItem[]): MetricItem[][] {
+  const res: MetricItem[][] = []
+  for (let i = 0; i < items.length; i += 2) {
+    const a = items[i]
+    const b = items[i + 1]
+    res.push(b ? [a, b] : [a])
+  }
+  return res
+}
+
+function buildItems(code: EquipmentCode, defs: readonly MetricDef[]): MetricItem[] {
+  const data = ventilatorByCode[code]
+  const record = (data ?? {}) as Record<string, unknown>
+  return defs.map(def => ({ ...def, value: record[def.key] }))
+}
+
+const airDefs = [
+  { key: 'air_speed', label: '风速', unit: 'm/s', type: 'number' },
+  { key: 'air_volume', label: '风量', unit: 'm³/s', type: 'number' },
+  { key: 'total_pressure', label: '全压', unit: 'Pa', type: 'number' },
+  { key: 'neg_pressure', label: '负压', unit: 'Pa', type: 'number' },
+  { key: 'inverter_freq', label: '变频频率', unit: 'Hz', type: 'number' },
+  { key: 'inverter_current', label: '变频电流', unit: 'A', type: 'number' }
+] as const satisfies readonly MetricDef[]
+
+const motor1Defs = [
+  { key: 'motor1_voltage', label: '电压', unit: 'V', type: 'number' },
+  { key: 'motor1_current', label: '电流', unit: 'A', type: 'number' },
+  { key: 'motor1_active_power', label: '有功', unit: 'kW', type: 'number' },
+  { key: 'motor1_vert_vibration', label: '垂直振动', unit: 'mm/s', type: 'number' },
+  { key: 'motor1_horiz_vibration', label: '水平振动', unit: 'mm/s', type: 'number' },
+  { key: 'motor1_north_axis_temp', label: '北轴温度', unit: '℃', type: 'number' }
+] as const satisfies readonly MetricDef[]
+
+const motor2Defs = [
+  { key: 'motor2_voltage', label: '电压', unit: 'V', type: 'number' },
+  { key: 'motor2_current', label: '电流', unit: 'A', type: 'number' },
+  { key: 'motor2_active_power', label: '有功', unit: 'kW', type: 'number' },
+  { key: 'motor2_vert_vibration', label: '垂直振动', unit: 'mm/s', type: 'number' },
+  { key: 'motor2_horiz_vibration', label: '水平振动', unit: 'mm/s', type: 'number' },
+  { key: 'motor2_north_axis_temp', label: '北轴温度', unit: '℃', type: 'number' }
+] as const satisfies readonly MetricDef[]
+
+const statusDefs = [
+  { key: 'run_feedback', label: '运行反馈', type: 'bool' },
+  { key: 'inverter_run_feedback', label: '变频运行', type: 'bool' },
+  { key: 'auto_mode', label: '自动', type: 'bool' },
+  { key: 'manual_mode', label: '手动', type: 'bool' },
+  { key: 'standby_mode', label: '待机', type: 'bool' },
+  { key: 'exhaust_wind_mode', label: '抽风', type: 'bool' }
+] as const satisfies readonly MetricDef[]
+
+const alarmDefs = [
+  { key: 'general_alarm', label: '报警', type: 'bool' },
+  { key: 'main_motor_alarm', label: '主电机报警', type: 'bool' },
+  { key: 'lube_general_alarm', label: '润滑站报警', type: 'bool' },
+  { key: 'stator_temp_alarm', label: '定子温度报警', type: 'bool' },
+  { key: 'bearing_temp_alarm', label: '主轴承温度报警', type: 'bool' },
+  { key: 'bearing_vibration_alarm', label: '主轴承振动报警', type: 'bool' }
+] as const satisfies readonly MetricDef[]
+
+const tf001AirItems = computed(() => buildItems('TF001', airDefs))
+const tf001Motor1Items = computed(() => buildItems('TF001', motor1Defs))
+const tf001Motor2Items = computed(() => buildItems('TF001', motor2Defs))
+const tf001StatusItems = computed(() => buildItems('TF001', statusDefs))
+const tf001AlarmItems = computed(() => buildItems('TF001', alarmDefs))
+
+const tf001AirPairs = computed(() => pairMetrics(tf001AirItems.value))
+const tf001Motor1Pairs = computed(() => pairMetrics(tf001Motor1Items.value))
+const tf001Motor2Pairs = computed(() => pairMetrics(tf001Motor2Items.value))
+const tf001StatusPairs = computed(() => pairMetrics(tf001StatusItems.value))
+const tf001AlarmPairs = computed(() => pairMetrics(tf001AlarmItems.value))
+
+const tf002AirItems = computed(() => buildItems('TF002', airDefs))
+const tf002Motor1Items = computed(() => buildItems('TF002', motor1Defs))
+const tf002Motor2Items = computed(() => buildItems('TF002', motor2Defs))
+const tf002StatusItems = computed(() => buildItems('TF002', statusDefs))
+const tf002AlarmItems = computed(() => buildItems('TF002', alarmDefs))
+
+const tf002AirPairs = computed(() => pairMetrics(tf002AirItems.value))
+const tf002Motor1Pairs = computed(() => pairMetrics(tf002Motor1Items.value))
+const tf002Motor2Pairs = computed(() => pairMetrics(tf002Motor2Items.value))
+const tf002StatusPairs = computed(() => pairMetrics(tf002StatusItems.value))
+const tf002AlarmPairs = computed(() => pairMetrics(tf002AlarmItems.value))
 
 // ----------------------------------------------------------------------
 // 3. Unity 集成与核心逻辑
 // ----------------------------------------------------------------------
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let unityInstance: any = null
+let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
 /**
@@ -172,22 +367,24 @@ function formatDataForUnity(data: VentilatorRealtimeData): string {
  */
 async function loadRealtimeAndSync() {
   try {
-    const res = await getRealtimeDataApi('TF001')
-    const data = res.data as VentilatorRealtimeData
+    const results = await Promise.allSettled(
+      EQUIPMENT_CODES.map(code => getRealtimeDataApi(code))
+    )
 
-    // 1. 更新 Vue 界面
-    ventilatorData.value = data
+    results.forEach((r, idx) => {
+      const code = EQUIPMENT_CODES[idx]
+      if (r.status === 'fulfilled') {
+        ventilatorByCode[code] = r.value.data as VentilatorRealtimeData
+      } else {
+        console.error(`获取数据失败(${code})`, r.reason)
+      }
+    })
 
-    // 2. 发送给 Unity
-    if (unityInstance) {
-      const messageToSend = formatDataForUnity(data)
-
-      console.log('同步数据到 Unity:', messageToSend)
-
-      // 调用第一个函数
+    // 发送给 Unity：默认同步 TF001，避免破坏现有 Unity 逻辑
+    const unityData = ventilatorByCode.TF001
+    if (unityInstance && unityData) {
+      const messageToSend = formatDataForUnity(unityData)
       unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, messageToSend)
-
-      // 【修改点】调用第二个函数 (传递相同的参数)
       unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME_2, messageToSend)
     }
 
@@ -200,7 +397,8 @@ async function loadRealtimeAndSync() {
  * 初始化 Unity
  */
 function initUnity() {
-  if (!canvasRef.value) {
+  const canvas = canvasRef.value
+  if (!canvas) {
     console.error("Canvas 未找到，请检查 DOM 结构")
     return
   }
@@ -220,23 +418,24 @@ function initUnity() {
     }
 
     if (window.createUnityInstance) {
-      window.createUnityInstance(canvasRef.value, config)
-        .then((instance: any) => {
+      window.createUnityInstance(canvas, config)
+        .then((instance) => {
           console.log("Unity 实例加载成功")
           unityInstance = instance
 
           // 加载完成后，如果有缓存数据，立即发送一次
-          if (ventilatorData.value) {
-            const messageToSend = formatDataForUnity(ventilatorData.value)
+          const cached = ventilatorByCode.TF001
+          if (unityInstance && cached) {
+            const messageToSend = formatDataForUnity(cached)
 
             // 发送给第一个方法
-            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, messageToSend)
+            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, messageToSend)
 
             // 【修改点】发送给第二个方法
-            unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME_2, messageToSend)
+            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME_2, messageToSend)
           }
         })
-        .catch((message: any) => {
+        .catch((message: unknown) => {
           console.error("Unity 加载报错:", message)
         })
     }
@@ -372,9 +571,9 @@ article::-webkit-scrollbar {
 .left-panel {
   /*background: url('@/assets/img/239.png') left;*/
   background-size: cover;
-	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
-	min-width: 250px; /* 减小最小宽度 */
-	max-width: 350px; /* 减小最大宽度 */
+	width: min(400px, 26vw); /* 增加宽度 */
+	min-width: 320px; /* 增加最小宽度 */
+	max-width: 480px; /* 增加最大宽度 */
 	height: calc(100vh - 190px); /* 使用视口高度 */
 	display: flex;
 	flex-direction: column;
@@ -397,9 +596,9 @@ article::-webkit-scrollbar {
 .right-panel {
 	/*background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
   background-size: cover;
-	width: min(320px, 22vw); /* 减小宽度避免超出屏幕 */
-	min-width: 250px; /* 减小最小宽度 */
-	max-width: 350px; /* 减小最大宽度 */
+	width: min(400px, 26vw); /* 增加宽度 */
+	min-width: 320px; /* 增加最小宽度 */
+	max-width: 480px; /* 增加最大宽度 */
 	height: calc(100vh - 190px); /* 使用视口高度 */
 	display: flex;
 	flex-direction: column;
@@ -435,7 +634,7 @@ article::-webkit-scrollbar {
   padding: 10px;
   backdrop-filter: blur(8px);
   height: auto;
-  flex: 0 1 auto;
+  flex: 0 0 auto; /* 禁止缩小，确保背景撑开包裹所有内容 */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -469,6 +668,84 @@ article::-webkit-scrollbar {
   text-align: center;
 }
 
+.collected-at {
+  margin: -6px 0 10px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.sub-title {
+  margin: 10px 0 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.18);
+  border-left: 3px solid rgba(0, 188, 212, 0.75);
+  border-radius: 6px;
+}
+
+/* 两列紧凑行：每行展示两条数据 */
+.kv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 32px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(0, 188, 212, 0.08);
+  border: 1px solid rgba(0, 188, 212, 0.18);
+  overflow: hidden;
+}
+
+.kv-label {
+  flex: 1 1 46%;
+  font-size: 10px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+.kv-value {
+  flex: 0 1 54%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  justify-content: flex-end;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kv-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 .title-text {
   /* color: #00bcd4; */
@@ -492,8 +769,8 @@ article::-webkit-scrollbar {
 /* 数据卡片 */
 .data-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   flex: 1; /* 使卡片区域能够扩展和收缩 */
   min-height: 80px; /* 设置最小高度，确保至少能显示2行卡片 */
   max-height: 100%; /* 限制最大高度不超过父容器 */
@@ -514,37 +791,88 @@ article::-webkit-scrollbar {
   background: rgba(0, 188, 212, 0.1);
   border: 1px solid rgba(0, 188, 212, 0.3);
   border-radius: 6px;
-  padding: 10px 5px 8px 12px; /* 调整padding给内容更多空间 */
+  padding: 8px 8px 7px 10px; /* 更紧凑，避免溢出 */
   display: flex;
   align-items: center;
   gap: 8px; /* 减小间距 */
-  width: 100%; /* 使用100%宽度而不是固定宽度 */
+  width: 100%;
   height: auto; /* 让高度自适应内容 */
-  min-height: 50px; /* 设置合适的最小高度 */
-  max-width: 150px; /* 保持最大宽度限制 */
+  min-height: 52px; /* 轻微提高，避免挤压 */
+  min-width: 0; /* 关键：允许在 grid 中收缩，避免撑破 */
 }
 
 .card-icon {
-  font-size: 24px;
+  font-size: 18px;
   color: #00bcd4;
+  flex: 0 0 auto;
 }
 
 .card-content {
   flex: 1;
+  min-width: 0; /* 关键：允许文本区域收缩 */
 }
 
 .card-value {
-  font-size: clamp(16px, 2.5vw, 19px); /* 响应式字体大小 */
+  font-size: 14px;
   font-weight: bold;
   color: #ffffff;
-  margin-bottom: 2px; /* 减小间距 */
+  margin-bottom: 2px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0;
+  vertical-align: middle;
+}
+
+.dot.on {
+  background: #49f343;
+  box-shadow: 0 0 10px rgba(73, 243, 67, 0.65);
+}
+
+.dot.off {
+  background: #ff3d00;
+  box-shadow: 0 0 10px rgba(255, 61, 0, 0.55);
+}
+
+/* 更紧凑：减少左右侧栏的内边距，让更多内容进屏 */
+.left-panel {
+  padding: 12px 12px 12px 18px;
+}
+.right-panel {
+  padding: 12px 18px 12px 12px;
+}
+
+/* 小高度屏幕进一步压缩行高 */
+@media (max-height: 760px) {
+  .sub-title {
+    margin: 8px 0 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+  .kv-item {
+    height: 30px;
+    padding: 5px 9px;
+  }
+  .kv-label { font-size: 10px; }
+  .kv-value { font-size: 10px; }
 }
 
 .card-label {
-  font-size: clamp(10px, 1.5vw, 12px); /* 响应式字体大小 */
-  color: #cccccc;
-  margin-bottom: 1px; /* 减小间距 */
-  line-height: 1.2; /* 调整行高 */
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 0;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-unit {
@@ -932,15 +1260,15 @@ article::-webkit-scrollbar {
 /* 大屏幕优化 */
 @media (min-width: 1600px) {
   .left-panel, .right-panel {
-    width: min(350px, 20vw);
+    width: min(450px, 25vw);
   }
 }
 
 /* 中等屏幕 */
 @media (max-width: 1400px) and (min-width: 1200px) {
   .left-panel, .right-panel {
-    width: min(300px, 22vw);
-    min-width: 250px;
+    width: min(350px, 25vw);
+    min-width: 280px;
   }
 }
 
@@ -1100,8 +1428,8 @@ article::-webkit-scrollbar {
 /* 小屏幕适配 */
 @media (max-width: 1200px) {
   .left-panel, .right-panel {
-    width: min(280px, 25vw);
-    min-width: 220px;
+    width: min(320px, 28vw);
+    min-width: 260px;
   }
 
   .left-panel {
@@ -1110,6 +1438,10 @@ article::-webkit-scrollbar {
 
   .right-panel {
     right: 10px; /* 减小右边距 */
+  }
+
+  .kv-row {
+    grid-template-columns: 1fr;
   }
 }
 

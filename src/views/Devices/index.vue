@@ -83,7 +83,7 @@
 
 
           <el-table-column v-if="selectedType === '机械设备'" prop="location" label="安装位置" width="150" />
-          <el-table-column v-if="selectedType === '机械设备'" prop="installDate" label="安装日期" width="120" />
+          <!-- <el-table-column v-if="selectedType === '机械设备'" prop="installDate" label="安装日期" width="120" /> -->
           <el-table-column v-if="selectedType === '摄像头'" prop="createTime" label="创建时间" width="150" />
           <el-table-column v-if="selectedType === '摄像头'" prop="updateTime" label="更新时间" width="150" />
 
@@ -164,7 +164,7 @@
               <p><strong>设备型号：</strong>{{ selectedDevice.model }}</p>
               <p><strong>制造商：</strong>{{ selectedDevice.manufacturer }}</p>
               <p><strong>安装位置：</strong>{{ selectedDevice.location }}</p>
-              <p><strong>安装日期：</strong>{{ selectedDevice.installDate }}</p>
+              <!-- <p><strong>安装日期：</strong>{{ selectedDevice.installDate }}</p> -->
               <p><strong>额定功率：</strong>{{ selectedDevice.power }} kW</p>
               <p><strong>额定电压：</strong>{{ selectedDevice.voltage }} V</p>
               <p><strong>额定电流：</strong>{{ selectedDevice.current }} A</p>
@@ -603,7 +603,29 @@ const filteredDevices = computed(() => {
 
   // 根据选择的类型组合数据
   if (selectedType.value === '机械设备') {
-    allDevices = formattedDevices
+    // 按类型分组排序：提升机 -> 压风机 -> 排水机 -> 运输机
+    allDevices = formattedDevices.sort((a, b) => {
+      const typeOrder = ['提升机', '压风机', '排水机', '运输机']
+      const indexA = typeOrder.indexOf(a.type)
+      const indexB = typeOrder.indexOf(b.type)
+      
+      // 如果都在列表中，按列表顺序排序
+      if (indexA !== -1 && indexB !== -1) {
+        if (indexA !== indexB) return indexA - indexB
+        // 类型相同按编码排序
+        return (a.code || '').localeCompare(b.code || '')
+      }
+      
+      // 如果只有一个在列表中，在列表中的排前面
+      if (indexA !== -1) return -1
+      if (indexB !== -1) return 1
+      
+      // 都不在列表中，按类型名称排序
+      const typeCompare = (a.type || '').localeCompare(b.type || '', 'zh-CN')
+      if (typeCompare !== 0) return typeCompare
+      
+      return (a.code || '').localeCompare(b.code || '')
+    })
   } else if (selectedType.value === '摄像头') {
     allDevices = formattedCameras
   } else if (selectedType.value === '传感器') {
