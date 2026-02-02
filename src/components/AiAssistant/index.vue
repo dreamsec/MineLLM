@@ -240,7 +240,7 @@ const isExpanded = (messageId: number, sectionType: string) => {
   return expandedSections.value[key]?.has(sectionType) || false
 }
 
-// 添加消息部分
+// 添加消息部分（思考、工具调用、响应）
 const addMessagePart = (
   messageIndex: number,
   type: 'thinking' | 'tool' | 'response',
@@ -250,42 +250,36 @@ const addMessagePart = (
   tool_calls?: ToolDetail[],
   tool_call_id?: string
 ) => {
-  if (messageIndex === -1 || !messages.value[messageIndex]) return
+  if (messageIndex === -1) return
 
-  const message = messages.value[messageIndex]
-  if (!message.parts) message.parts = []
+  const lastMessage = messages.value[messageIndex]
+  const partId = Date.now() + Math.random() // 确保唯一性
 
-  // 确保持续更新同一类型的同一个step
-  const existingPart = message.parts.find(p => {
+  // 查找是否已存在相同类型和步骤的部分
+  const existingPart = lastMessage.parts?.find(part => {
     if (type === 'thinking' || type === 'tool') {
-      return p.type === type && p.stepIndex === stepIndex
+      return part.type === type && part.stepIndex === stepIndex
     }
-    return p.type === type
+    return part.type === type
   })
 
   if (existingPart) {
-    if (type === 'response' || type === 'thinking') {
-      // 模拟流式打字效果 (参考 Big Model 界面)
-      // 对于 thinking 内容，即使后端返回较快或有缓冲，也强制使用打字机效果平滑输出
-      setTimeout(() => {
-        existingPart.content += content
-        if (thinkTime) existingPart.thinkTime = thinkTime
-        scrollToBottom()
-      }, 50)
-    } else {
-      existingPart.content += content
-      if (thinkTime) existingPart.thinkTime = thinkTime
-      scrollToBottom()
+    // 更新现有内容 - 直接追加，不使用setTimeout
+    existingPart.content += content
+    if (thinkTime) {
+      existingPart.thinkTime = thinkTime
     }
+    scrollToBottom()
   } else {
-    message.parts.push({
-      id: Date.now() + Math.random(),
+    // 创建新的部分
+    lastMessage.parts?.push({
+      id: partId,
       type,
       content,
       stepIndex,
-      thinkTime,
       tool_calls,
-      tool_call_id
+      tool_call_id,
+      thinkTime
     })
     scrollToBottom()
   }
@@ -301,19 +295,32 @@ const sendMessage = () => {
 const sendMessageInternal = async (content: string) => {
   if (!currentSessionId.value) return
 
-  messages.value.push({ id: Date.now(), role: 'user', content: content })
-  scrollToBottom()
+  const userMessage = { id: Date.now(), role: 'user' as const, content: content }
+  messages.value.push(userMessage)
+
+  inputText.value = ''
+
+  // 自动滚动
+  nextTick(() => {
+    scrollToBottom()
+  })
+
+  console.log(currentSessionId.value)
+  // 显示AI正在输入
+  const aiMessage: Message = {
+    id: Date.now() + 1,
+    role: 'ai',
+    content: '',
+    loading: true,
+    modelLoading: false,
+    parts: []
+  }
+  messages.value.push(aiMessage)
   loading.value = true
-
-  // 添加一个空的 AI 消息占位
-  const aiMsgId = Date.now() + 1
-  messages.value.push({ id: aiMsgId, role: 'ai', content: '', parts: [], loading: true, modelLoading: false })
-
-  const getAiIndex = () => messages.value.findIndex(m => m.id === aiMsgId)
 
   // 如果首包迟迟不来（例如首次加载模型到显卡），显示"模型加载中"提示
   const warmupTimer = window.setTimeout(() => {
-    const idx = getAiIndex()
+    const idx = messages.value.findIndex((msg) => msg.id === aiMessage.id)
     if (idx !== -1) {
       const msg = messages.value[idx]
       if (msg.loading && (msg.parts?.length || 0) === 0) {
@@ -322,134 +329,145 @@ const sendMessageInternal = async (content: string) => {
     }
   }, 300)
 
-  let currentThinkStepIndex = 0
+  let currentThinkStepIndex = 0 // 用于跟踪思考步骤
 
-  const startThinking = () => {
-    startTime.value = Date.now()
-    currentTime.value = Date.now()
-    thinkingTimer = window.setInterval(() => {
-      currentTime.value = Date.now()
-    }, 100)
-    overThink.value = true
-    currentThinkStepIndex++
-    toggleSection(aiMsgId, `thinking-${currentThinkStepIndex}`)
-  }
+  nextTick(() => {
+    scrollToBottom()
+  })
 
-  const finishThinking = () => {
-    if (!overThink.value) return
-    const finalDuration = (Date.now() - startTime.value) / 1000
-    const finalTime = `${finalDuration.toFixed(1)}s`
-
-    addMessagePart(getAiIndex(), 'thinking', '', currentThinkStepIndex, finalTime)
-
-    clearInterval(thinkingTimer)
-    overThink.value = false
-  }
-
-  try {
-    const response = await getAiResponse({
-      session_id: currentSessionId.value,
-      content: content
-    })
-
-    if (!response.body) throw new Error('No response body')
-
+  console.log(userMessage.content)
+  getAiResponse({
+    session_id: currentSessionId.value || '',
+    content: userMessage.content,
+  }).then(async (response) => {
+    if (!response.ok || !response.body) {
+      throw new Error('Network response was not ok')
+    }
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
 
+    const startThinking = () => {
+      startTime.value = Date.now()
+      currentTime.value = Date.now()
+      thinkingTimer = window.setInterval(() => {
+        currentTime.value = Date.now()
+      }, 100)
+      overThink.value = true
+      currentThinkStepIndex++
+      toggleSection(aiMessage.id, `thinking-${currentThinkStepIndex}`) // 默认展开思考部分
+    }
+
+    const finishThinking = (aiMessageIndex: number) => {
+      if (!overThink.value) return
+      const finalDuration = (Date.now() - startTime.value) / 1000
+      const finalTime = `${finalDuration.toFixed(1)}s`
+      // 仅更新计时，不追加内容
+      addMessagePart(aiMessageIndex, 'thinking', '', currentThinkStepIndex, finalTime)
+      clearInterval(thinkingTimer)
+      overThink.value = false
+    }
+
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
+      buffer = lines.pop() ?? '' // 保留未完整的一行
 
       for (const line of lines) {
-        if (!line.trim()) continue
-
+        console.log('收到行:', line)
+        if (line.trim() === '') continue
         try {
-          // 兼容 AIQA 的逻辑: 优先尝试直接 JSON 解析，如果包含 data: 前缀则去除
-          const jsonStr = line.startsWith('data:') ? line.slice(5) : line
-          const json = JSON.parse(jsonStr)
-          const payload = json.data
-          const aiMsgIndex = getAiIndex()
-
-          if (aiMsgIndex !== -1) {
+          const result = JSON.parse(line)
+          const payload = result.data
+          console.log('payload:', payload)
+          const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+          if (aiMessageIndex !== -1) {
             // 一旦开始收到任何流式数据，就认为"模型加载"阶段结束
             clearTimeout(warmupTimer)
-            if (messages.value[aiMsgIndex].modelLoading) {
-              messages.value[aiMsgIndex].modelLoading = false
+            if (messages.value[aiMessageIndex].modelLoading) {
+              messages.value[aiMessageIndex].modelLoading = false
             }
-          }
 
-          if (isToolStreamPayload(payload)) {
-             currentThinkStepIndex++
-             addMessagePart(
-               aiMsgIndex,
-               'tool',
-               payload.content,
-               currentThinkStepIndex,
-               undefined,
-               payload.tool_calls,
-               payload.tool_call_id
-             )
-             toggleSection(aiMsgId, `tool-${currentThinkStepIndex}`)
-          }
-          else {
-            const text = String(payload ?? '')
-            if (!text || text === '\n\n') continue
+            // 1) 工具调用：后端可能返回对象结构
+            if (isToolStreamPayload(payload)) {
+              currentThinkStepIndex++
+              // 处理工具响应
+              addMessagePart(
+                aiMessageIndex,
+                'tool',
+                payload.content,
+                currentThinkStepIndex,
+                undefined,
+                payload.tool_calls,
+                payload.tool_call_id
+              )
+              toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
+            }
+            else {
+              // 2) 普通流式文本（字符串 token）
+              const text = String(payload ?? '')
+              if (!text || text === '\n\n') continue
 
-            const isThinkWrapped = text.includes('<think>') && text.includes('</think>')
-            const isThinkStartOnly = text.includes('<think>') && !text.includes('</think>')
-            const isThinkEndOnly = !text.includes('<think>') && text.includes('</think>')
+              // 兼容后端"每个 token 都包一层 <think>...</think>"的情况：都追加到同一个思考块
+              const isThinkWrapped = text.includes('<think>') && text.includes('</think>')
+              const isThinkStartOnly = text.includes('<think>') && !text.includes('</think>')
+              const isThinkEndOnly = !text.includes('<think>') && text.includes('</think>')
 
-            if (isThinkWrapped) {
-              if (!overThink.value) startThinking()
-              const inner = text.replace('<think>', '').replace('</think>', '')
-              if (inner) addMessagePart(aiMsgIndex, 'thinking', inner, currentThinkStepIndex)
-              // 依然保持思考状态，直到显式收到非 think 文本或结束标签 (参考 AIQA)
-            } else if (isThinkStartOnly) {
-              if (!overThink.value) startThinking()
-              const inner = text.replace('<think>', '')
-              if (inner) addMessagePart(aiMsgIndex, 'thinking', inner, currentThinkStepIndex)
-            } else if (isThinkEndOnly) {
-              const inner = text.replace('</think>', '')
-              if (inner) addMessagePart(aiMsgIndex, 'thinking', inner, currentThinkStepIndex)
-              finishThinking()
-            } else if (overThink.value) {
-              // 在思考模式下收到非think内容 -> 结束思考
-               finishThinking()
-               addMessagePart(aiMsgIndex, 'response', text)
-            } else {
-               addMessagePart(aiMsgIndex, 'response', text)
+              if (isThinkWrapped) {
+                if (!overThink.value) startThinking()
+                const inner = text.replace('<think>', '').replace('</think>', '')
+                if (inner) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentThinkStepIndex)
+                }
+                // 这里不结束思考：直到收到非 think 文本再结束
+              } else if (isThinkStartOnly) {
+                if (!overThink.value) startThinking()
+                const inner = text.replace('<think>', '')
+                if (inner.trim()) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentThinkStepIndex)
+                }
+              } else if (isThinkEndOnly) {
+                const inner = text.replace('</think>', '')
+                if (inner.trim()) {
+                  addMessagePart(aiMessageIndex, 'thinking', inner, currentThinkStepIndex)
+                }
+                finishThinking(aiMessageIndex)
+              } else if (overThink.value) {
+                // 只要收到非 think 文本，就认为思考结束并进入最终回答流
+                finishThinking(aiMessageIndex)
+                addMessagePart(aiMessageIndex, 'response', text)
+              } else {
+                addMessagePart(aiMessageIndex, 'response', text)
+              }
             }
           }
         } catch (e) {
-          console.warn('Pass JSON failed', line)
+          console.error('JSON解析失败:', e, line)
         }
       }
     }
-  } catch (error) {
-    console.error('AI请求失败:', error)
-    const aiMsgIndex = getAiIndex()
-    if (messages.value[aiMsgIndex]) {
-       messages.value[aiMsgIndex].parts?.push({
-         id: Date.now(), type: 'response', content: '**[请求出错]**'
-       })
-       messages.value[aiMsgIndex].loading = false
-       messages.value[aiMsgIndex].modelLoading = false
-    }
-  } finally {
-    const aiMsgIndex = getAiIndex()
-    if (aiMsgIndex !== -1) {
-      messages.value[aiMsgIndex].loading = false
-      messages.value[aiMsgIndex].modelLoading = false
+
+    // 流结束，结束加载状态
+    const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+    if (aiMessageIndex !== -1) {
+      messages.value[aiMessageIndex].loading = false
+      messages.value[aiMessageIndex].modelLoading = false
     }
     loading.value = false
-    scrollToBottom()
-  }
+  }).catch((error) => {
+    console.error('AI请求失败:', error)
+    const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
+    if (aiMessageIndex !== -1) {
+      messages.value[aiMessageIndex].parts?.push({
+        id: Date.now(), type: 'response', content: '**[请求出错]**'
+      })
+      messages.value[aiMessageIndex].loading = false
+      messages.value[aiMessageIndex].modelLoading = false
+    }
+    loading.value = false
+  })
 }
 
 </script>
