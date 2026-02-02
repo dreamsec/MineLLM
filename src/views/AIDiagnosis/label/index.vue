@@ -81,7 +81,7 @@
                           <div style="margin: -4px">
                             <div
                               v-for="(item, index) in imageItems"
-                              :key="index"
+                              :key="item.image_id || index"
                               class="card-item"
                               style="width: 33.3333%; padding: 4px 4px 0px"
                             >
@@ -95,7 +95,7 @@
                                     <div class="picture-status pic-status-wrapper">
                                       <div :title="item.image_name" :filename="item.image_name" class="normal hover">
                                         <div style="transform: rotate(0deg); height: 100%; width: 100%">
-                                          <img :src="'/api/v1/' + item.image_path" class="image-items" />
+                                          <img :src="'/api2/' + item.image_path" class="image-items" />
                                         </div>
                                       </div>
                                     </div>
@@ -290,7 +290,7 @@
                           <div class="tag-item-left">
                             <div :style="{ backgroundColor: item.tag_color }" style="width: 2px; height: 20px" />
                             <el-icon>
-                              <component :is="selectedTagIndex === index ? 'CircleCheck' : ''" />
+                              <component :is="selectedTagIndex === index ? CircleCheck : null" />
                             </el-icon>
                             <span> {{ item.tag_name }}</span>
                           </div>
@@ -383,19 +383,22 @@ import {
   ZoomOut,
   Crop,
   Pointer,
-  CirclePlus
+  CirclePlus,
+  CircleCheck,
+  Back,
+  MoreFilled
 } from "@element-plus/icons-vue"
 import { ElMessage, ElMessageBox, ElLoading } from "element-plus"
 import SimpleImageLabel from "simple-image-label"
 import { ref, onMounted, watch, computed } from "vue"
 import { onBeforeUnmount } from "vue"
 
-import { deleteTagApi, listTagApi, exportTagApi, searchTagApi } from "@/api/tag/index.js"
-import { addLabelApi, deleteLabelApi, updateLabelApi, listLabelApi, exportLabelApi } from "@/api/label/index.js"
-import { listImageApi, updateImageApi, countImageApi, deleteImageApi } from "@/api/image/index.js"
+import { deleteTagApi, listTagApi, exportTagApi, searchTagApi } from "@/api/tag"
+import { addLabelApi, deleteLabelApi, updateLabelApi, listLabelApi, exportLabelApi } from "@/api/label"
+import { listImageApi, updateImageApi, countImageApi, deleteImageApi } from "@/api/image"
 import Dialog from "./components/dialog.vue"
 import { isNull } from "@/utils/filters.js"
-import router from "@/router/index.js"
+import router from "@/router"
 import SvgIcon from "@/components/SvgIcon/index.vue"
 
 // 配置
@@ -430,8 +433,12 @@ const datasetId = localStorage.getItem("dataset_id")
 const datasetFilename = localStorage.getItem("dataset_filename")
 
 // 返回上一级
-const go_back = () => {
-  handleAddUpadteLabel()
+const go_back = async () => {
+  try {
+    await handleAddUpadteLabel()
+  } catch (e) {
+    console.error(e)
+  }
   router.push("/ai-diagnosis/data_manage")
   handleClickExportYaml()
 }
@@ -537,15 +544,45 @@ const handleImageItemClick = async (index) => {
     simpleImageLabel.value.setImage()
     return
   }
+
+  // 1. 如果切换目标不同或者处于"无索引"状态
   if (activeIndex.value !== index || index === 0) {
+    
+    // 2. 尝试保存当前图片（保存可能会触发列表刷新，导致 imageItems 变更）
+    const prevImageName = imageItems.value[activeIndex.value]?.image_name
     await handleAddUpadteLabel()
-    const imageUrl = "/api/v1/" + imageItems.value[index].image_path
-    const imageId = imageItems.value[index].image_id
+
+    // 3. 重新获取列表长度，并进行边界检查（因为列表可能被刷新变短了）
+    let targetIndex = index
+    const currentLength = imageItems.value.length
+
+    if (currentLength === 0) {
+        imageName.value = ""
+        simpleImageLabel.value.setImage()
+        return
+    }
+
+    if (targetIndex >= currentLength) {
+        targetIndex = Math.max(0, currentLength - 1)
+    }
+
+    // 4. 判断是否需要强制刷新视图
+    // 如果列表变短了，说明刚刚那张图被移除了（例如未标注 -> 已标注）
+    // 此时即使 targetIndex 等于 activeIndex，实际上内容已经变了（后位补前位）
+    // 所以我们需要获取当前 targetIndex 对应的新图片，并强制加载
+    
+    const imageUrl = "/api2/" + imageItems.value[targetIndex].image_path
+    const imageId = imageItems.value[targetIndex].image_id
+    
+    // 更新状态
     labelsWithUuid.value = []
-    imageName.value = imageItems.value[index].image_name
+    imageName.value = imageItems.value[targetIndex].image_name
     simpleImageLabel.value.setImage(imageUrl)
+    
+    // 获取新图片的标签列表
     await initGetLabelsList(imageId)
-    activeIndex.value = index
+    
+    activeIndex.value = targetIndex
     updateImageCount()
   }
 }
@@ -557,7 +594,7 @@ const handleImageItemSwitch = async () => {
     simpleImageLabel.value.setImage()
     return
   }
-  const imageUrl = "/api/v1/" + imageItems.value[0].image_path
+  const imageUrl = "/api2/" + imageItems.value[0].image_path
   const imageId = imageItems.value[0].image_id
   labelsWithUuid.value = []
   imageName.value = imageItems.value[0].image_name
@@ -623,8 +660,15 @@ const handleAddUpadteLabel = async () => {
   if (labelsWithUuid.value.length === 0 || imageItems.value.length === 0) {
     return
   }
+  // 增加边界检查，防止 delete 后 activeIndex 超出范围
+  if (!imageItems.value[activeIndex.value]) {
+    console.warn("handleAddUpadteLabel: activeIndex out of bounds")
+    return
+  }
+
   const imageId = imageItems.value[activeIndex.value].image_id
-  await Promise.all(
+  try {
+    await Promise.all(
     labelsWithUuid.value.map(async (item) => {
       if (!checkLabel(item) || !item.name) {
         return
@@ -645,7 +689,22 @@ const handleAddUpadteLabel = async () => {
       await updateImageApi(imageId, 1)
     })
   )
-  await exportLabelApi(imageId)
+  try {
+    await exportLabelApi(imageId)
+  } catch (err) {
+    console.error("Export label failed", err)
+  }
+  
+  // 刷新列表以移除已处理的图片（如果在分类视图中）
+  if (selectedTab.value === "未标注") {
+    await initGetImageList(currentPage.value, pageSize.value, 1, 0)
+  } else if (selectedTab.value === "已标注") {
+    await initGetImageList(currentPage.value, pageSize.value, 1, 1) // 刷新以显示最新状态
+  }
+  
+  } catch (error) {
+    console.error("handleAddUpadteLabel error", error)
+  }
 }
 
 // 根据uuid获取index
@@ -799,7 +858,27 @@ const saveLabel = async () => {
     type: "success",
     message: "保存成功"
   })
-  initGetLabelsList(imageItems.value[activeIndex.value].image_id)
+
+  // 刷新当前视图（因为列表可能已经变了，需要加载当前位置的新图片）
+  if (imageItems.value.length > 0) {
+      // 边界检查
+      if (activeIndex.value >= imageItems.value.length) {
+          activeIndex.value = Math.max(0, imageItems.value.length - 1)
+      }
+      
+      const currentItem = imageItems.value[activeIndex.value]
+      const imageUrl = "/api2/" + currentItem.image_path
+      
+      imageName.value = currentItem.image_name
+      simpleImageLabel.value.setImage(imageUrl)
+      
+      await initGetLabelsList(currentItem.image_id)
+  } else {
+      simpleImageLabel.value.setImage()
+      imageName.value = ""
+      labelsWithUuid.value = []
+  }
+
   updateImageCount()
   handleClickExportYaml()
 }
@@ -911,13 +990,56 @@ const resetIconClick = () => {
 // 删除图片
 const deleteIconClick = async () => {
   IconActive.value = 9
-  await deleteImageApi(imageItems.value[activeIndex.value].image_id)
-  ElMessage({
-    type: "success",
-    message: "删除成功"
-  })
-  await handleRefeashImage()
-  IconActive.value = 0
+  try {
+    await ElMessageBox.confirm("确定要删除这张图片吗？此操作不可恢复。", "提示", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning"
+    })
+
+    const imageId = imageItems.value[activeIndex.value].image_id
+    await deleteImageApi(imageId)
+    ElMessage({
+      type: "success",
+      message: "删除成功"
+    })
+    
+    // 清空当前的标签数据
+    labelsWithUuid.value = []
+    
+    // 延迟 500ms 确保服务器文件删除操作和DB更新完成
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // 手动刷新列表并加载第一张，跳过 handleAddUpadteLabel
+    if (selectedTab.value === "未标注") {
+      await initGetImageList(currentPage.value, pageSize.value, 1, 0)
+    } else {
+      await initGetImageList(currentPage.value, pageSize.value, 1, 1)
+    }
+
+    if (imageItems.value.length > 0) {
+        const nextIndex = 0
+        const imageUrl = "/api2/" + imageItems.value[nextIndex].image_path
+        const nextImageId = imageItems.value[nextIndex].image_id
+        
+        imageName.value = imageItems.value[nextIndex].image_name
+        simpleImageLabel.value.setImage(imageUrl)
+        await initGetLabelsList(nextImageId)
+        activeIndex.value = nextIndex
+    } else {
+        imageItems.value = []
+        imageName.value = ""
+        simpleImageLabel.value.setImage()
+    }
+
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("删除图片失败:", error)
+      ElMessage.error("删除失败")
+    }
+  } finally {
+    IconActive.value = 0
+  }
 }
 
 onMounted(() => {

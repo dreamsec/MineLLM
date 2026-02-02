@@ -9,7 +9,8 @@ export function listImageApi(dataset_id: number, page: number, page_size: number
       page: page,
       per_page: page_size,
       is_train: is_train,
-      is_label: is_label
+      is_label: is_label,
+      _t: new Date().getTime() // 防止缓存
     }
   })
 }

@@ -19,7 +19,11 @@ import {
   Promotion,
   Histogram,
   DeleteFilled,
-  CirclePlusFilled
+  CirclePlusFilled,
+  Search,
+  Close,
+  WarningFilled,
+  WarnTriangleFilled
 } from "@element-plus/icons-vue"
 import {usePagination} from "@/hooks/usePagination"
 import {
@@ -922,7 +926,7 @@ const handlePublish = (row: any) => {
 }
 
 const handleDetect = () => {
-  router.push({path: "/AIDiagnosis/model_detect"})
+  router.push({path: "/ai-diagnosis/model_detect"})
 }
 
 const backmain = () => {
@@ -1232,9 +1236,9 @@ defineOptions({ name: "DataManage" })
                     :icon="CirclePlusFilled"
                   >训练
                   </el-button>
-                  <el-button type="success" size="small" plain bg @click="handlePublish(scope.row)" :icon="Promotion">
+                  <!-- <el-button type="success" size="small" plain bg @click="handlePublish(scope.row)" :icon="Promotion">
                     发布
-                  </el-button>
+                  </el-button> -->
                   <el-button type="warning" size="small" plain bg @click="handleDetect()" :icon="Histogram"
                   >测试
                   </el-button>

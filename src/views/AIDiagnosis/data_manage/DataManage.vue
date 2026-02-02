@@ -203,7 +203,7 @@ const uploadFileToServer = async (file: string | Blob, batchId: string | Blob, i
   formData.append("batch_id", batchId) // 添加批次号标识
 
   try {
-    const response = await fetch("/api/v1/data/creat_dataset", {
+    const response = await fetch("/api2/data/creat_dataset", {
       method: "POST",
       body: formData
     })
@@ -1143,7 +1143,7 @@ defineOptions({
           </div>
           <el-upload
             ref="upload"
-            action="/api/v1/data/creat_dataset"
+            action="/api2/data/creat_dataset"
             :data="{
               dataset_type: createVersionForm.dataset_type,
               dataset_name: createVersionForm.dataset_name,
