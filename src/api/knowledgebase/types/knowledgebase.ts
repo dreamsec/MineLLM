@@ -26,6 +26,7 @@ export interface FileLibraryResponseModel {
   create_time: string
   update_time: string
   content_type_id: number
+  suffix: string
 }
 
 // 上传文件（表单）——与后端 FileLibraryInForm 对齐

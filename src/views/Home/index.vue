@@ -327,7 +327,7 @@ const getDeviceStatus = (code: string, data: any) => {
 onMounted(() => {
   // 启动实时数据轮询
   fetchRealtimeData()
-  dataPollingTimer = setInterval(fetchRealtimeData, 2000)
+  dataPollingTimer = setInterval(fetchRealtimeData, 1000000)
 })
 
 onUnmounted(() => {

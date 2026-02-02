@@ -394,7 +394,7 @@
             <div class="upload-area" @drop="handleDrop" @dragover.prevent @dragenter.prevent>
               <i class="fas fa-upload"></i>
               <h4>拖拽文件到这里，或点击选择文件</h4>
-              <p>支持 .doc, .docx, .pdf, .txt 格式</p>
+              <p>支持 Word, Excel, PPT, PDF, WPS, TXT 文档及常见图片格式</p>
               <input
                 type="file"
                 multiple
@@ -968,7 +968,7 @@ const fetchDocuments = async () => {
     // 将后端 FileLibraryResponseModel 映射为前端 Document
   documents.value = (pageData.list || []).map((f: any) => ({
       id: f.id,
-      title: f.filename,
+      title: f.filename + f.suffix,
       type: mapContentTypeToDocType(contentTypeMap.value[f.content_type_id]),
       categoryId: f.content_type_id,
       summary: f.abstract || '',
