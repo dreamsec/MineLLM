@@ -64,52 +64,7 @@
 
         </div>
 
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">设备健康状态</span>
-            <div class="title-line"></div>
-          </div>
 
-          <!-- 进度条数据 -->
-          <div class="progress-data">
-            <div class="progress-item">
-              <div class="progress-label">运输系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill red" style="width: 45%"></div>
-              </div>
-              <div class="progress-value">45%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">通风系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 70%"></div>
-              </div>
-              <div class="progress-value">70%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">供电系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 60%"></div>
-              </div>
-              <div class="progress-value">60%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">通信系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 80%"></div>
-              </div>
-              <div class="progress-value">80%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">照明系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 65%"></div>
-              </div>
-              <div class="progress-value">65%</div>
-            </div>
-          </div>
-        </div>
 
         <!-- 智慧园区数据展示 - 圆形图表 -->
         <div class="panel-section1">

@@ -28,261 +28,90 @@
           </div>
 
            <div class="icon-data">
-            <div class="icon-item">
-              <div class="icon-3d">🏗️</div>
+             <div
+              v-for="code in DEVICE_CODES"
+              :key="code"
+              class="icon-item"
+             >
+              <div class="icon-3d">
+                <span v-if="code.startsWith('TS')">🏗️</span>
+                <span v-else-if="code.startsWith('YF')">⚙️</span>
+                <span v-else-if="code.startsWith('TF')">🌪️</span>
+                <span v-else-if="code.startsWith('PS')">💧</span>
+                <span v-else-if="code.startsWith('YS')">🚂</span>
+                <span v-else>🏢</span>
+              </div>
               <div class="icon-info">
                 <div class="info-left">
-                  <div class="icon-label">提升机</div>
-                  <div class="icon-value">进行中</div>
+                  <div class="icon-label">{{ getDeviceName(code) }}</div>
+                  <div class="icon-value">{{ getDeviceStatus(code, realtimeDeviceData[code]).message }}</div>
                 </div>
-                <div class="icon-unit">正常</div>
+                <!-- 这里的 class 根据状态动态改变颜色 -->
+                <div
+                  class="icon-unit"
+                  :class="{
+                    'normal': getDeviceStatus(code, realtimeDeviceData[code]).status === 'normal',
+                    'alarm': getDeviceStatus(code, realtimeDeviceData[code]).status === 'alarm',
+                    'orange': getDeviceStatus(code, realtimeDeviceData[code]).status === 'warning'
+                  }"
+                >
+                  {{ getDeviceStatus(code, realtimeDeviceData[code]).statusText }}
+                </div>
               </div>
             </div>
-            <div class="icon-item">
-              <div class="icon-3d">🌪️</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">通风机</div>
-                  <div class="icon-value">正常</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div>
-
-            <div class="icon-item">
-              <div class="icon-3d">⚙️</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">压风机</div>
-                  <div class="icon-value">高温</div>
-                </div>
-                <div class="icon-unit orange">预警</div>
-              </div>
-            </div>
-
-            <div class="icon-item">
-              <div class="icon-3d">💧</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">排水机</div>
-                  <div class="icon-value">正常</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div>
-
           </div>
 
 
         </div>
 
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">提升机健康状态</span>
-            <div class="title-line"></div>
-          </div>
 
-          <!-- 进度条数据 -->
-          <div class="progress-data">
-            <div class="progress-item">
-              <div class="progress-label">主电机系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 92%"></div>
-              </div>
-              <div class="progress-value">92%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">制动系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 88%"></div>
-              </div>
-              <div class="progress-value">88%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">钢丝绳状态</div>
-              <div class="progress-bar">
-                <div class="progress-fill yellow" style="width: 85%"></div>
-              </div>
-              <div class="progress-value">85%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">液压系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 90%"></div>
-              </div>
-              <div class="progress-value">90%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">控制系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 95%"></div>
-              </div>
-              <div class="progress-value">95%</div>
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">安全保护系统</div>
-              <div class="progress-bar">
-                <div class="progress-fill green" style="width: 98%"></div>
-              </div>
-              <div class="progress-value">98%</div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 智慧园区数据展示 - 圆形图表 -->
-         <!-- 提升机运行数据统计 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">提升机运行数据统计</span>
-            <div class="title-line"></div>
-          </div>
 
-          <div class="circle-charts">
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="62.8"/>
-                </svg>
-                <div class="chart-value">156</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">今日提升次数</div>
-                <div class="chart-data">
-                  <div>提升高度: 680m</div>
-                  <div>载重: 12吨/次</div>
-                </div>
-              </div>
-            </div>
-            <div class="circle-chart">
-              <div class="chart-circle">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="chart-bg"/>
-                  <circle cx="50" cy="50" r="40" class="chart-fg" stroke-dasharray="251.2" stroke-dashoffset="37.68"/>
-                </svg>
-                <div class="chart-value">94.7%</div>
-              </div>
-              <div class="chart-labels">
-                <div class="chart-label">运行效率</div>
-                <div class="chart-data">
-                  <div>故障次数: 0</div>
-                  <div>可用率: 98.5%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
 
       </div>
 
       <!-- 右侧数据区 - 透明浮层 -->
       <div class="right-panel">
-        <!-- 智慧园区数据展示 -->
-        <div class="panel-section1">
-          <div class="section-title1">
-            <span class="title-text">环境监控</span>
-            <div class="title-line"></div>
-          </div>
-
-
-          <div class="env-cards">
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/wen.png" alt="温度">
-              <div class="env-content">
-                <div class="env-value">28℃</div>
-                <div class="env-label">井下温度</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/feng.png" alt="风速">
-              <div class="env-content">
-                <div class="env-value">2.3m/s</div>
-                <div class="env-label">风速</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/shi.png" alt="空气湿度">
-              <div class="env-content">
-                <div class="env-value">65%</div>
-                <div class="env-label">空气湿度</div>
-                <div class="env-unit yellow">稍高</div>
-              </div>
-            </div>
-            <div class="env-card">
-              <img class="env-icon" src="@/assets/img/nong.png" alt="气体浓度">
-              <div class="env-content">
-                <div class="env-value">0.02%</div>
-                <div class="env-label">气体浓度</div>
-                <div class="env-unit green">正常范围</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- 智慧园区数据展示 - 饼图 -->
         <div class="panel-section1">
           <div class="section-title">
-            <span class="title-text">智慧园区数据展示</span>
-            <div class="title-line"></div>
+            <span class="title-text">系统报警</span>
           </div>
-
-          <div class="panel-section1">
-            <div class="chart-container" ref="chartRef"></div>
+          <div class="alarm-list">
+             <!-- 报警信息将通过循环渲染到这里 -->
+             <transition-group name="list">
+              <div v-for="alarm in alarmList" :key="alarm.id" class="alarm-card" :class="alarm.level">
+                <div class="alarm-header">
+                  <span class="alarm-device">{{ alarm.name }}</span>
+                  <span class="alarm-time">{{ alarm.time }}</span>
+                </div>
+                <div class="alarm-content">
+                  {{ alarm.message }}
+                </div>
+                <div class="alarm-actions">
+                  <button class="action-btn ai-btn" @click="handleAiAssist(alarm)">
+                    🤖 AI助手
+                  </button>
+                  <button class="action-btn del-btn" @click="removeAlarm(alarm.id)">
+                    🗑️ 删除
+                  </button>
+                </div>
+              </div>
+             </transition-group>
+             <div v-if="alarmList.length === 0" class="no-alarm">
+               暂无系统报警
+             </div>
           </div>
-
         </div>
-
-        <!-- 智慧园区数据展示 - 关键设备 -->
-        <div class="panel-section1">
-          <div class="section-title">
-            <span class="title-text">关键设备</span>
-            <div class="title-line"></div>
-          </div>
-
-           <div class="icon-data">
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主提升机#1</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div>
-            <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">主提升机#2</div>
-                  <div class="icon-value">温度：55℃  运行：12h</div>
-                </div>
-                <div class="icon-unit orange">预警</div>
-              </div>
-            </div>
-            <!-- <div class="icon-item">
-              <div class="icon-3d">🏢</div>
-              <div class="icon-info">
-                <div class="info-left">
-                  <div class="icon-label">运输皮带#5</div>
-                  <div class="icon-value">温度：65℃  运行：72h</div>
-                </div>
-                <div class="icon-unit">正常</div>
-              </div>
-            </div> -->
-          </div>
-
-
-        </div>
-
-
       </div>
+
     </div>
+
+    <!-- AI 助手组件 -->
+    <AiAssistant
+      v-model:visible="showAiAssistant"
+      :initial-context="aiContext"
+    />
 
   </div>
 </template>
@@ -294,290 +123,220 @@ defineOptions({
 })
 
 import {ref, onMounted, onUnmounted} from 'vue'
-import * as echarts from 'echarts'
+import { getRealtimeDataApi } from '@/api/device'
+import AiAssistant from '@/components/AiAssistant/index.vue'
 
-const chartRef = ref<HTMLElement | null>(null)
-let chart: echarts.ECharts | null = null
+// 设备列表
+const DEVICE_CODES = [
+  "TS001",
+  ...Array.from({ length: 7 }, (_, i) => `YF00${i + 1}`), // YF001-YF007
+  "TF001", "TF002",
+  "PS001", "PS002", "PS003",
+  "YS001"
+]
 
-// 根据窗口高度计算图表高度
-const calculateChartHeight = (windowHeight: number): number => {
-  // 基础高度
-  let baseHeight = 200
+interface AlarmItem {
+  id: string
+  code: string
+  name: string
+  time: string
+  level: 'alarm' | 'warning'
+  message: string
+}
 
-  if (windowHeight < 600) {
-    baseHeight = 120  // 极小屏幕
-  } else if (windowHeight < 900) {
-    baseHeight = 160  // 小屏幕
-  } else if (windowHeight < 1000) {
-    baseHeight = 180  // 中等屏幕
-  } else if (windowHeight < 1200) {
-    baseHeight = 200  // 大屏幕
+// 存储实时数据
+const realtimeDeviceData = ref<Record<string, any>>({})
+let dataPollingTimer: any = null // 使用 any 避免类型问题 (NodeJS.Timer vs number)
+
+// AI 助手控制
+const showAiAssistant = ref(false)
+const aiContext = ref('')
+
+// 报警列表
+const alarmList = ref<AlarmItem[]>([])
+// 记录上一次的报警状态，防止重复添加。 key: deviceCode, value: alarmMessage
+const lastAlarmState = new Map<string, string>()
+
+// 获取实时数据
+const fetchRealtimeData = async () => {
+    // 遍历所有设备并行请求
+  const promises = DEVICE_CODES.map(async (code) => {
+    try {
+      const res = await getRealtimeDataApi(code)
+      // 根据 API 定义, res 是 GetEquipmentRealtimeDataResponse
+      // 假设我们要存的数据就在 res.data 中
+      if (res && res.data) {
+          realtimeDeviceData.value[code] = res.data
+
+          // 检查并生成报警
+          checkAndGenerateAlarm(code, res.data)
+      }
+    } catch (error) {
+      console.error(`获取设备 ${code} 实时数据失败:`, error)
+    }
+  })
+
+  await Promise.all(promises)
+}
+
+// 检查并生成报警
+const checkAndGenerateAlarm = (code: string, data: any) => {
+  const { status, message, statusText } = getDeviceStatus(code, data)
+
+  if (status === 'alarm' || status === 'warning') {
+    // 如果当前有报警
+    const currentMsg = message
+    const lastMsg = lastAlarmState.get(code)
+
+    // 如果是新的报警信息（与上一次不同），则添加到列表
+    // 这样用户删除后，如果是同一个持续的报警，不会立即重新弹出来干扰
+    // 只有当报警状态发生变化（例如从"温度保护"变成了"设备故障"）才会再次弹窗
+    if (lastMsg !== currentMsg) {
+       addItemToAlarmList(code, status, statusText, currentMsg)
+       lastAlarmState.set(code, currentMsg)
+    }
   } else {
-    baseHeight = 220  // 超大屏幕
-  }
-
-  return baseHeight
-}
-
-const initChart = () => {
-  if (chartRef.value) {
-    // 根据窗口高度动态设置图表容器高度
-    const windowHeight = window.innerHeight
-    const chartHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = chartHeight + 'px'
-    chart = echarts.init(chartRef.value)
-    const xData = ["提升效率", "提升速度", "载重状态", "制动系统", "安全指数"]
-
-    const percent = [94, 87, 76, 100, 92]
-
-    const imgList: Array<{
-      coord: [number, number];
-      symbolSize: [number, number];
-      symbolKeepAspect: boolean;
-      symbolOffset: [number, number];
-      symbol: string;
-    }> = []
-    const iconData: Array<{
-      value: number;
-      symbolPosition: string;
-    }> = []
-
-    percent.forEach((item, index) => {
-      imgList.push({
-        coord: [index, item],
-        symbolSize: [100, 50],
-        symbolKeepAspect: true,
-        symbolOffset: [-40, -185],
-        symbol: "circle",
-      })
-      iconData.push({
-        value: item,
-        symbolPosition: 'end',
-      })
-    })
-
-    const option = {
-      tooltip: {
-        trigger: 'axis',
-        backgroundColor: "rgba(7,55,63,0.7)",
-        borderColor: "rgba(7,55,63,0.7)",
-        textStyle: {
-          color: '#fff',
-        },
-        formatter: function (params: Array<{marker: string, name: string, value: number}>) {
-          return params[0].marker + '' + params[0].name + ': ' + params[0].value + '%'
-        }
-      },
-      grid: {
-        top: '10%',
-        bottom: '10%',
-        right: 0,
-        left: 0,
-      },
-      xAxis: {
-        data: xData,
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: true,
-          textStyle: { color: '#fff', fontSize: 11 },
-          interval: 0,
-          formatter: function(value: string) {
-            // 长文字分两行显示
-            if (value.length > 3) {
-              return value.substring(0, 2) + '\n' + value.substring(2)
-            }
-            return value
-          }
-        }
-      },
-      yAxis: {
-        max: 110,
-        splitLine: {
-          show: false
-        },
-        axisTick: {
-          show: false
-        },
-        axisLine: {
-          show: false
-        },
-        axisLabel: {
-          show: false
-        }
-      },
-      series: [
-        {
-          name: '权属情况',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -7],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: '#14b1eb',
-              opacity: 0.5,
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [40, 15],
-          symbolOffset: [0,-2],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [30, 12],
-          symbolOffset: [0, -5],
-          z: 10,
-          itemStyle: {
-            normal: {
-              color: 'transparent',
-              borderColor: '#14b1eb',
-              borderType: 'solid',
-              borderWidth: 5
-            }
-          },
-          data: iconData
-        },
-        {
-          name: '',
-          type: 'pictorialBar',
-          symbolSize: [15, 5],
-          symbolOffset: [0, -5],
-          z: 12,
-          itemStyle: {
-            normal: {
-              color: 'rgb(9,227,255)'
-            }
-          },
-          data: iconData
-        },
-        {
-          type: 'bar',
-          itemStyle: {
-            normal: {
-              color: {
-                x: 0,
-                y: 0,
-                x2: 0,
-                y2: 1,
-                type: 'linear',
-                global: false,
-                colorStops: [{
-                  offset: 0,
-                  color: "rgb(24,118,158)"
-                }, {
-                  offset: 1,
-                  // color: "rgba(9,30,41,0.5)"
-                  color:"rgba(26, 35, 50, 0.5)"
-                }]
-              }
-            }
-          },
-          barWidth: 30,
-          data: percent,
-          label: {
-            show: true,
-            position: 'top',
-            distance: 15,
-            color: '#fff',
-            fontSize: 12,
-            formatter: (params: { dataIndex: number, value: number }) => {
-              return '{b|' + params.value + '%}'
-            },
-            rich: {
-              a: {
-                color: '#03adff',
-                fontSize: 12,
-                fontWeight: 'bold'
-              },
-              b: {
-                color: '#fff',
-                fontSize: 12,
-                marginTop: 15,
-              }
-            }
-          },
-          markPoint: {
-            data: imgList
-          }
-        }
-      ]
+    // 如果设备恢复正常，清除该设备的上一次报警记录
+    // 这样下次如果再次报警，就能正常添加到列表
+    if (lastAlarmState.has(code)) {
+      lastAlarmState.delete(code)
     }
-
-    chart.setOption(option)
   }
 }
 
-const resizeChart = () => {
-   if (chart && chartRef.value) {
-    const windowHeight = window.innerHeight;
+const addItemToAlarmList = (code: string, level: 'alarm' | 'warning', statusText: string, message: string) => {
+  const newItem: AlarmItem = {
+    id: `${code}-${Date.now()}`,
+    code,
+    name: getDeviceName(code),
+    time: new Date().toLocaleTimeString(),
+    level,
+    message: `[${statusText}] ${message}`
+  }
+  // 新报警添加到顶部
+  alarmList.value.unshift(newItem)
+}
 
-    // 动态调整容器高度
-    const newHeight = calculateChartHeight(windowHeight)
-    chartRef.value.style.height = newHeight + 'px'
+// 删除报警
+const removeAlarm = (id: string) => {
+  alarmList.value = alarmList.value.filter(item => item.id !== id)
+}
 
-    // 重新调整图表大小
-    chart.resize()
+// AI助手占位功能
+const handleAiAssist = (item: AlarmItem) => {
+  console.log('启动AI助手分析报警:', item)
 
-    // 根据窗口高度调整Y轴最大值
-    let newMax = 110;
+  // 获取当前设备的实时数据
+  const deviceRealtimeData = realtimeDeviceData.value[item.code]
+  const dataStr = deviceRealtimeData ? JSON.stringify(deviceRealtimeData, null, 2) : '暂无数据'
 
-    if (windowHeight < 600) {
-      newMax = 160;
-    } else if (windowHeight < 900) {
-      newMax = 140;
-    } else if (windowHeight < 1000) {
-      newMax = 130;
-    } else {
-      newMax = 100;
+  aiContext.value = `请分析以下设备报警并给出处理建议：\n\n**基本信息**\n- 设备名称：${item.name} (${item.code})\n- 报警时间：${item.time}\n- 报警详情：${item.message}\n\n**实时运行数据**\n\`\`\`json\n${dataStr}\n\`\`\`\n\n请根据上述报警信息和实时运行数据，分析故障原因并给出处理建议。`
+  showAiAssistant.value = true
+}
+
+// 获取设备名称
+const getDeviceName = (code: string) => {
+  if (code.startsWith('TS')) return '主提升机'
+  if (code.startsWith('YF')) {
+    const num = code.replace('YF', '')
+    return `压风机#${parseInt(num)}`
+  }
+  if (code.startsWith('TF')) {
+    const num = code.replace('TF', '')
+    return `通风机#${parseInt(num)}`
+  }
+  if (code.startsWith('PS')) {
+    const num = code.replace('PS', '')
+    return `排水泵#${parseInt(num)}`
+  }
+  if (code.startsWith('YS')) return '运输皮带'
+  return code
+}
+
+// 获取设备状态和报警信息
+const getDeviceStatus = (code: string, data: any) => {
+  if (!data) return { status: 'normal', statusText: '正常', message: '运行正常' }
+
+  let isAlarm = false
+  let isWarning = false
+  let alarmMsg = '运行正常'
+
+  if (code.startsWith('TS')) {
+    // 提升机
+    if (data.fault_alarm || data.fault_stop || data.primary_hoist_fault) {
+      isAlarm = true
+      alarmMsg = '故障报警'
+    } else if (data.emergency_stop) {
+      isWarning = true
+      alarmMsg = '急停'
     }
+  } else if (code.startsWith('YF')) {
+    // 压风机
+    if (data.fault_exist) {
+      isAlarm = true
+      alarmMsg = '设备故障'
+    } else if (data.air_tank_temp_protect_active || data.host_temp_protect_active) {
+      isWarning = true
+      alarmMsg = '温度保护'
+    }
+  } else if (code.startsWith('TF')) {
+    // 通风机
+    if (data.general_alarm || data.main_motor_alarm) {
+      isAlarm = true
+      alarmMsg = '综合报警'
+    } else if (data.lube_general_alarm) {
+       isWarning = true
+       alarmMsg = '润滑告警'
+    }
+  } else if (code.startsWith('PS')) {
+    // 排水机
+    if (data.total_fault || data.pump_fault || data.pump_emergency_fault) {
+      isAlarm = true
+       alarmMsg = '水泵故障'
+    } else if (data.current_abnormal) {
+      isWarning = true
+      alarmMsg = '电流异常'
+    }
+  } else if (code.startsWith('YS')) {
+    // 运输机
+    if (data.smoke_alarm || data.tear_alarm || data.coal_piling_alarm || data.skid_alarm) {
+      isAlarm = true
+      if (data.smoke_alarm) alarmMsg = '烟雾报警'
+      else if (data.tear_alarm) alarmMsg = '撕裂报警'
+      else if (data.coal_piling_alarm) alarmMsg = '堆煤报警'
+      else if (data.skid_alarm) alarmMsg = '打滑报警'
+      else alarmMsg = '综合报警'
+    } else if (data.deviation_alarm) {
+      isWarning = true
+      alarmMsg = '跑偏'
+    }
+  }
 
-    chart.setOption(
-      {
-        yAxis: {
-          max: newMax
-        },
-        grid: {
-          top: '10%',
-          bottom: '10%',
-          right: 0,
-          left: 0,
-        }
-      },
-      false
-    )
-
+  if (isAlarm) {
+    return { status: 'alarm', statusText: '报警', message: alarmMsg }
+  } else if (isWarning) {
+    return { status: 'warning', statusText: '预警', message: alarmMsg }
+  } else {
+    return { status: 'normal', statusText: '正常', message: '运行正常' }
   }
 }
+
+
+
 
 onMounted(() => {
-  initChart()
-  window.addEventListener('resize', resizeChart)
+  // 启动实时数据轮询
+  fetchRealtimeData()
+  dataPollingTimer = setInterval(fetchRealtimeData, 2000)
 })
 
 onUnmounted(() => {
-  chart?.dispose()
-  window.removeEventListener('resize', resizeChart)
+  if (dataPollingTimer) {
+    clearInterval(dataPollingTimer)
+    dataPollingTimer = null
+  }
 })
+
 </script>
 
 <style scoped>
@@ -587,7 +346,22 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-/* 全局隐藏滚动条 */
+
+.icon-unit.normal {
+  color: #00ff00; /* 绿色 */
+  border-color: #00ff00;
+}
+
+.icon-unit.alarm {
+  color: #ff0000; /* 红色 */
+  border-color: #ff0000;
+}
+
+.icon-unit.orange {
+  color: #ffa500; /* 橙色 */
+  border-color: #ffa500;
+}
+
 * {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -696,14 +470,29 @@ article::-webkit-scrollbar {
   top: 60px; /* 距离顶部60px */
   left: 15px; /* 距离左侧15px */
   z-index: 10; /* 层级为10，确保面板显示在其他元素上方 */
-  overflow-y: auto; /* 当内容超出面板高度时，允许垂直滚动 */
-  scrollbar-width: none; /* Firefox浏览器隐藏滚动条 */
-  -ms-overflow-style: none; /* IE和Edge浏览器隐藏滚动条 */
+  overflow: hidden; /* 隐藏面板自身的滚动条，由内部元素处理滚动 */
 }
 
-.left-panel::-webkit-scrollbar {
-  display: none; /* Chrome、Safari和Opera浏览器隐藏滚动条 */
+/* 针对左侧面板内的第一部分的特殊布局，使其充满面板并包含滚动区域 */
+.left-panel .panel-section1 {
+  height: 100%;
+  padding-bottom: 10px; /* 给底部留点空间 */
 }
+
+/* 让列表区域可滚动 */
+.left-panel .icon-data {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* 允许flex子项收缩 */
+  padding-right: 5px; /* 防止滚动条挡住内容（即使滚动条隐藏，加上padding也好） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.left-panel .icon-data::-webkit-scrollbar {
+      display: none;
+}
+
 
 .right-panel {
 	background: url('@/assets/img/240.png') right; /* 修正背景图片方向 */
@@ -721,14 +510,33 @@ article::-webkit-scrollbar {
 	top: 60px; /* 在标题下方 */
 	right: 15px; /* 减小右边距 */
 	z-index: 10; /* 确保在3D模型上方 */
-	overflow-y: auto; /* 允许滚动 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
+  overflow: hidden; /* 隐藏面板自身的滚动条 */
+}
+
+.right-panel .panel-section1 {
+  height: 100%;
+  padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel .alarm-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 5px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.right-panel .alarm-list::-webkit-scrollbar {
+  display: none;
 }
 
 .right-panel::-webkit-scrollbar {
 	display: none; /* Chrome, Safari and Opera */
 }
+
 
 .center-panel {
   position: absolute;
@@ -1429,7 +1237,121 @@ article::-webkit-scrollbar {
   }
 }
 
-/* 极小屏幕适配 */
+
+/* 报警列表样式 */
+.alarm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alarm-card {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.alarm-card.warning {
+  background: rgba(255, 165, 0, 0.1);
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+.alarm-card.alarm {
+  background: rgba(255, 61, 0, 0.15);
+  border-color: rgba(255, 61, 0, 0.4);
+  box-shadow: 0 0 10px rgba(255, 61, 0, 0.1) inset;
+  animation: flash 2s infinite;
+}
+
+@keyframes flash {
+  0% { border-color: rgba(255, 61, 0, 0.4); }
+  50% { border-color: rgba(255, 61, 0, 0.8); }
+  100% { border-color: rgba(255, 61, 0, 0.4); }
+}
+
+.alarm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.alarm-device {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.alarm-time {
+  font-size: 11px;
+  color: #ccc;
+}
+
+.alarm-content {
+  font-size: 13px;
+  color: #ffd7d7;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.alarm-card.warning .alarm-content {
+  color: #ffecc2;
+}
+
+
+.alarm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s;
+  color: #fff;
+}
+
+.ai-btn {
+  background: rgba(0, 188, 212, 0.6);
+}
+.ai-btn:hover {
+  background: rgba(0, 188, 212, 0.9);
+}
+
+.del-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+.del-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.no-alarm {
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  margin-top: 20px;
+}
+
+/* 列表过渡动画 */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
 @media (max-width: 480px) {
   .left-panel, .right-panel {
     width: min(220px, 35vw);
