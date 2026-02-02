@@ -308,7 +308,7 @@ const sendMessageInternal = async (content: string) => {
   // 添加一个空的 AI 消息占位
   const aiMsgId = Date.now() + 1
   messages.value.push({ id: aiMsgId, role: 'ai', content: '', parts: [], loading: true, modelLoading: false })
-  
+
   const getAiIndex = () => messages.value.findIndex(m => m.id === aiMsgId)
 
   // 如果首包迟迟不来（例如首次加载模型到显卡），显示"模型加载中"提示
@@ -339,7 +339,7 @@ const sendMessageInternal = async (content: string) => {
     if (!overThink.value) return
     const finalDuration = (Date.now() - startTime.value) / 1000
     const finalTime = `${finalDuration.toFixed(1)}s`
-    
+
     addMessagePart(getAiIndex(), 'thinking', '', currentThinkStepIndex, finalTime)
 
     clearInterval(thinkingTimer)
