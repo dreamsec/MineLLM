@@ -3,7 +3,7 @@
     <!-- 顶部标题区 -->
     <div class="dashboard-header">
       <img src="@/assets/img/up.png" class="header-bg" alt="header-bg" />
-      <div class="header-title">煤矿井下自供能安全监测系统</div>
+      <div class="header-title">压风机孪生平台</div>
     </div>
 
     <!-- 主体内容区 -->
@@ -20,7 +20,7 @@
 
       <!-- 底部横向 7 台压风机卡片（从左到右） -->
       <div class="bottom-panel">
-        <div class="bottom-panel-title">压风机系统（点击卡片切换 3D 显示设备）</div>
+        <div class="bottom-panel-title">压风机系统</div>
         <div class="unit-row">
           <div
             v-for="unit in units"

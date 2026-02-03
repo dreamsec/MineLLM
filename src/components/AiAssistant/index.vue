@@ -11,13 +11,15 @@
           <div class="avatar">{{ msg.role === 'ai' ? '🤖' : '👨‍💻' }}</div>
           <div class="message-bubble">
             <!-- 用户消息：直接显示 -->
-            <div v-if="msg.role === 'user'">{{ msg.content }}</div>
+            <div v-if="msg.role === 'user'" :class="{ 'context-hint': msg.isContext }">
+              {{ msg.displayContent ?? msg.content }}
+            </div>
 
             <!-- AI消息：分块渲染 -->
             <div v-else class="ai-message-content">
               <!-- 模型加载提示 -->
               <div v-if="msg.modelLoading" class="model-loading">
-                <span class="model-loading-text">模型加载中（首次可能需要 1–2 秒）</span>
+                <span class="model-loading-text">模型加载中（首次可能需要 5–6 秒）</span>
                 <div class="typing-indicator">
                   <span></span><span></span><span></span>
                 </div>
@@ -133,6 +135,8 @@ interface Message {
   id: number
   role: 'user' | 'ai'
   content: string // 用于兼容或作为fallback
+  displayContent?: string // 用于 UI 展示（可与实际发送内容不同）
+  isContext?: boolean // 标记为自动发送的上下文/机器信息
   parts?: MessagePart[]
   loading?: boolean
   modelLoading?: boolean
@@ -190,7 +194,10 @@ watch(() => props.visible, async (newVal) => {
         currentSessionId.value = res.data.session_id
 
         if (props.initialContext) {
-           await sendMessageInternal(props.initialContext)
+           await sendMessageInternal(props.initialContext, {
+             displayContent: '已将机器信息发送给ai助手',
+             isContext: true,
+           })
         } else {
            messages.value = [
             { id: Date.now(), role: 'ai', content: '👋 您好，我是您的智能运维助手。有什么可以帮您？' }
@@ -292,10 +299,22 @@ const sendMessage = () => {
   inputText.value = ''
 }
 
-const sendMessageInternal = async (content: string) => {
+const sendMessageInternal = async (
+  content: string,
+  options?: {
+    displayContent?: string
+    isContext?: boolean
+  }
+) => {
   if (!currentSessionId.value) return
 
-  const userMessage = { id: Date.now(), role: 'user' as const, content: content }
+  const userMessage: Message = {
+    id: Date.now(),
+    role: 'user',
+    content,
+    displayContent: options?.displayContent,
+    isContext: options?.isContext,
+  }
   messages.value.push(userMessage)
 
   inputText.value = ''
@@ -609,6 +628,11 @@ const sendMessageInternal = async (content: string) => {
   color: #0f1c2e;
   font-weight: 500;
   border-top-right-radius: 2px;
+}
+
+.context-hint {
+  opacity: 0.9;
+  font-weight: 600;
 }
 
 /* AI消息内容分块 */
