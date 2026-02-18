@@ -51,8 +51,7 @@
                   class="icon-unit"
                   :class="{
                     'normal': getDeviceStatus(code, realtimeDeviceData[code]).status === 'normal',
-                    'alarm': getDeviceStatus(code, realtimeDeviceData[code]).status === 'alarm',
-                    'orange': getDeviceStatus(code, realtimeDeviceData[code]).status === 'warning'
+                    'alarm': getDeviceStatus(code, realtimeDeviceData[code]).status === 'alarm'
                   }"
                 >
                   {{ getDeviceStatus(code, realtimeDeviceData[code]).statusText }}
@@ -140,7 +139,7 @@ interface AlarmItem {
   code: string
   name: string
   time: string
-  level: 'alarm' | 'warning'
+  level: 'alarm'
   message: string
 }
 
@@ -183,7 +182,7 @@ const fetchRealtimeData = async () => {
 const checkAndGenerateAlarm = (code: string, data: any) => {
   const { status, message, statusText } = getDeviceStatus(code, data)
 
-  if (status === 'alarm' || status === 'warning') {
+  if (status === 'alarm') {
     // 如果当前有报警
     const currentMsg = message
     const lastMsg = lastAlarmState.get(code)
@@ -192,7 +191,7 @@ const checkAndGenerateAlarm = (code: string, data: any) => {
     // 这样用户删除后，如果是同一个持续的报警，不会立即重新弹出来干扰
     // 只有当报警状态发生变化（例如从"温度保护"变成了"设备故障"）才会再次弹窗
     if (lastMsg !== currentMsg) {
-       addItemToAlarmList(code, status, statusText, currentMsg)
+       addItemToAlarmList(code, statusText, currentMsg)
        lastAlarmState.set(code, currentMsg)
     }
   } else {
@@ -204,13 +203,13 @@ const checkAndGenerateAlarm = (code: string, data: any) => {
   }
 }
 
-const addItemToAlarmList = (code: string, level: 'alarm' | 'warning', statusText: string, message: string) => {
+const addItemToAlarmList = (code: string, statusText: string, message: string) => {
   const newItem: AlarmItem = {
     id: `${code}-${Date.now()}`,
     code,
     name: getDeviceName(code),
     time: new Date().toLocaleTimeString(),
-    level,
+    level: 'alarm',
     message: `[${statusText}] ${message}`
   }
   // 新报警添加到顶部
@@ -315,7 +314,8 @@ const getDeviceStatus = (code: string, data: any) => {
   if (isAlarm) {
     return { status: 'alarm', statusText: '报警', message: alarmMsg }
   } else if (isWarning) {
-    return { status: 'warning', statusText: '预警', message: alarmMsg }
+    // 按需求：界面不展示“预警”，统一按“正常”显示
+    return { status: 'normal', statusText: '正常', message: '运行正常' }
   } else {
     return { status: 'normal', statusText: '正常', message: '运行正常' }
   }
