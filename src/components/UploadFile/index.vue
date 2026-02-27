@@ -18,7 +18,7 @@ const handleUpload = (response: any) => {
   <el-upload
     class="upload-demo"
     drag
-    action="/api2/detect/upload"
+    action="/api2/api/v2/detect/detect"
     :on-success="handleUpload"
     multiple
   >

@@ -11,7 +11,7 @@
         <el-step title="创建模型" :icon="Coin" />
         <el-step title="设置训练参数" :icon="EditPen" />
         <el-step title="开始训练" :icon="Tools" />
-        <el-step title="发布" :icon="Finished" />
+        <el-step title="完成" :icon="Finished" />
       </el-steps>
       <!-- 步骤内容 -->
       <div class="content">
@@ -122,9 +122,9 @@
         </div>
         <div v-if="activeStep === 3">
           <!--            步骤四-->
-          <p>发布</p>
+          <p>训练完成</p>
           <div>
-            <div>
+            <div style="display: none;">
               <el-form ref="locationFormRef" :model="locationForm" label-width="100px" style="margin-right: 95px">
                 <el-form-item label="区域筛选：">
                   <el-cascader
@@ -140,7 +140,7 @@
               </el-form>
             </div>
             <!--区域筛选多选框-->
-            <div class="choose2" v-if="locationForm.location !== ''">
+            <div class="choose2" v-if="locationForm.location !== ''" style="display: none;">
               <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate" @change="handleCheckAllChange"
                 >全选</el-checkbox
               >
@@ -156,8 +156,9 @@
             </div>
           </div>
           <el-button type="primary" @click="prevStep">上一步</el-button>
-          <el-button type="primary" @click="backmain">暂不发布</el-button>
-          <el-button type="primary" :loading="loading" @click="confirmPublishfirst">发布</el-button>
+          <!-- <el-button type="primary" @click="backmain">暂不发布</el-button>
+          <el-button type="primary" :loading="loading" @click="confirmPublishfirst">发布</el-button> -->
+          <el-button type="primary" @click="handleFinish">完成</el-button>
         </div>
       </div>
     </el-card>
@@ -469,7 +470,11 @@ const handleold = () => {
 }
 
 const backmain = () => {
-  router.push({ path: "/AIDiagnosis/model_manage" })
+  router.push({ path: "/ai-diagnosis/model_manage" })
+}
+
+const handleFinish = () => {
+  router.push("/ai-diagnosis/data_manage") // 返回数据管理页面
 }
 
 // 发布进度对话框与轮询
