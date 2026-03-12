@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 defineOptions({
-  name: 'DashboardIndex'
+  name: 'TishengIndex'
 })
 
 import { ref, onMounted, onUnmounted, computed } from 'vue'
@@ -76,10 +76,10 @@ import { formatDecimal } from '@/utils/format'
 // 1. Unity 配置 (假设路径在 /NewElevator/Build/ 下)
 // ----------------------------------------------------------------------
 const UNITY_CONFIG = {
-  loaderUrl: "/NewElevator/Build/NewElevator.loader.js", // 请确认文件名
-  dataUrl: "/NewElevator/Build/NewElevator.data",       // 请确认文件名
-  frameworkUrl: "/NewElevator/Build/NewElevator.framework.js", // 请确认文件名
-  codeUrl: "/NewElevator/Build/NewElevator.wasm",       // 请确认文件名
+  loaderUrl: "/NewElevator/Build/NewElevator.loader.js",
+  dataUrl: "/NewElevator/Build/NewElevator.data.unityweb",
+  frameworkUrl: "/NewElevator/Build/NewElevator.framework.js.unityweb",
+  codeUrl: "/NewElevator/Build/NewElevator.wasm.unityweb",
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

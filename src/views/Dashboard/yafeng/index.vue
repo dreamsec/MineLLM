@@ -78,7 +78,7 @@
 import { formatDecimal } from '@/utils/format'
 
 defineOptions({
-  name: 'DashboardIndex'
+  name: 'YafengIndex'
 })
 
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
@@ -91,9 +91,9 @@ import type { CompressorRealtimeData } from '@/api/device/types/device'
 // 假设你的 Unity 打包输出在 /CompressorFan/Build/ 目录下，且文件名通常与文件夹一致
 const UNITY_CONFIG = {
   loaderUrl: "/CompressorFan/Build/CompressorFan.loader.js",
-  dataUrl: "/CompressorFan/Build/CompressorFan.data",
-  frameworkUrl: "/CompressorFan/Build/CompressorFan.framework.js",
-  codeUrl: "/CompressorFan/Build/CompressorFan.wasm",
+  dataUrl: "/CompressorFan/Build/CompressorFan.data.unityweb",
+  frameworkUrl: "/CompressorFan/Build/CompressorFan.framework.js.unityweb",
+  codeUrl: "/CompressorFan/Build/CompressorFan.wasm.unityweb",
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

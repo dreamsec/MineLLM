@@ -49,3 +49,15 @@ export function getRealtimeDataApi(equipmentCode: string) {
     method: "get"
   })
 }
+
+/**
+ * 按变量查询设备历史实时数据
+ * @param params 查询参数 (包含设别编号、查询变量、开始时间和结束时间)
+ */
+export function getEquipmentHistoryVariableApi(params: Device.GetEquipmentHistoryVariableParams) {
+  return request<Device.GetEquipmentHistoryVariableResponse>({
+    url: "/api/v1/equipment/realtime/history/variable",
+    method: "get",
+    params
+  })
+}

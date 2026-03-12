@@ -643,7 +643,38 @@ export type EquipmentRealtimeData =
 // 设备实时数据响应类型
 export type GetEquipmentRealtimeDataResponse = IApiResponseData<EquipmentRealtimeData>;
 
+// 查询变量历史数据请求参数接口
+export interface GetEquipmentHistoryVariableParams {
+  // 设备编号
+  equipment_code: string;
+  // 查询变量
+  query_variable: string;
+  // 开始时间 (YYYY-MM-DD HH:MM:SS)
+  start_time: string;
+  // 结束时间 (YYYY-MM-DD HH:MM:SS)
+  end_time: string;
+}
 
+// 历史变量数据点
+export interface HistoryVariablePoint {
+  // 收集时间
+  collected_at: string;
+  // 变量值
+  value: number | string | boolean;
+}
+
+// 查询变量历史数据响应数据
+export interface GetEquipmentHistoryVariableData {
+  equipment_code: string;
+  query_variable: string;
+  start_time: string;
+  end_time: string;
+  total: number;
+  history: HistoryVariablePoint[];
+}
+
+// 查询变量历史数据响应类型
+export type GetEquipmentHistoryVariableResponse = IApiResponseData<GetEquipmentHistoryVariableData>;
 
 
 

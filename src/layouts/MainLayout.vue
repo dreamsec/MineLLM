@@ -83,7 +83,11 @@
 
         <!-- 主内容区 -->
         <el-main class="main-content">
-          <router-view />
+          <router-view v-slot="{ Component }">
+            <keep-alive :include="['TishengIndex', 'PaishuiIndex', 'TongfengIndex', 'YafengIndex', 'YunshuIndex']" :max="2">
+              <component :is="Component" />
+            </keep-alive>
+          </router-view>
         </el-main>
       </el-container>
     </el-container>

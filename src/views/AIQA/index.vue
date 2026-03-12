@@ -502,7 +502,7 @@ const sendMessage = async () => {
   })
 
   if (currentSessionId.value === "-1"){
-    await newChatSessionId({model_name:"qwen3:32b",title:"新对话"}).then((res) => {
+    await newChatSessionId({model_name:"qwen-plus",title:"新对话"}).then((res) => {
       currentSessionId.value = res.data.session_id
     })
   }

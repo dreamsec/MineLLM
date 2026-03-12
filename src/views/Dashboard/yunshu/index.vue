@@ -104,7 +104,7 @@
 import { formatDecimal } from '@/utils/format'
 
 defineOptions({
-  name: 'DashboardIndex'
+  name: 'YunshuIndex'
 })
 
 import { ref, onMounted, onUnmounted, computed } from 'vue'
@@ -116,9 +116,9 @@ import type { ConveyorRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 const UNITY_CONFIG = {
   loaderUrl: "/Belt/Build/Belt.loader.js",      // 请确认文件名
-  dataUrl: "/Belt/Build/Belt.data",            // 请确认文件名
-  frameworkUrl: "/Belt/Build/Belt.framework.js", // 请确认文件名
-  codeUrl: "/Belt/Build/Belt.wasm",            // 请确认文件名
+  dataUrl: "/Belt/Build/Belt.data.unityweb",            // 请确认文件名
+  frameworkUrl: "/Belt/Build/Belt.framework.js.unityweb", // 请确认文件名
+  codeUrl: "/Belt/Build/Belt.wasm.unityweb",            // 请确认文件名
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

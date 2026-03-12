@@ -165,7 +165,7 @@
 import { formatDecimal } from '@/utils/format'
 
 defineOptions({
-  name: 'DashboardIndex'
+  name: 'TongfengIndex'
 })
 
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
@@ -177,9 +177,9 @@ import type { VentilatorRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 const UNITY_CONFIG = {
   loaderUrl: "/airMachine/Build/airMachine.loader.js",
-  dataUrl: "/airMachine/Build/airMachine.data",
-  frameworkUrl: "/airMachine/Build/airMachine.framework.js",
-  codeUrl: "/airMachine/Build/airMachine.wasm",
+  dataUrl: "/airMachine/Build/airMachine.data.unityweb",
+  frameworkUrl: "/airMachine/Build/airMachine.framework.js.unityweb",
+  codeUrl: "/airMachine/Build/airMachine.wasm.unityweb",
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

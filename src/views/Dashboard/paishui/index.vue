@@ -46,7 +46,7 @@
 import { formatDecimal } from '@/utils/format'
 // 智慧楼宇可视化指挥中心
 defineOptions({
-  name: 'DashboardIndex'
+  name: 'PaishuiIndex'
 })
 
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
@@ -58,9 +58,9 @@ import type { PumpRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 const UNITY_CONFIG = {
   loaderUrl: "/waterMachine/Build/waterMachine.loader.js",
-  dataUrl: "/waterMachine/Build/waterMachine.data",
-  frameworkUrl: "/waterMachine/Build/waterMachine.framework.js",
-  codeUrl: "/waterMachine/Build/waterMachine.wasm",
+  dataUrl: "/waterMachine/Build/waterMachine.data.unityweb",
+  frameworkUrl: "/waterMachine/Build/waterMachine.framework.js.unityweb",
+  codeUrl: "/waterMachine/Build/waterMachine.wasm.unityweb",
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

@@ -197,6 +197,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '虚拟巡检', icon: 'ChatDotRound' }
       },
       {
+        path: '/fault-diagnosis',
+        name: 'FaultDiagnosis',
+        component: () => import('../views/FaultDiagnosis/index.vue'),
+        meta: { title: '故障诊断', icon: 'Warning' }
+      },
+      {
         path: '/system',
         name: 'System',
         component: () => import('../views/System/index.vue'),
