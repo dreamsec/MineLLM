@@ -13,9 +13,15 @@
       </div>
     </div>
     <el-card class="filter-card">
+      <div class="selection-summary">
+        <span class="summary-label">当前选择</span>
+        <span class="summary-pill">机器类型：{{ selectedMachineTypeLabel }}</span>
+        <span class="summary-pill">机器编号：{{ selectedMachineIdLabel }}</span>
+        <span class="summary-pill">展示参数：{{ selectedParameterLabel }}</span>
+      </div>
       <el-form :inline="true" :model="filterForm" class="filter-form">
         <el-form-item label="机器类型">
-          <el-select v-model="filterForm.machineType" placeholder="请选择机器类型" @change="handleMachineTypeChange">
+          <el-select class="filter-select" v-model="filterForm.machineType" placeholder="请选择机器类型" @change="handleMachineTypeChange">
             <el-option label="提升机" value="hoist" />
             <el-option label="压风机" value="compressor" />
             <el-option label="通风机" value="ventilator" />
@@ -24,17 +30,18 @@
           </el-select>
         </el-form-item>
         <el-form-item label="机器编号">
-          <el-select v-model="filterForm.machineId" placeholder="请选择机器编号" @change="handleMachineIdChange">
+          <el-select class="filter-select" v-model="filterForm.machineId" placeholder="请选择机器编号" @change="handleMachineIdChange">
             <el-option v-for="item in machineIdOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="展示参数">
-          <el-select v-model="filterForm.parameter" placeholder="请选择展示参数" @change="handleParameterChange">
+          <el-select class="filter-select" v-model="filterForm.parameter" placeholder="请选择展示参数" @change="handleParameterChange">
             <el-option v-for="item in parameterOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="时间范围">
           <el-date-picker
+            class="filter-date"
             v-model="filterForm.timeRange"
             type="datetimerange"
             value-format="YYYY-MM-DD HH:mm:ss"
@@ -56,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import { getEquipmentHistoryVariableApi } from '@/api/device'
@@ -90,138 +97,231 @@ const deviceOverview = [
   { label: '运输机', value: 'YS001' }
 ]
 
-const buildOptions = (keys: string[]) => keys.map(key => ({ label: key, value: key }))
-
-const parameterKeyDict: Record<string, string[]> = {
+const parameterDict: Record<string, { label: string, value: string }[]> = {
   hoist: [
-    'motor_temp_1', 'motor_temp_2', 'motor_temp_3', 'motor_temp_4', 'motor_temp_5', 'motor_temp_6',
-    'motor_temp_7', 'motor_temp_8', 'motor_temp_9', 'motor_temp_10', 'motor_temp_11', 'motor_temp_12',
-    'motor_temp_max',
-    'sheave_temp_1', 'sheave_temp_2', 'sheave_temp_3', 'sheave_temp_4', 'sheave_temp_5', 'sheave_temp_6',
-    'sheave_temp_7', 'sheave_temp_8', 'sheave_temp_max',
-    'main_shaft_temp_1', 'main_shaft_temp_2', 'main_shaft_temp_3', 'main_shaft_temp_4', 'main_shaft_temp_max',
-    'plc_speed_1', 'plc_speed_2', 'actual_speed', 'guide_wheel_speed', 'speed_setpoint',
-    'handle_set_speed_check', 'speed_diff',
-    'speed_status_1', 'speed_status_2', 'speed_status_3', 'speed_status_4', 'deceleration',
-    'main_skip_depth', 'vice_skip_depth', 'travel_diff',
-    'main_skip_overwind', 'main_skip_stop_point', 'main_skip_deceleration_point', 'main_skip_monitor_2m',
-    'main_skip_calibration_point',
-    'vice_skip_overwind', 'vice_skip_stop_point', 'vice_skip_deceleration_point', 'vice_skip_monitor_2m',
-    'vice_skip_calibration_point',
-    'auto_run', 'semi_auto_run', 'manual_run', 'simple_run', 'repair_mode',
-    'lift_person', 'lift_material', 'heavy_load_down', 'handle_zero_position',
-    'inverter_enable', 'inverter_running', 'main_fan_run', 'external_water_cooling_run',
-    'main_transformer_merge', 'excitation_merge',
-    'emergency_stop', 'fault_stop', 'fault_alarm', 'primary_hoist_fault', 'start_condition_insufficient',
-    'motor_current', 'excitation_current', 'brake_oil_pressure', 'brake_oil_temp', 'load_weight',
-    'wellhead_temp', 'signal_0', 'signal_2', 'signal_3', 'signal_4', 'signal_5'
+    { value: 'actual_speed', label: '实际速度' },
+    { value: 'speed_setpoint', label: '速度给定' },
+    { value: 'guide_wheel_speed', label: '导向轮速度' },
+    { value: 'speed_diff', label: '速度差' },
+    { value: 'travel_diff', label: '行程差' },
+    { value: 'main_skip_depth', label: '主箕斗深度' },
+    { value: 'vice_skip_depth', label: '副箕斗深度' },
+    { value: 'load_weight', label: '载重' },
+    { value: 'motor_current', label: '电机电流' },
+    { value: 'excitation_current', label: '励磁电流' },
+    { value: 'brake_oil_pressure', label: '闸控油压' },
+    { value: 'brake_oil_temp', label: '闸控油温' },
+    { value: 'wellhead_temp', label: '井口温度' },
+    { value: 'motor_temp_max', label: '电机最高温度' },
+    { value: 'sheave_temp_max', label: '天轮最高温度' },
+    { value: 'main_shaft_temp_max', label: '主轴最高温度' },
+    { value: 'plc_speed_1', label: 'PLC速度1' },
+    { value: 'plc_speed_2', label: 'PLC速度2' },
+    { value: 'handle_set_speed_check', label: '手柄给定判速' },
+    { value: 'speed_status_1', label: '速度状态1' },
+    { value: 'speed_status_2', label: '速度状态2' },
+    { value: 'speed_status_3', label: '速度状态3' },
+    { value: 'speed_status_4', label: '速度状态4' },
+    { value: 'deceleration', label: '减速' },
+    { value: 'main_skip_overwind', label: '主箕斗过卷' },
+    { value: 'main_skip_stop_point', label: '主箕斗停点' },
+    { value: 'main_skip_deceleration_point', label: '主箕斗减速点' },
+    { value: 'main_skip_monitor_2m', label: '主箕斗2M监视点' },
+    { value: 'main_skip_calibration_point', label: '主箕斗校正点' },
+    { value: 'vice_skip_overwind', label: '副箕斗过卷' },
+    { value: 'vice_skip_stop_point', label: '副箕斗停点' },
+    { value: 'vice_skip_deceleration_point', label: '副箕斗减速点' },
+    { value: 'vice_skip_monitor_2m', label: '副箕斗2M监视点' },
+    { value: 'vice_skip_calibration_point', label: '副箕斗校正点' },
+    { value: 'auto_run', label: '全自动运行' },
+    { value: 'semi_auto_run', label: '半自动运行' },
+    { value: 'manual_run', label: '手动运行' },
+    { value: 'simple_run', label: '简易运行' },
+    { value: 'repair_mode', label: '检修' },
+    { value: 'lift_person', label: '提人' },
+    { value: 'lift_material', label: '提物' },
+    { value: 'heavy_load_down', label: '重载下放' },
+    { value: 'handle_zero_position', label: '手柄零位' },
+    { value: 'inverter_enable', label: '变频允许' },
+    { value: 'inverter_running', label: '变频运行' },
+    { value: 'main_fan_run', label: '主风机运行' },
+    { value: 'external_water_cooling_run', label: '外水冷运行' },
+    { value: 'main_transformer_merge', label: '主变合' },
+    { value: 'excitation_merge', label: '励磁变合' },
+    { value: 'emergency_stop', label: '紧急停车' },
+    { value: 'fault_stop', label: '事故停车' },
+    { value: 'fault_alarm', label: '事故报警' },
+    { value: 'primary_hoist_fault', label: '一次提升故障' },
+    { value: 'start_condition_insufficient', label: '开车条件不足' },
+    { value: 'signal_0', label: '信号0' },
+    { value: 'signal_2', label: '信号2' },
+    { value: 'signal_3', label: '信号3' },
+    { value: 'signal_4', label: '信号4' },
+    { value: 'signal_5', label: '信号5' },
+    ...Array.from({length: 12}, (_, i) => ({ value: `motor_temp_${i+1}`, label: `电机温度${i+1}` })),
+    ...Array.from({length: 8}, (_, i) => ({ value: `sheave_temp_${i+1}`, label: `天轮温度${i+1}` })),
+    ...Array.from({length: 4}, (_, i) => ({ value: `main_shaft_temp_${i+1}`, label: `主轴温度${i+1}` }))
   ],
   compressor: [
-    'unit_exhaust_temp', 'host_exhaust_temp', 'air_tank_temp', 'coolant_temp', 'running_temp',
-    'exhaust_pressure', 'separation_pressure', 'separation_diff_pressure', 'intake_vacuum',
-    'current', 'voltage', 'host_vibration', 'motor_vibration',
-    'current_run_time', 'host_run_time', 'host_load_time',
-    'standby_status', 'running_feedback', 'fault_exist', 'comm_status',
-    'auto_manual_mode', 'remote_mode', 'local_mode', 'load_unload_mode', 'auto_toggle_status',
-    'start_btn', 'stop_btn', 'load_btn', 'unload_btn', 'auto_btn', 'manual_btn', 'auto_toggle_btn',
-    'drain_valve_open', 'drain_valve_close', 'drain_valve_manual_open_btn', 'drain_valve_manual_close_btn',
-    'drain_valve_manual_stop_btn', 'drain_valve_mode_btn_status', 'drain_valve_interval_setting',
-    'drain_valve_duration_setting',
-    'air_tank_temp_alarm_setting', 'air_tank_temp_trip_setting', 'air_tank_temp_protect_active',
-    'air_tank_temp_protect_btn',
-    'host_temp_alarm_setting', 'host_temp_trip_setting', 'host_temp_protect_active', 'host_temp_protect_btn',
-    'exhaust_temp_alarm_setting', 'exhaust_temp_trip_setting', 'exhaust_temp_protect_active',
-    'exhaust_temp_protect_btn',
-    'vibration_alarm_setting', 'vibration_trip_setting', 'vibration_protect_active', 'vibration_protect_btn'
+    { value: 'unit_exhaust_temp', label: '机组排气温度' },
+    { value: 'host_exhaust_temp', label: '主机排气温度' },
+    { value: 'air_tank_temp', label: '风包温度' },
+    { value: 'coolant_temp', label: '冷却剂温度' },
+    { value: 'running_temp', label: '运行温度' },
+    { value: 'exhaust_pressure', label: '排气压力' },
+    { value: 'separation_pressure', label: '分离压力' },
+    { value: 'separation_diff_pressure', label: '分离压差' },
+    { value: 'intake_vacuum', label: '进气真空' },
+    { value: 'voltage', label: '电压' },
+    { value: 'current', label: '电流' },
+    { value: 'host_vibration', label: '主机振动' },
+    { value: 'motor_vibration', label: '电机振动' },
+    { value: 'current_run_time', label: '当次运行时间' },
+    { value: 'host_run_time', label: '主机运行时间' },
+    { value: 'host_load_time', label: '主机加载时间' },
+    { value: 'standby_status', label: '待机状态' },
+    { value: 'running_feedback', label: '运行反馈' },
+    { value: 'fault_exist', label: '故障存在' },
+    { value: 'comm_status', label: '通信状态' },
+    { value: 'auto_manual_mode', label: '手自动模式' },
+    { value: 'remote_mode', label: '远控模式' },
+    { value: 'local_mode', label: '就地模式' },
+    { value: 'load_unload_mode', label: '加卸载模式' },
+    { value: 'auto_toggle_status', label: '自动投退状态' },
+    { value: 'start_btn', label: '启动按钮' },
+    { value: 'stop_btn', label: '停止按钮' },
+    { value: 'load_btn', label: '加载按钮' },
+    { value: 'unload_btn', label: '卸载按钮' },
+    { value: 'auto_btn', label: '自动按钮' },
+    { value: 'manual_btn', label: '手动按钮' },
+    { value: 'auto_toggle_btn', label: '自动投退按钮' },
+    { value: 'drain_valve_open', label: '排污阀开状态' },
+    { value: 'drain_valve_close', label: '排污阀关状态' },
+    { value: 'drain_valve_manual_open_btn', label: '排污阀手动开按钮' },
+    { value: 'drain_valve_manual_close_btn', label: '排污阀手动关按钮' },
+    { value: 'drain_valve_manual_stop_btn', label: '排污阀手动停按钮' },
+    { value: 'drain_valve_mode_btn_status', label: '排污阀手自动按钮状态' },
+    { value: 'drain_valve_interval_setting', label: '排污阀时间间隔设定' },
+    { value: 'drain_valve_duration_setting', label: '排污阀时长设定' },
+    { value: 'air_tank_temp_alarm_setting', label: '风包温度报警值设定' },
+    { value: 'air_tank_temp_trip_setting', label: '风包温度跳闸值设定' },
+    { value: 'air_tank_temp_protect_active', label: '风包温度保护投退状态' },
+    { value: 'air_tank_temp_protect_btn', label: '风包温度保护投退按钮' },
+    { value: 'host_temp_alarm_setting', label: '主机温度报警值设定' },
+    { value: 'host_temp_trip_setting', label: '主机温度跳闸值设定' },
+    { value: 'host_temp_protect_active', label: '主机温度保护投退状态' },
+    { value: 'host_temp_protect_btn', label: '主机温度保护投退按钮' },
+    { value: 'exhaust_temp_alarm_setting', label: '排气温度报警值设定' },
+    { value: 'exhaust_temp_trip_setting', label: '排气温度跳闸值设定' },
+    { value: 'exhaust_temp_protect_active', label: '排气温度保护投退状态' },
+    { value: 'exhaust_temp_protect_btn', label: '排气温度保护投退按钮' },
+    { value: 'vibration_alarm_setting', label: '振动报警值设定' },
+    { value: 'vibration_trip_setting', label: '振动跳闸值设定' },
+    { value: 'vibration_protect_active', label: '振动保护投退状态' },
+    { value: 'vibration_protect_btn', label: '振动保护投退按钮' }
   ],
   ventilator: [
-    'motor1_phase_a_temp', 'motor1_phase_b_temp', 'motor1_phase_c_temp', 'motor1_north_axis_temp',
-    'motor1_south_axis_temp', 'motor1_vert_vibration', 'motor1_horiz_vibration', 'motor1_current',
-    'motor1_voltage', 'motor1_active_power',
-    'motor2_phase_a_temp', 'motor2_phase_b_temp', 'motor2_phase_c_temp', 'motor2_north_axis_temp',
-    'motor2_south_axis_temp', 'motor2_vert_vibration', 'motor2_horiz_vibration', 'motor2_current',
-    'motor2_voltage', 'motor2_active_power',
-    'inverter_current', 'inverter_freq',
-    'air_volume', 'air_speed', 'neg_pressure', 'total_pressure',
-    'side_door_opening', 'side_door_open_limit', 'side_door_close_limit', 'side_door_opening_process',
-    'side_door_closing_process',
-    'air_door_opening', 'air_door_open_limit', 'air_door_close_limit', 'air_door_open_fault',
-    'air_door_close_fault',
-    'horiz_door_opening_process', 'horiz_door_closing_process',
-    'fan_damper_open_fault', 'fan_damper_close_fault', 'fan_damper_alarm',
-    'run_feedback', 'inverter_run_feedback', 'motor1_run_feedback', 'motor2_run_feedback',
-    'auto_mode', 'manual_mode', 'standby_mode', 'exhaust_wind_mode', 'reverse_wind_mode',
-    'cmd_start', 'cmd_stop', 'cmd_switch', 'cmd_reset', 'cmd_mute', 'system_estop',
-    'general_alarm', 'main_motor_alarm', 'other_plc_fault', 'oil_pump1_fault', 'oil_pump2_fault',
-    'lube_pressure_low', 'lube_general_alarm',
-    'stator_temp_alarm', 'bearing_temp_alarm', 'main_motor_bearing_alarm', 'main_motor_bearing_warning',
-    'motor_u1_rise_warn', 'motor_v1_rise_warn', 'motor_w1_rise_warn', 'motor_front_axis_rise_warn',
-    'motor_rear_axis_rise_warn', 'front_axis_rise_warn_1', 'front_axis_rise_warn_2',
-    'bearing_rise_warn_1', 'bearing_rise_warn_2',
-    'bearing_vibration_alarm', 'bearing_vibration_warning', 'front_axis_vert_vib_rise_warn',
-    'front_axis_horiz_vib_rise_warn', 'rear_axis_vert_vib_rise_warn', 'rear_axis_horiz_vib_rise_warn',
-    'front_motor_remote_alarm', 'rear_motor_remote_alarm',
-    'total_run_hours', 'run_time_days', 'run_time_hours', 'run_time_minutes', 'run_time_seconds',
-    'stall_time_minutes', 'stall_time_seconds',
-    'vfd_run_current', 'vfd_run_feedback', 'vfd_run_freq', 'alarm', 'standby', 'exhaust_mode',
-    'side_door_closed', 'side_door_opened'
+    { value: 'air_speed', label: '风速' },
+    { value: 'air_volume', label: '风量' },
+    { value: 'total_pressure', label: '全压' },
+    { value: 'neg_pressure', label: '负压' },
+    { value: 'inverter_freq', label: '变频频率' },
+    { value: 'inverter_current', label: '变频电流' },
+    { value: 'motor1_voltage', label: '1#电机电压' },
+    { value: 'motor1_current', label: '1#电机电流' },
+    { value: 'motor1_active_power', label: '1#电机有功' },
+    { value: 'motor1_vert_vibration', label: '1#电机垂直振动' },
+    { value: 'motor1_horiz_vibration', label: '1#电机水平振动' },
+    { value: 'motor1_north_axis_temp', label: '1#电机北轴温度' },
+    { value: 'motor2_voltage', label: '2#电机电压' },
+    { value: 'motor2_current', label: '2#电机电流' },
+    { value: 'motor2_active_power', label: '2#电机有功' },
+    { value: 'motor2_vert_vibration', label: '2#电机垂直振动' },
+    { value: 'motor2_horiz_vibration', label: '2#电机水平振动' },
+    { value: 'motor2_north_axis_temp', label: '2#电机北轴温度' },
+    { value: 'run_feedback', label: '运行反馈' },
+    { value: 'inverter_run_feedback', label: '变频运行' },
+    { value: 'auto_mode', label: '自动' },
+    { value: 'manual_mode', label: '手动' },
+    { value: 'standby_mode', label: '待机' },
+    { value: 'exhaust_wind_mode', label: '抽风' },
+    { value: 'general_alarm', label: '报警' },
+    { value: 'main_motor_alarm', label: '主电机报警' },
+    { value: 'lube_general_alarm', label: '润滑站报警' },
+    { value: 'stator_temp_alarm', label: '定子温度报警' },
+    { value: 'bearing_temp_alarm', label: '主轴承温度报警' },
+    { value: 'bearing_vibration_alarm', label: '主轴承振动报警' }
   ],
   pump: [
-    'current', 'pos_pressure', 'neg_pressure', 'total_run_hours', 'total_run_minutes',
-    'motor_temp_u', 'motor_temp_v', 'motor_temp_w', 'motor_front_axis_temp', 'motor_rear_axis_temp',
-    'pump_front_axis_temp', 'pump_rear_axis_temp',
-    'run_status', 'run_feedback', 'auto_starting', 'auto_stopping', 'remote_selected', 'local_allow',
-    'standby_status', 'maintenance_status', 'forbid_start',
-    'total_fault', 'start_fault', 'stop_fault', 'soft_start_fault', 'current_abnormal',
-    'pos_pressure_timeout', 'neg_pressure_timeout', 'motor_vert_vib_alert', 'motor_horiz_vib_alert',
-    'pump_vert_vib_alert', 'pump_horiz_vib_alert',
-    'cmd_start', 'cmd_stop', 'cmd_reset_time',
-    'voltage', 'current_fault', 'motor_phase_a_temp', 'motor_phase_b_temp', 'motor_phase_c_temp',
-    'motor_vibration_1', 'motor_vibration_2', 'motor_overheat_fault',
-    'pump_fault', 'pump_emergency_fault', 'pump_vibration_1', 'pump_vibration_2', 'pump_overheat_fault',
-    'pump_run_feedback', 'pos_pressure_fault', 'neg_pressure_fault',
-    'main_valve_close_feedback', 'main_valve_overload_fault', 'main_valve_closed',
-    'main_valve_open_feedback', 'main_valve_opening', 'main_valve_closed_fault', 'main_valve_open',
-    'main_valve_open_fault', 'jet_ball_valve_status',
-    'semi_auto_status', 'runtime_reset_button', 'device_stop_status', 'remote_status',
-    'runtime_minutes', 'runtime_hours', 'runtime', 'local_status', 'vibration_fault',
-    'positive_pressure', 'negative_pressure', 'pump_front_temp', 'motor_front_temp', 'pump_rear_temp',
-    'motor_rear_temp', 'total_run_time'
+    { value: 'current', label: '电流' },
+    { value: 'pos_pressure', label: '正压' },
+    { value: 'neg_pressure', label: '负压' },
+    { value: 'total_run_time', label: '累计运行' },
+    { value: 'motor_temp_u', label: '电机U温' },
+    { value: 'motor_temp_v', label: '电机V温' },
+    { value: 'motor_temp_w', label: '电机W温' },
+    { value: 'motor_front_axis_temp', label: '电机前轴温' },
+    { value: 'motor_rear_axis_temp', label: '电机后轴温' },
+    { value: 'pump_front_axis_temp', label: '水泵前轴温' },
+    { value: 'pump_rear_axis_temp', label: '水泵后轴温' },
+    { value: 'run_status', label: '运行状态' },
+    { value: 'run_feedback', label: '运行反馈' },
+    { value: 'standby_status', label: '备用' },
+    { value: 'maintenance_status', label: '检修' },
+    { value: 'forbid_start', label: '禁起' },
+    { value: 'total_fault', label: '总故障' }
   ],
   conveyor: [
-    'is_running', 'has_power', 'belt_speed', 'belt_tension', 'is_remote_control', 'is_local_control',
-    'is_maintenance_mode',
-    'motor_current_1', 'motor_temp_1', 'motor_overheat_1', 'motor_running_1',
-    'motor_current_2', 'motor_temp_2', 'motor_overheat_2', 'motor_running_2',
-    'motor_current_3', 'motor_temp_3', 'motor_overheat_3', 'motor_running_3',
-    'drum_temp', 'drum_overheat', 'brake_status', 'brake_fault',
-    'smoke_alarm', 'tear_alarm', 'deviation_alarm', 'coal_piling_alarm', 'skid_alarm', 'emergency_stop',
-    'feeder_running', 'feeder_coal_level'
+    { value: 'belt_speed', label: '皮带速度' },
+    { value: 'belt_tension', label: '皮带张力' },
+    { value: 'feeder_coal_level', label: '给煤机煤位' },
+    { value: 'motor_current_1', label: '1#电机电流' },
+    { value: 'motor_temp_1', label: '1#电机温度' },
+    { value: 'motor_current_2', label: '2#电机电流' },
+    { value: 'motor_temp_2', label: '2#电机温度' },
+    { value: 'motor_current_3', label: '3#电机电流' },
+    { value: 'motor_temp_3', label: '3#电机温度' },
+    { value: 'drum_temp', label: '滚筒温度' }
   ]
 }
 
 const mockDataDict: Record<string, { ids: string[], params: { label: string, value: string }[] }> = {
   hoist: {
     ids: ['TS001'],
-    params: buildOptions(parameterKeyDict.hoist)
+    params: parameterDict.hoist
   },
   compressor: {
     ids: ['YF001', 'YF002', 'YF003', 'YF004', 'YF005', 'YF006', 'YF007'],
-    params: buildOptions(parameterKeyDict.compressor)
+    params: parameterDict.compressor
   },
   ventilator: {
     ids: ['TF001', 'TF002'],
-    params: buildOptions(parameterKeyDict.ventilator)
+    params: parameterDict.ventilator
   },
   pump: {
     ids: ['PS001', 'PS002', 'PS003'],
-    params: buildOptions(parameterKeyDict.pump)
+    params: parameterDict.pump
   },
   conveyor: {
     ids: ['YS001'],
-    params: buildOptions(parameterKeyDict.conveyor)
+    params: parameterDict.conveyor
   }
 }
+
+const machineTypeLabelMap: Record<string, string> = {
+  hoist: '提升机',
+  compressor: '压风机',
+  ventilator: '通风机',
+  pump: '排水泵',
+  conveyor: '运输机'
+}
+
+const selectedMachineTypeLabel = computed(() => machineTypeLabelMap[filterForm.machineType] || '未选择')
+const selectedMachineIdLabel = computed(() => filterForm.machineId || '未选择')
+const selectedParameterLabel = computed(() => {
+  const option = parameterOptions.value.find(item => item.value === filterForm.parameter)
+  return option?.label || '未选择'
+})
 
 // 处理机器类型改变
 const handleMachineTypeChange = (val: string) => {
@@ -361,7 +461,7 @@ const fetchData = async () => {
     }
 
     chartInstance.setOption(option)
-  } catch (error) {
+  } catch {
     ElMessage.error('获取历史数据失败')
   } finally {
     loading.value = false
@@ -506,6 +606,34 @@ onUnmounted(() => {
       padding: 18px 20px;
     }
 
+    .selection-summary {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(84, 160, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(10, 24, 42, 0.5);
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: rgba(156, 203, 255, 0.9);
+      font-weight: 600;
+    }
+
+    .summary-pill {
+      padding: 4px 10px;
+      border: 1px solid rgba(54, 240, 255, 0.35);
+      border-radius: 999px;
+      background: rgba(8, 30, 52, 0.9);
+      color: #E6F7FF;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
     .filter-form {
       display: flex;
       flex-wrap: wrap;
@@ -514,6 +642,14 @@ onUnmounted(() => {
       .el-form-item {
         margin-bottom: 0;
         margin-right: 18px;
+      }
+
+      :deep(.filter-select) {
+        width: 180px;
+      }
+
+      :deep(.filter-date) {
+        width: 420px;
       }
     }
   }
@@ -550,16 +686,29 @@ onUnmounted(() => {
   }
 
   :deep(.el-input__wrapper),
-  :deep(.el-select .el-input__wrapper),
+  :deep(.el-select__wrapper),
   :deep(.el-date-editor.el-input__wrapper) {
-    background: rgba(12, 26, 44, 0.9);
-    border: 1px solid rgba(84, 160, 255, 0.35);
-    box-shadow: inset 0 0 12px rgba(54, 240, 255, 0.08);
+    background-color: rgba(12, 26, 44, 0.9) !important;
+    box-shadow: 0 0 0 1px rgba(84, 160, 255, 0.35) inset, inset 0 0 12px rgba(54, 240, 255, 0.08) !important;
   }
 
-  :deep(.el-input__inner) {
-    color: #E6F7FF;
+  :deep(.el-input__inner),
+  :deep(.el-select__placeholder),
+  :deep(.el-select__selected-item),
+  :deep(.el-range-input) {
+    color: #E6F7FF !important;
     font-family: 'Rajdhani', sans-serif;
+    background: transparent !important;
+    -webkit-text-fill-color: #E6F7FF !important;
+  }
+
+  :deep(.el-select__selected-item) {
+    color: #E6F7FF !important;
+  }
+
+  :deep(.el-select__selected-item span) {
+    color: #E6F7FF !important;
+    -webkit-text-fill-color: #E6F7FF !important;
   }
 
   :deep(.el-button--primary) {
