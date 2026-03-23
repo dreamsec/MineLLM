@@ -301,23 +301,26 @@ let refreshTimer: number | undefined
 function formatDataForUnity(data: CompressorRealtimeData): string {
   if (!data) return "";
 
-  // 示例：简单拼接，实际请根据 Unity 需求调整
-  // 这里演示将所有数值用竖线 | 分隔
-  const values = [
-    data.voltage || 0,
-    data.current || 0,
-    data.motor_vibration || 0,
+  const num = (v: unknown) => (typeof v === 'number' ? formatDecimal(v) : (v ?? '--'))
+  const boolText = (v: unknown) => (toBool(v as BooleanLike) ? '开' : '关')
 
-    data.host_vibration || 0,
-
-    data.exhaust_pressure || 0,
-    data.running_temp || 0,
-    data.host_exhaust_temp || 0,
-    data.separation_pressure || 0,
-
-  ];
-
-  return "电压：" + values[0] + "V,电流：" + values[1] + "A,电机振动：" + values[2] + "mm/s,主机振动：" + values[3] + "mm/s|排气压力：" + values[4] + "Mpa,运行温度" + values[5] + "°C,主机排气温度：" + values[6] + "°C,分离压力：" + values[7] + "Mpa";
+  return "电压：" + num(data.voltage) + "V"
+    + ",电流：" + num(data.current) + "A"
+    + ",电机振动：" + num(data.motor_vibration) + "mm/s"
+    + ",主机振动：" + num(data.host_vibration) + "mm/s"
+    + "|排气压力：" + num(data.exhaust_pressure) + "MPa"
+    + ",分离压力：" + num(data.separation_pressure) + "MPa"
+    + ",分离压差：" + num(data.separation_diff_pressure) + "MPa"
+    + ",进气真空：" + num(data.intake_vacuum) + "kPa"
+    + "|机组排气温度：" + num(data.unit_exhaust_temp) + "°C"
+    + ",主机排气温度：" + num(data.host_exhaust_temp) + "°C"
+    + ",风包温度：" + num(data.air_tank_temp) + "°C"
+    + ",冷却剂温度：" + num(data.coolant_temp) + "°C"
+    + ",运行温度：" + num(data.running_temp) + "°C"
+    + "|运行反馈：" + boolText(data.running_feedback)
+    + ",故障存在：" + boolText(data.fault_exist)
+    + ",通信状态：" + boolText(data.comm_status)
+    + ",加卸载模式：" + boolText(data.load_unload_mode);
 }
 
 /**

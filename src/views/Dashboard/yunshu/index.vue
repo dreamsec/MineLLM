@@ -279,7 +279,7 @@ function formatDataForUnity(data: ConveyorRealtimeData): string {
 
   // 分组：运行数据 | 电机数据 | 保护/状态
   const runText =
-    `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}`
+    `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}N`
 
   const motorText =
     `1#电机:${n(data.motor_current_1)}A/${n(data.motor_temp_1)}°C,` +

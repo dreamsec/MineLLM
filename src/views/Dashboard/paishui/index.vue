@@ -198,47 +198,20 @@ let refreshTimer: number | undefined
 function formatDataForUnity(data: PumpRealtimeData): string {
   if (!data) return "";
 
-  // 映射排水机数据到要求的格式数组中
-  // 注意：要求的格式中包含"排气压力"等可能属于压缩机的术语，
-  // 此处将排水机的 PosPressure 映射为 排气压力，NegPressure 映射为 分离压力 以保证数据传递
-  const values = [
-    //水泵
-    data.pump_fault||0,
-    data.pump_emergency_fault||0,
-    data.pump_overheat_fault||0,
-    data.vibration_fault||0,
-    //电机
-    data.motor_front_axis_temp||0,
-    data.motor_rear_axis_temp||0,
-    data.motor_phase_a_temp||0,
-    data.motor_phase_b_temp||0,
-    data.motor_phase_c_temp||0,
-    data.motor_vibration_1||0,
-    data.motor_vibration_2||0,
-    data.motor_overheat_fault||0,
-    //运行状态
-    data.runtime_hours||0,
-    data.runtime_minutes||0,
-    data.total_fault||0,
-    data.device_stop_status||0,
-    data.maintenance_status||0,
-    data.remote_status||0,
-    data.local_status||0,
-    data.semi_auto_status||0,
-    //阀门状态
-    data.main_valve_opening||0,
-    data.main_valve_open||0,
-    data.main_valve_closed||0,
-    data.main_valve_open_fault||0,
-    data.main_valve_closed_fault||0,
-    data.main_valve_overload_fault||0,
-    data.jet_ball_valve_status||0
+  const num = (v: unknown) => (typeof v === 'number' ? formatDecimal(v) : (v ?? '--'))
+  const boolText = (v: unknown) => (toBool(v) ? '是' : '否')
+  const runTime = `${data.total_run_hours ?? 0}h${data.total_run_minutes ?? 0}m`
 
-
-
-  ];
-
-  return "泵故障："+values[0]+",泵紧急故障："+values[1]+",泵过热故障："+values[2]+",振动故障："+values[3]+"|电机前温度："+values[4]+"°C,电机后温度："+values[5]+"°C,电机振动1："+values[9]+"mm/s,电机振动2："+values[10]+"mm/s,电机过热故障："+values[11]+"|累计运行："+values[12]+"h,运行分钟："+values[13]+"m,总故障数："+values[14]+"次,设备停止状态："+values[15]+",半自动状态："+values[19]+"|主阀开度："+values[20]+"%,主阀开启故障："+values[23]+",主阀关闭故障："+values[24]+",主阀过载故障："+values[25]+",喷射球阀状态："+values[26];
+  return "电流：" + num(data.current) + "A"
+    + ",正压：" + num(data.pos_pressure) + "MPa"
+    + ",负压：" + num(data.neg_pressure) + "MPa"
+    + "|累计运行：" + runTime
+    + "|电机U温：" + num(data.motor_temp_u) + "℃,电机V温：" + num(data.motor_temp_v) + "℃,电机W温：" + num(data.motor_temp_w) + "℃"
+    + "|电机前轴温：" + num(data.motor_front_axis_temp) + "℃,电机后轴温：" + num(data.motor_rear_axis_temp) + "℃"
+    + "|水泵前轴温：" + num(data.pump_front_axis_temp) + "℃,水泵后轴温：" + num(data.pump_rear_axis_temp) + "℃"
+    + "|运行状态：" + boolText(data.run_status) + ",运行反馈：" + boolText(data.run_feedback)
+    + ",备用：" + boolText(data.standby_status) + ",检修：" + boolText(data.maintenance_status)
+    + ",禁起：" + boolText(data.forbid_start) + ",总故障：" + boolText(data.total_fault);
 }
 
 async function loadRealtime() {

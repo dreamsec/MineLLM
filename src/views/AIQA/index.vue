@@ -364,11 +364,6 @@ const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 // 快捷问题
 const quickQuestions = ref<QuickQuestion[]>([
   {
-    id: 1,
-    text: '主提升机异响怎么处理？',
-    icon: 'fas fa-volume-up',
-  },
-  {
     id: 2,
     text: '设备维护保养的标准流程是什么？',
     icon: 'fas fa-tools',
