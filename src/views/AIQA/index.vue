@@ -29,8 +29,26 @@
         <div class="chat-messages" ref="messagesContainer">
           <div v-if="messages.length === 0" class="welcome-message">
             <div class="welcome-content">
-              <div class="ai-avatar">
-                <i class="fas fa-robot"></i>
+              <div class="ai-hero-orb">
+                <div class="orb-rings">
+                  <div class="ring ring-1"></div>
+                  <div class="ring ring-2"></div>
+                  <div class="ring ring-3"></div>
+                </div>
+                <div class="orb-core">
+                  <div class="orb-glow"></div>
+                  <div class="orb-inner">
+                    <i class="fas fa-robot"></i>
+                  </div>
+                  <div class="orb-particles">
+                    <span class="particle" :style="{'--i': 0}"></span>
+                    <span class="particle" :style="{'--i': 1}"></span>
+                    <span class="particle" :style="{'--i': 2}"></span>
+                    <span class="particle" :style="{'--i': 3}"></span>
+                    <span class="particle" :style="{'--i': 4}"></span>
+                    <span class="particle" :style="{'--i': 5}"></span>
+                  </div>
+                </div>
               </div>
               <h3>智能运维助手</h3>
               <p>我是您的智能运维助手，可以为您解答设备维护、故障诊断、操作规程等相关问题。</p>
@@ -205,15 +223,35 @@
               :class="['history-item', { active: currentSessionId === session.session_id }]"
               @click="loadSession(session.session_id)"
             >
-              <div class="session-info">
-                <h4>{{ session.title }}</h4>
-                <p>{{ formatDate(new Date(session.updated_at).getTime()) }}</p>
-                <span class="message-count">{{ session.model_name }}</span>
-              </div>
-              <div class="session-actions">
-                <button class="action-btn small" @click.stop="deleteSession(session.session_id)">
-                  <i class="fas fa-trash"></i>
-                </button>
+              <div class="session-main">
+                <div class="session-top-row">
+                  <div class="session-model-badge">
+                    <i class="fas fa-microchip"></i>
+                    <span>{{ session.model_name }}</span>
+                  </div>
+                  <button class="session-delete-btn" @click.stop="deleteSession(session.session_id)" title="删除对话">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <h4 class="session-title">{{ session.title }}</h4>
+                <p class="session-summary" v-if="session.summary">{{ session.summary }}</p>
+                <div class="session-keywords" v-if="session.keywords && session.keywords.length">
+                  <span
+                    v-for="(kw, idx) in session.keywords.slice(0, 3)"
+                    :key="idx"
+                    class="keyword-tag"
+                  >#{{ kw }}</span>
+                </div>
+                <div class="session-footer">
+                  <span class="session-time">
+                    <i class="fas fa-clock"></i>
+                    {{ formatDate(new Date(session.updated_at).getTime()) }}
+                  </span>
+                  <span class="session-msg-count" v-if="session.message_count">
+                    <i class="fas fa-comments"></i>
+                    {{ session.message_count }} 条
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -344,6 +382,9 @@ interface ChatSession {
   status: number
   created_at: string
   updated_at: string
+  summary?: string       // 对话摘要
+  keywords?: string[]    // 关键词标签
+  message_count?: number // 消息数量
 }
 
 interface KnowledgeCategory {
@@ -497,7 +538,7 @@ const sendMessage = async () => {
   })
 
   if (currentSessionId.value === "-1"){
-    await newChatSessionId({model_name:"qwen-plus",title:"新对话"}).then((res) => {
+    await newChatSessionId({model_name:"qwen3:32b",title:"新对话"}).then((res) => {
       currentSessionId.value = res.data.session_id
     })
   }
@@ -665,6 +706,8 @@ const sendMessage = async () => {
       messages.value[aiMessageIndex].modelLoading = false
     }
     isLoading.value = false
+    // 流结束后刷新会话列表，更新标题/摘要/关键词
+    await refreshSessionList()
   })
 }
 
@@ -1025,6 +1068,7 @@ const deleteSession = async (sessionId: string) => {
       }
 
       ElMessage.success('会话删除成功')
+      await refreshSessionList()
     } else {
       ElMessage.error(response.message || '删除会话失败')
     }
@@ -1034,16 +1078,21 @@ const deleteSession = async (sessionId: string) => {
   }
 }
 
-// 生命周期
-onMounted(async () => {
+// 刷新会话列表
+const refreshSessionList = async () => {
   try {
-    const response: IApiResponseData<ChatSession[]> = await getChatSessionList()
-    if (response.code === 1 && response.data) {
-      chatSessions.value = response.data
+    const response = await getChatSessionList()
+    if (response && response.data && Array.isArray(response.data)) {
+      chatSessions.value = response.data as ChatSession[]
     }
   } catch (error) {
     console.error('获取会话列表失败:', error)
   }
+}
+
+// 生命周期
+onMounted(async () => {
+  await refreshSessionList()
 })
 
 // 监听输入文本变化
@@ -1174,21 +1223,130 @@ watch(inputText, () => {
   overflow: auto;
 }
 
-.welcome-content .ai-avatar {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #1890ff, #40a9ff);
-  border-radius: 50%;
+/* ---- AI Hero Orb ---- */
+.ai-hero-orb {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 16px auto 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 20px auto 20px;
-  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.3);
 }
 
-.welcome-content .ai-avatar i {
-  font-size: 32px;
+/* 旋转光环 */
+.orb-rings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+}
+
+.ring-1 {
+  width: 120px;
+  height: 120px;
+  border-color: rgba(24, 144, 255, 0.35);
+  border-top-color: rgba(24, 144, 255, 0.9);
+  animation: orb-spin 3s linear infinite;
+}
+
+.ring-2 {
+  width: 96px;
+  height: 96px;
+  border-color: rgba(64, 169, 255, 0.25);
+  border-right-color: rgba(64, 169, 255, 0.8);
+  animation: orb-spin 2s linear infinite reverse;
+}
+
+.ring-3 {
+  width: 72px;
+  height: 72px;
+  border-color: rgba(0, 209, 255, 0.2);
+  border-bottom-color: rgba(0, 209, 255, 0.7);
+  animation: orb-spin 4s linear infinite;
+}
+
+@keyframes orb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 核心球体 */
+.orb-core {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orb-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(24, 144, 255, 0.4) 0%, rgba(24, 144, 255, 0.1) 50%, transparent 70%);
+  animation: orb-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50%       { transform: scale(1.18); opacity: 1; }
+}
+
+.orb-inner {
+  position: relative;
+  z-index: 2;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #1677ff 0%, #0958d9 40%, #003eb3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 2px rgba(24, 144, 255, 0.3),
+    0 8px 32px rgba(24, 144, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.orb-inner i {
+  font-size: 24px;
   color: #ffffff;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.6));
+}
+
+/* 粒子 */
+.orb-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #40a9ff;
+  transform-origin: 0 0;
+  animation: particle-orbit 3s linear infinite;
+  animation-delay: calc(var(--i) * -0.5s);
+}
+
+@keyframes particle-orbit {
+  0%   { transform: rotate(calc(var(--i) * 60deg)) translateX(38px) scale(1);   opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { transform: rotate(calc(var(--i) * 60deg + 360deg)) translateX(38px) scale(0.6); opacity: 1; }
 }
 
 .welcome-content h3 {
@@ -1590,7 +1748,14 @@ watch(inputText, () => {
   overflow-y: auto;
 }
 
-.history-section,
+.history-section {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .knowledge-shortcuts,
 .usage-stats {
   background: #ffffff;
@@ -1610,51 +1775,165 @@ watch(inputText, () => {
 }
 
 .history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 300px;
+  max-height: 480px;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.history-list > * + * {
+  margin-top: 8px;
 }
 
 .history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #fafafa;
+  padding: 0;
+  background: #fff;
   border: 1px solid #e8e8e8;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  overflow: hidden;
 }
 
 .history-item:hover {
   border-color: #1890ff;
-  background: #f0f8ff;
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.12);
+  transform: translateY(-1px);
 }
 
 .history-item.active {
   border-color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
+  background: linear-gradient(135deg, rgba(24,144,255,0.06) 0%, rgba(64,169,255,0.04) 100%);
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.18);
 }
 
-.session-info h4 {
-  margin: 0 0 4px 0;
-  color: #333333;
-  font-size: 14px;
+.session-main {
+  padding: 10px 12px;
+}
+
+.session-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.session-model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #e6f4ff, #bae0ff);
+  border: 1px solid #91caff;
+  border-radius: 20px;
+  font-size: 10px;
+  color: #0958d9;
   font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.session-info p {
-  margin: 0 0 4px 0;
-  color: #999999;
-  font-size: 12px;
+.session-model-badge i {
+  font-size: 9px;
+  flex-shrink: 0;
 }
 
-.message-count {
-  color: #999999;
+.session-delete-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #bfbfbf;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 11px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.session-delete-btn:hover {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.session-title {
+  margin: 0 0 5px 0;
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-summary {
+  margin: 0 0 7px 0;
+  color: #595959;
+  font-size: 11.5px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.session-summary--empty {
+  color: #bfbfbf;
+  font-style: italic;
+}
+
+.session-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.keyword-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 10px;
+  font-size: 10px;
+  color: #2f54eb;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.history-item:hover .keyword-tag,
+.history-item.active .keyword-tag {
+  background: #d6e4ff;
+  border-color: #85a5ff;
+}
+
+.session-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed #f0f0f0;
+  padding-top: 6px;
+}
+
+.session-time,
+.session-msg-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: #8c8c8c;
+}
+
+.session-time i,
+.session-msg-count i {
+  font-size: 9px;
+  color: #bfbfbf;
 }
 
 .shortcut-list {

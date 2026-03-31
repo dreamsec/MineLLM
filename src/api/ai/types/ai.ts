@@ -66,6 +66,9 @@ export interface GetChatSessionListResponseData {
   status: number
   created_at: string
   updated_at: string
+  summary?: string        // 对话摘要（核心主题一句话概述）
+  keywords?: string[]     // 关键词标签列表
+  message_count?: number  // 消息条数
 }
 export type GetChatSessionListResponse = IApiResponseData<GetChatSessionListResponseData[]>
 

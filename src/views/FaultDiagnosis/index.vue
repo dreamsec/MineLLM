@@ -2,22 +2,36 @@
   <div class="fault-diagnosis-container">
     <div class="page-header">
       <div class="title-group">
-        <h2>故障诊断 · 历史趋势</h2>
-        <p>按设备变量检索历史数据，生成趋势曲线</p>
+        <div class="title-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#36F0FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <h2>故障诊断 <span class="title-dot">·</span> 历史趋势</h2>
+          <p>按设备变量检索历史数据，生成趋势曲线</p>
+        </div>
       </div>
       <div class="device-strip">
         <div v-for="item in deviceOverview" :key="item.label" class="device-chip">
+          <span class="chip-dot"></span>
           <span class="chip-label">{{ item.label }}</span>
           <span class="chip-value">{{ item.value }}</span>
         </div>
       </div>
     </div>
+
     <el-card class="filter-card">
-      <div class="selection-summary">
-        <span class="summary-label">当前选择</span>
-        <span class="summary-pill">机器类型：{{ selectedMachineTypeLabel }}</span>
-        <span class="summary-pill">机器编号：{{ selectedMachineIdLabel }}</span>
-        <span class="summary-pill">展示参数：{{ selectedParameterLabel }}</span>
+      <div class="filter-card-header">
+        <span class="filter-card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 4h18M7 12h10M11 20h2" stroke="#36F0FF" stroke-width="2" stroke-linecap="round"/></svg>
+          查询条件
+        </span>
+        <div class="selection-pills">
+          <span class="summary-pill active">{{ selectedMachineTypeLabel }}</span>
+          <span class="pill-sep">›</span>
+          <span class="summary-pill active">{{ selectedMachineIdLabel }}</span>
+          <span class="pill-sep">›</span>
+          <span class="summary-pill active">{{ selectedParameterLabel }}</span>
+        </div>
       </div>
       <el-form :inline="true" :model="filterForm" class="filter-form">
         <el-form-item label="机器类型">
@@ -51,12 +65,25 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="fetchData">查询</el-button>
+          <el-button type="primary" class="query-btn" @click="fetchData">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="margin-right:6px"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            查询
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <el-card class="chart-card" v-loading="loading">
+      <div class="chart-card-header">
+        <div class="chart-card-title">
+          <span class="chart-title-bar"></span>
+          趋势图表
+        </div>
+        <div class="chart-card-badges">
+          <span class="chart-badge">{{ selectedMachineIdLabel }}</span>
+          <span class="chart-badge highlight">{{ selectedParameterLabel }}</span>
+        </div>
+      </div>
       <div ref="chartRef" class="chart-container"></div>
     </el-card>
   </div>
@@ -503,13 +530,13 @@ onUnmounted(() => {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   height: 100%;
   box-sizing: border-box;
   font-family: 'Rajdhani', sans-serif;
   color: #E6F7FF;
-  background: radial-gradient(1200px 500px at 10% -10%, rgba(54, 240, 255, 0.25), transparent 60%),
-    radial-gradient(900px 600px at 90% 10%, rgba(93, 120, 255, 0.25), transparent 65%),
+  background: radial-gradient(1200px 500px at 10% -10%, rgba(54, 240, 255, 0.22), transparent 60%),
+    radial-gradient(900px 600px at 90% 10%, rgba(93, 120, 255, 0.22), transparent 65%),
     linear-gradient(135deg, #050b16 0%, #0b1b2b 60%, #0e1020 100%);
   position: relative;
   overflow: hidden;
@@ -518,64 +545,128 @@ onUnmounted(() => {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(rgba(95, 200, 255, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(95, 200, 255, 0.08) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(95, 200, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(95, 200, 255, 0.06) 1px, transparent 1px);
     background-size: 40px 40px;
-    opacity: 0.4;
+    opacity: 0.5;
     pointer-events: none;
   }
 
+  &::after {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    right: -220px;
+    bottom: -280px;
+    background: radial-gradient(circle, rgba(54, 240, 255, 0.28), transparent 60%);
+    filter: blur(12px);
+    pointer-events: none;
+  }
+
+  // ── 页头 ──────────────────────────────────────────
   .page-header {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 16px 20px;
-    border: 1px solid rgba(85, 160, 255, 0.22);
+    padding: 18px 24px;
+    border: 1px solid rgba(85, 160, 255, 0.2);
+    border-top: 2px solid rgba(54, 240, 255, 0.5);
     border-radius: 14px;
-    background: linear-gradient(120deg, rgba(12, 26, 44, 0.85), rgba(8, 20, 35, 0.7));
-    box-shadow: inset 0 0 40px rgba(16, 32, 55, 0.6), 0 8px 28px rgba(0, 0, 0, 0.35);
+    background: linear-gradient(120deg, rgba(12, 26, 44, 0.9), rgba(8, 20, 35, 0.75));
+    box-shadow: inset 0 0 40px rgba(16, 32, 55, 0.5), 0 8px 28px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(54, 240, 255, 0.6), transparent);
+    }
   }
 
   .title-group {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 14px;
+
+    .title-icon {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(54, 240, 255, 0.1);
+      border: 1px solid rgba(54, 240, 255, 0.3);
+      box-shadow: 0 0 16px rgba(54, 240, 255, 0.15);
+      flex-shrink: 0;
+    }
 
     h2 {
-      margin: 0;
-      font-size: 22px;
+      margin: 0 0 4px;
+      font-size: 20px;
       letter-spacing: 2px;
       font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(90deg, #E6F7FF, #36F0FF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+
+      .title-dot {
+        color: rgba(54, 240, 255, 0.6);
+        -webkit-text-fill-color: rgba(54, 240, 255, 0.6);
+        margin: 0 4px;
+      }
     }
 
     p {
       margin: 0;
-      color: rgba(156, 203, 255, 0.8);
+      font-size: 13px;
+      color: rgba(156, 203, 255, 0.7);
+      letter-spacing: 0.5px;
     }
   }
 
   .device-strip {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     justify-content: flex-end;
   }
 
   .device-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: 7px;
+    padding: 5px 12px 5px 8px;
     border-radius: 999px;
-    border: 1px solid rgba(54, 240, 255, 0.35);
-    background: rgba(10, 24, 42, 0.8);
-    font-size: 13px;
+    border: 1px solid rgba(54, 240, 255, 0.25);
+    background: rgba(10, 24, 42, 0.85);
+    font-size: 12.5px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      border-color: rgba(54, 240, 255, 0.5);
+      box-shadow: 0 0 10px rgba(54, 240, 255, 0.12);
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #36F0FF;
+      box-shadow: 0 0 6px #36F0FF;
+      animation: blink 2.5s ease-in-out infinite;
+    }
   }
 
   .chip-label {
-    color: rgba(156, 203, 255, 0.8);
+    color: rgba(156, 203, 255, 0.75);
   }
 
   .chip-value {
@@ -584,102 +675,170 @@ onUnmounted(() => {
     letter-spacing: 0.5px;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    width: 520px;
-    height: 520px;
-    right: -200px;
-    bottom: -240px;
-    background: radial-gradient(circle, rgba(54, 240, 255, 0.35), transparent 60%);
-    filter: blur(10px);
-    pointer-events: none;
-  }
-
+  // ── 筛选卡片 ──────────────────────────────────────
   .filter-card {
     backdrop-filter: blur(14px);
-    background: rgba(8, 20, 35, 0.7);
-    border: 1px solid rgba(85, 160, 255, 0.25);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    background: rgba(8, 20, 35, 0.72);
+    border: 1px solid rgba(85, 160, 255, 0.2);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 
     :deep(.el-card__body) {
-      padding: 18px 20px;
+      padding: 16px 20px;
     }
 
-    .selection-summary {
+    .filter-card-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
-      gap: 8px;
-      margin: 0 0 12px;
-      padding: 8px 10px;
-      border: 1px solid rgba(84, 160, 255, 0.2);
-      border-radius: 10px;
-      background: rgba(10, 24, 42, 0.5);
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(84, 160, 255, 0.15);
     }
 
-    .summary-label {
-      font-size: 12px;
-      color: rgba(156, 203, 255, 0.9);
+    .filter-card-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
       font-weight: 600;
+      color: #9CCBFF;
+      letter-spacing: 1px;
+    }
+
+    .selection-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-sep {
+      color: rgba(156, 203, 255, 0.35);
+      font-size: 14px;
     }
 
     .summary-pill {
-      padding: 4px 10px;
-      border: 1px solid rgba(54, 240, 255, 0.35);
+      padding: 3px 10px;
+      border: 1px solid rgba(54, 240, 255, 0.25);
       border-radius: 999px;
-      background: rgba(8, 30, 52, 0.9);
-      color: #E6F7FF;
+      background: rgba(8, 30, 52, 0.8);
+      color: rgba(230, 247, 255, 0.7);
       font-size: 12px;
-      line-height: 1.2;
+
+      &.active {
+        border-color: rgba(54, 240, 255, 0.45);
+        color: #36F0FF;
+        background: rgba(54, 240, 255, 0.08);
+      }
     }
 
     .filter-form {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
+      gap: 0;
 
       .el-form-item {
         margin-bottom: 0;
-        margin-right: 18px;
+        margin-right: 16px;
       }
 
       :deep(.filter-select) {
-        width: 180px;
+        width: 175px;
       }
 
       :deep(.filter-date) {
-        width: 420px;
+        width: 400px;
       }
+    }
+
+    .query-btn {
+      display: flex;
+      align-items: center;
+      padding: 8px 20px;
+      height: 36px;
     }
   }
 
+  // ── 图表卡片 ──────────────────────────────────────
   .chart-card {
     flex: 1;
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(16px);
-    background: rgba(6, 16, 30, 0.82);
-    border: 1px solid rgba(74, 190, 255, 0.25);
-    box-shadow: inset 0 0 40px rgba(19, 43, 70, 0.7), 0 18px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(6, 16, 30, 0.85);
+    border: 1px solid rgba(74, 190, 255, 0.2);
+    border-radius: 14px;
+    box-shadow: inset 0 0 50px rgba(19, 43, 70, 0.6), 0 16px 40px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
 
     :deep(.el-card__body) {
       flex: 1;
-      padding: 20px;
+      padding: 0;
       display: flex;
       flex-direction: column;
+    }
+
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(74, 190, 255, 0.12);
+      background: rgba(10, 24, 42, 0.5);
+    }
+
+    .chart-card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #9CCBFF;
+      letter-spacing: 1px;
+
+      .chart-title-bar {
+        width: 3px;
+        height: 16px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, #36F0FF, #4A5CFF);
+        box-shadow: 0 0 8px rgba(54, 240, 255, 0.6);
+      }
+    }
+
+    .chart-card-badges {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chart-badge {
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(84, 160, 255, 0.25);
+      background: rgba(12, 26, 44, 0.8);
+      font-size: 12px;
+      color: rgba(156, 203, 255, 0.8);
+
+      &.highlight {
+        border-color: rgba(54, 240, 255, 0.4);
+        color: #36F0FF;
+        background: rgba(54, 240, 255, 0.08);
+      }
     }
 
     .chart-container {
       flex: 1;
       width: 100%;
-      min-height: 400px;
-      border-radius: 12px;
+      min-height: 380px;
       position: relative;
       animation: pulseGlow 6s ease-in-out infinite;
     }
   }
 
+  // ── Element Plus 覆盖 ─────────────────────────────
   :deep(.el-form-item__label) {
     color: #9CCBFF;
     font-weight: 600;
@@ -689,7 +848,12 @@ onUnmounted(() => {
   :deep(.el-select__wrapper),
   :deep(.el-date-editor.el-input__wrapper) {
     background-color: rgba(12, 26, 44, 0.9) !important;
-    box-shadow: 0 0 0 1px rgba(84, 160, 255, 0.35) inset, inset 0 0 12px rgba(54, 240, 255, 0.08) !important;
+    box-shadow: 0 0 0 1px rgba(84, 160, 255, 0.3) inset, inset 0 0 12px rgba(54, 240, 255, 0.06) !important;
+    transition: box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 0 0 1px rgba(54, 240, 255, 0.5) inset, inset 0 0 12px rgba(54, 240, 255, 0.1) !important;
+    }
   }
 
   :deep(.el-input__inner),
@@ -700,10 +864,6 @@ onUnmounted(() => {
     font-family: 'Rajdhani', sans-serif;
     background: transparent !important;
     -webkit-text-fill-color: #E6F7FF !important;
-  }
-
-  :deep(.el-select__selected-item) {
-    color: #E6F7FF !important;
   }
 
   :deep(.el-select__selected-item span) {
@@ -717,21 +877,23 @@ onUnmounted(() => {
     color: #050b16;
     font-weight: 700;
     letter-spacing: 1px;
-    box-shadow: 0 10px 20px rgba(54, 240, 255, 0.35);
-  }
+    box-shadow: 0 6px 18px rgba(54, 240, 255, 0.3);
+    transition: box-shadow 0.2s, filter 0.2s;
 
-  :deep(.el-button--primary:hover) {
-    filter: brightness(1.08);
+    &:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 8px 24px rgba(54, 240, 255, 0.45);
+    }
   }
 }
 
 @keyframes pulseGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 rgba(54, 240, 255, 0);
-  }
-  50% {
-    box-shadow: 0 0 28px rgba(54, 240, 255, 0.2);
-  }
+  0%, 100% { box-shadow: 0 0 0 rgba(54, 240, 255, 0); }
+  50%       { box-shadow: 0 0 30px rgba(54, 240, 255, 0.15); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
 </style>
