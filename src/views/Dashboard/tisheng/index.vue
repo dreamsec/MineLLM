@@ -86,8 +86,9 @@ const UNITY_CONFIG = {
   productName: "My Project",
 }
 
-const UNITY_TARGET_OBJ = "SendMessageelevator" // ★请确认Unity场景中接收数据的物体名称
-const UNITY_METHOD_NAME = "UpdateelevatorTexts"     // ★请确认Unity脚本中接收数据的函数名称
+const UNITY_TARGET_OBJ = "elevator_car" // 主井提升机物体名称
+const UNITY_TARGET_OBJ_VICE = "elevator_people" // 副并提升机（人员）物体名称
+const UNITY_METHOD_NAME = "ReceiveDataFromWeb" // 脚本里的方法 ReceiveDataFromWeb
 
 declare global {
   interface Window {
@@ -306,6 +307,29 @@ function formatDataForUnity(data: HoistRealtimeData): string {
   return "定子电流:" + values[0] + "A,励磁电流:" + values[1] + "A,进线电压:" + values[2] + "V,电机最高温度:" + values[3] + "°C|轴承最高温度:" + values[4] + "°C,制动油压:" + values[5] + "MPa|主箕斗位置:" + values[6] + "m,副箕斗位置:" + values[7] + "m,主箕斗速度:" + values[8] + "m/s,副箕斗速度:" + values[9] + "m/s|自动模式:" + values[10] + ",故障报警:" + values[11] + ",手动模式:" + values[12];
 }
 
+/**
+ * 【新增加】专门格式化传给 elevatorEasyContral 脚本的数据
+ * 格式要求: 当前值,最小值,最大值
+ */
+function formatDataForElevatorMotion(data: HoistRealtimeData): string {
+     if (!data) return '0,0,600'
+     // 主箕斗位置 main_skip_pos
+     const currentVal = Number(data.main_skip_pos || 0).toFixed(2)
+     const minVal = "0"
+     const maxVal = "600"
+     return `${currentVal},${minVal},${maxVal}`
+}
+
+function formatDataForViceElevatorMotion(data: HoistRealtimeData): string {
+     if (!data) return '0,0,600'
+     // 副箕斗位置 vice_skip_pos
+     const currentVal = Number(data.vice_skip_pos || 0).toFixed(2)
+     const minVal = "0"
+     const maxVal = "600"
+     return `${currentVal},${minVal},${maxVal}`
+
+}
+
 async function loadRealtime() {
   try {
     const res = await getRealtimeDataApi('TS001')
@@ -314,9 +338,18 @@ async function loadRealtime() {
 
     // 同步数据到 Unity
     if (unityInstance) {
-      const msg = formatDataForUnity(data)
-      // console.log("Sending to Unity:", msg)
-      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+      // 1. 发送文字UI更新数据 (给原先负责文字解析的脚本/对象，如果存在且名字不变的话)
+      // 注意：如果您完全移除了原有文字UI通信，请注释这段或者保留为原用。
+      // const msgText = formatDataForUnity(data)
+      // unityInstance.SendMessage("SendMessageelevator", "UpdateelevatorTexts", msgText)
+
+      // 2. 发送主井提升机运动控制数据
+      const motionData = formatDataForElevatorMotion(data)
+      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, motionData)
+
+      // 3. 发送副井提升机运动控制数据
+      const viceMotionData = formatDataForViceElevatorMotion(data)
+      unityInstance.SendMessage(UNITY_TARGET_OBJ_VICE, UNITY_METHOD_NAME, viceMotionData)
     }
   } catch (e) {
     console.error(e)
@@ -348,8 +381,11 @@ function initUnity() {
           unityInstance = instance
           // 加载完成后立即发送一次数据
           if (hoistData.value) {
-            const msg = formatDataForUnity(hoistData.value)
-            instance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, msg)
+            const motionData = formatDataForElevatorMotion(hoistData.value)
+            instance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, motionData)
+
+            const viceMotionData = formatDataForViceElevatorMotion(hoistData.value)
+            instance.SendMessage(UNITY_TARGET_OBJ_VICE, UNITY_METHOD_NAME, viceMotionData)
           }
         })
         .catch((err: unknown) => {
