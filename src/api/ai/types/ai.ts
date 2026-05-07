@@ -82,3 +82,15 @@ export interface ChatMessageData {
 }
 
 export type GetChatSessionMessagesResponse = IApiResponseData<ChatMessageData[]>
+
+// 使用统计响应参数
+export interface UsageSummaryData {
+  total_visits: number
+  today_visits: number
+  total_questions: number
+  today_questions: number
+  avg_response_time: number
+  satisfaction: number
+}
+
+export type GetUsageSummaryResponse = IApiResponseData<UsageSummaryData>

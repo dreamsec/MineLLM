@@ -1,7 +1,7 @@
 import { request } from "@/utils/service"
 import  type * as AI from "./types/ai.ts"
 import {getToken} from "@/utils/cache/cookies.ts";
-import type {GetNewChatSessionIdResponseData, newChatSessionIdRequestData} from "./types/ai.ts";
+import type { newChatSessionIdRequestData } from "./types/ai.ts";
 
 /** 获取AI回复 */
 export function getAiResponse(data: AI.RequestData) {
@@ -25,6 +25,14 @@ export function newChatSessionId(params:newChatSessionIdRequestData) {
 export function getChatSessionList() {
   return request<AI.GetChatSessionListResponse>({
     url: `/api/v1/chat/list_sessions`,
+    method: "get",
+  })
+}
+
+/** 获取使用统计 */
+export function getUsageSummary() {
+  return request<AI.GetUsageSummaryResponse>({
+    url: `/api/v1/chat/usage_summary`,
     method: "get",
   })
 }
