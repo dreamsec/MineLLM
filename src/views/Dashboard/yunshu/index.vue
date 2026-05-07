@@ -1351,11 +1351,11 @@ article::-webkit-scrollbar {
     width: 40px;
     font-size: 12px;
   }
-  
+
   .scrollable-kv-rows {
     max-height: calc(100vh - 350px);
   }
-  
+
   /* 环境卡片响应式调整 */
   .env-card {
     min-height: 50px; /* 减小环境卡片最小高度 */
