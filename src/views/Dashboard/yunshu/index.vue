@@ -53,8 +53,8 @@
               <div class="kv-item" v-for="it in pair" :key="it.label">
                 <div class="kv-label">{{ it.label }}</div>
                 <div class="kv-value">
-                  <!-- 状态类：绿色代表好(运行)，红色代表坏(停止/否) -->
-                  <span class="dot" :class="toBool(it.value) ? 'on' : 'off'"></span>
+                  <!-- 状态类：绿色代表好(运行)，红色代表坏(停止/否) ; 对于alarm类特殊处理 -->
+                  <span class="dot" :class="it.type === 'alarm' ? (toBool(it.value) ? 'off' : 'on') : (toBool(it.value) ? 'on' : 'off')"></span>
                   <span class="kv-text">{{ formatMetricInline(it) }}</span>
                 </div>
               </div>
@@ -81,7 +81,7 @@
           </div>
 
           <div class="sub-title">安全保护与故障</div>
-          <div class="kv-rows">
+          <div class="kv-rows scrollable-kv-rows">
             <div class="kv-row" v-for="(pair, idx) in alarmPairs" :key="`alarm-${idx}`">
               <div class="kv-item" v-for="it in pair" :key="it.label">
                 <div class="kv-label">{{ it.label }}</div>
@@ -165,14 +165,11 @@ const formatTime = (v: string | null | undefined) => {
 const leftDefs = [
   { key: 'belt_speed', label: '皮带速度', unit: 'm/s', format: formatNum },
   { key: 'belt_tension', label: '皮带张力', unit: 'N', format: formatNum },
-  { key: 'feeder_coal_level', label: '给煤机煤位', unit: 'm', format: formatNum },
-  { key: 'motor_current_1', label: '1#电机电流', unit: 'A', format: formatNum },
-  { key: 'motor_temp_1', label: '1#电机温度', unit: '°C', format: formatNum },
-  { key: 'motor_current_2', label: '2#电机电流', unit: 'A', format: formatNum },
-  { key: 'motor_temp_2', label: '2#电机温度', unit: '°C', format: formatNum },
-  { key: 'motor_current_3', label: '3#电机电流', unit: 'A', format: formatNum },
-  { key: 'motor_temp_3', label: '3#电机温度', unit: '°C', format: formatNum },
-  { key: 'drum_temp', label: '滚筒温度', unit: '°C', format: formatNum },
+  { key: 'coal_bunker_level', label: '煤仓空高', unit: 'm', format: formatNum },
+  { key: 'motor_1_temp', label: '1#电机温度', unit: '°C', format: formatNum },
+  { key: 'motor_2_temp', label: '2#电机温度', unit: '°C', format: formatNum },
+  { key: 'drum_1_temp', label: '1#滚筒温度', unit: '°C', format: formatNum },
+  { key: 'drum_2_temp', label: '2#滚筒温度', unit: '°C', format: formatNum },
 ] satisfies readonly Def<keyof ConveyorRealtimeData>[]
 
 const rightDefs = [] satisfies readonly Def<keyof ConveyorRealtimeData>[]
@@ -201,12 +198,15 @@ const toBool = (v: any) => !!Number(v)
 const controlStatusPairs = computed(() => {
   const d = conveyorData.value
   const items = [
-    { label: '系统运行', value: d?.is_running, type: 'status' },
-    { label: '系统电源', value: d?.has_power, type: 'status' },
-    { label: '集控模式', value: d?.is_remote_control, type: 'status' },
-    { label: '检修模式', value: d?.is_maintenance_mode, type: 'status' },
+    { label: '系统总故障', value: d?.general_fault, type: 'alarm' },
+    { label: '松闸状态', value: d?.brake_released, type: 'status' },
+    { label: '集控模式', value: d?.mode_remote, type: 'status' },
+    { label: '检修模式', value: d?.mode_maintenance, type: 'status' },
+    { label: '就地模式', value: d?.mode_local, type: 'status' },
+    { label: '手动模式', value: d?.mode_manual, type: 'status' },
     { label: '给煤机运行', value: d?.feeder_running, type: 'status' },
-    { label: '松闸状态', value: d?.brake_status, type: 'status' },
+    { label: '水冷1运行', value: d?.water_cooling_1_running, type: 'status' },
+    { label: '水冷2运行', value: d?.water_cooling_2_running, type: 'status' },
   ]
   const rows = []
   for (let i = 0; i < items.length; i += 2) {
@@ -220,16 +220,12 @@ const motorStatusPairs = computed(() => {
   const d = conveyorData.value
   return [
     [
-      { label: '1#电机运行', value: d?.motor_running_1, type: 'status' },
-      { label: '1#电机超温', value: d?.motor_overheat_1, type: 'alarm' },
+      { label: '1#电机运行', value: d?.motor_1_running, type: 'status' },
+      { label: '1#电机超温', value: d?.fault_motor_1_overheat, type: 'alarm' },
     ],
     [
-      { label: '2#电机运行', value: d?.motor_running_2, type: 'status' },
-      { label: '2#电机超温', value: d?.motor_overheat_2, type: 'alarm' },
-    ],
-    [
-      { label: '3#电机运行', value: d?.motor_running_3, type: 'status' },
-      { label: '3#电机超温', value: d?.motor_overheat_3, type: 'alarm' },
+      { label: '2#电机运行', value: d?.motor_2_running, type: 'status' },
+      { label: '2#电机超温', value: d?.fault_motor_2_overheat, type: 'alarm' },
     ]
   ]
 })
@@ -238,14 +234,18 @@ const motorStatusPairs = computed(() => {
 const alarmPairs = computed(() => {
   const d = conveyorData.value
   const items = [
-    { label: '滚筒超温', value: d?.drum_overheat, type: 'alarm' },
-    { label: '闸故障', value: d?.brake_fault, type: 'alarm' },
-    { label: '堆煤保护', value: d?.coal_piling_alarm, type: 'alarm' },
-    { label: '烟雾保护', value: d?.smoke_alarm, type: 'alarm' },
-    { label: '纵撕保护', value: d?.tear_alarm, type: 'alarm' },
-    { label: '跑偏保护', value: d?.deviation_alarm, type: 'alarm' },
-    { label: '打滑保护', value: d?.skid_alarm, type: 'alarm' },
-    { label: '急停动作', value: d?.emergency_stop, type: 'alarm' },
+    { label: '滚筒超温', value: d?.fault_drum_overheat, type: 'alarm' },
+    { label: '闸返回故障', value: d?.fault_brake_return, type: 'alarm' },
+    { label: '皮带返回故障', value: d?.fault_belt_return, type: 'alarm' },
+    { label: '张力故障', value: d?.fault_tension, type: 'alarm' },
+    { label: '堆煤保护', value: d?.fault_coal_piling, type: 'alarm' },
+    { label: '烟雾保护', value: d?.fault_smoke, type: 'alarm' },
+    { label: '纵撕保护', value: d?.fault_tear, type: 'alarm' },
+    { label: '跑偏保护', value: d?.fault_deviation, type: 'alarm' },
+    { label: '打滑保护', value: d?.fault_skid, type: 'alarm' },
+    { label: '拉线故障', value: d?.fault_pull_cord, type: 'alarm' },
+    { label: '集控急停', value: d?.emergency_stop_remote, type: 'alarm' },
+    { label: '操作台急停', value: d?.emergency_stop_console, type: 'alarm' },
   ]
   const rows = []
   for (let i = 0; i < items.length; i += 2) {
@@ -282,22 +282,20 @@ function formatDataForUnity(data: ConveyorRealtimeData): string {
     `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}N`
 
   const motorText =
-    `1#电机:${n(data.motor_current_1)}A/${n(data.motor_temp_1)}°C,` +
-    `2#电机:${n(data.motor_current_2)}A/${n(data.motor_temp_2)}°C,` +
-    `3#电机:${n(data.motor_current_3)}A/${n(data.motor_temp_3)}°C,` +
-    `滚筒温度:${n(data.drum_temp)}°C`
+    `1#电机:${n(data.motor_1_temp)}°C,` +
+    `2#电机:${n(data.motor_2_temp)}°C,` +
+    `1#滚筒:${n(data.drum_1_temp)}°C,` +
+    `2#滚筒:${n(data.drum_2_temp)}°C`
 
   const statusText =
-    `急停:${Number(data.emergency_stop) ? '是' : '否'},` +
-    `堆煤:${Number(data.coal_piling_alarm) ? '是' : '否'},` +
-    `烟雾:${Number(data.smoke_alarm) ? '是' : '否'},` +
-    `滚筒超温:${Number(data.drum_overheat) ? '是' : '否'},` +
-    `1#超温:${Number(data.motor_overheat_1) ? '是' : '否'},` +
-    `2#超温:${Number(data.motor_overheat_2) ? '是' : '否'},` +
-    `3#超温:${Number(data.motor_overheat_3) ? '是' : '否'},` +
-    `1#运行:${Number(data.motor_running_1) ? '运行' : '停止'},` +
-    `2#运行:${Number(data.motor_running_2) ? '运行' : '停止'},` +
-    `3#运行:${Number(data.motor_running_3) ? '运行' : '停止'}`
+    `集控急停:${Number(data.emergency_stop_remote) ? '是' : '否'},` +
+    `堆煤:${Number(data.fault_coal_piling) ? '是' : '否'},` +
+    `烟雾:${Number(data.fault_smoke) ? '是' : '否'},` +
+    `滚筒超温:${Number(data.fault_drum_overheat) ? '是' : '否'},` +
+    `1#超温:${Number(data.fault_motor_1_overheat) ? '是' : '否'},` +
+    `2#超温:${Number(data.fault_motor_2_overheat) ? '是' : '否'},` +
+    `1#运行:${Number(data.motor_1_running) ? '运行' : '停止'},` +
+    `2#运行:${Number(data.motor_2_running) ? '运行' : '停止'}`
 
   return `${runText}|${motorText}|${statusText}|`
 }
@@ -485,12 +483,12 @@ onUnmounted(() => {
   backdrop-filter: blur(8px);
   /* height: auto;  removed height: 35% */
   /*flex: 1;  removed flex: 1 */
-  height: auto;
-  flex: 0 0 auto; /* 禁止缩小，撑开内容 */
+  height: 100%; /* 改成100%强制控制在父元素内 */
+  flex: 1; /* 允许等比缩放 */
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden; /* 这里修改为hidden或者让其可滚动，防止越界溢出 */
   border: 1px solid rgba(0, 188, 212, 0.25);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.04));
@@ -788,6 +786,15 @@ article::-webkit-scrollbar {
 
 .right-panel::-webkit-scrollbar {
 	display: none; /* Chrome, Safari and Opera */
+}
+
+.scrollable-kv-rows {
+  overflow-y: auto;
+  flex: 1; /* 撑满剩余空间，让超出部分在内部滚动 */
+  min-height: 100px;
+}
+.scrollable-kv-rows::-webkit-scrollbar {
+  display: none;
 }
 
 .center-panel {
@@ -1344,6 +1351,11 @@ article::-webkit-scrollbar {
     width: 40px;
     font-size: 12px;
   }
+  
+  .scrollable-kv-rows {
+    max-height: calc(100vh - 350px);
+  }
+  
   /* 环境卡片响应式调整 */
   .env-card {
     min-height: 50px; /* 减小环境卡片最小高度 */

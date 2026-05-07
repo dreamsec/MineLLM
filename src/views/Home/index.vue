@@ -323,14 +323,14 @@ const getDeviceStatus = (code: string, data: any) => {
     }
   } else if (code.startsWith('YS')) {
     // 运输机
-    if (data.smoke_alarm || data.tear_alarm || data.coal_piling_alarm || data.skid_alarm) {
+    if (data.fault_smoke || data.fault_tear || data.fault_coal_piling || data.fault_skid) {
       isAlarm = true
-      if (data.smoke_alarm) alarmMsg = '烟雾报警'
-      else if (data.tear_alarm) alarmMsg = '撕裂报警'
-      else if (data.coal_piling_alarm) alarmMsg = '堆煤报警'
-      else if (data.skid_alarm) alarmMsg = '打滑报警'
+      if (data.fault_smoke) alarmMsg = '烟雾报警'
+      else if (data.fault_tear) alarmMsg = '撕裂报警'
+      else if (data.fault_coal_piling) alarmMsg = '堆煤报警'
+      else if (data.fault_skid) alarmMsg = '打滑报警'
       else alarmMsg = '综合报警'
-    } else if (data.deviation_alarm) {
+    } else if (data.fault_deviation) {
       isWarning = true
       alarmMsg = '跑偏'
     }

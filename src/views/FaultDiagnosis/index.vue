@@ -304,14 +304,11 @@ const parameterDict: Record<string, { label: string, value: string }[]> = {
   conveyor: [
     { value: 'belt_speed', label: '皮带速度' },
     { value: 'belt_tension', label: '皮带张力' },
-    { value: 'feeder_coal_level', label: '给煤机煤位' },
-    { value: 'motor_current_1', label: '1#电机电流' },
-    { value: 'motor_temp_1', label: '1#电机温度' },
-    { value: 'motor_current_2', label: '2#电机电流' },
-    { value: 'motor_temp_2', label: '2#电机温度' },
-    { value: 'motor_current_3', label: '3#电机电流' },
-    { value: 'motor_temp_3', label: '3#电机温度' },
-    { value: 'drum_temp', label: '滚筒温度' }
+    { value: 'coal_bunker_level', label: '煤仓空高' },
+    { value: 'motor_1_temp', label: '1#电机温度' },
+    { value: 'motor_2_temp', label: '2#电机温度' },
+    { value: 'drum_1_temp', label: '1#滚筒温度' },
+    { value: 'drum_2_temp', label: '2#滚筒温度' }
   ]
 }
 

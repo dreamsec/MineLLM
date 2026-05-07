@@ -557,53 +557,51 @@ export interface PumpRealtimeData extends BaseRealtimeData {
 
 // 运输机实时数据接口
 export interface ConveyorRealtimeData extends BaseRealtimeData {
-  // ===================== A. 基础运行状态 =====================
-  is_running?: boolean;          // 运行标志
-  has_power?: boolean;           // 有无电源
-  belt_speed?: number;           // 皮带速度(m/s)
-  belt_tension?: number;         // 皮带张力(N)
+  // 1. 核心运行数据
+  belt_speed?: number;           // 皮带速度
+  belt_tension?: number;         // 皮带张力
+  coal_bunker_level?: number;    // 煤仓空高
 
-  // 控制模式
-  is_remote_control?: boolean;   // 集控模式
-  is_local_control?: boolean;    // 就地模式
-  is_maintenance_mode?: boolean; // 检修模式
+  // 2. 温度监测
+  motor_1_temp?: number;         // 电机1温度
+  motor_2_temp?: number;         // 电机2温度
+  drum_1_temp?: number;          // 滚筒1温度
+  drum_2_temp?: number;          // 滚筒2温度
 
-  // ===================== B. 电机监测 (支持多电机) =====================
-  // --- 1号电机 ---
-  motor_current_1?: number; // 1号电机电流(A)
-  motor_temp_1?: number;    // 1号电机温度(℃)
-  motor_overheat_1?: boolean; // 1号电机超温报警
-  motor_running_1?: boolean;  // 1号电机运行状态
+  // 3. 控制模式
+  mode_remote?: boolean;         // 集控状态
+  mode_local?: boolean;          // 就地状态
+  mode_maintenance?: boolean;    // 检修状态
+  mode_manual?: boolean;         // 手动状态
 
-  // --- 2号电机 ---
-  motor_current_2?: number; // 2号电机电流(A)
-  motor_temp_2?: number;    // 2号电机温度(℃)
-  motor_overheat_2?: boolean; // 2号电机超温报警
-  motor_running_2?: boolean;  // 2号电机运行状态
+  // 4. 运行与设备反馈
+  motor_1_running?: boolean;     // 电机1返回
+  motor_2_running?: boolean;     // 电机2返回
+  brake_released?: boolean;      // 松闸返回
+  water_cooling_1_running?: boolean; // 水冷1返回
+  water_cooling_2_running?: boolean; // 水冷2返回
+  feeder_running?: boolean;      // 给煤机电机返回
 
-  // --- 3号电机 ---
-  motor_current_3?: number; // 3号电机电流(A)
-  motor_temp_3?: number;    // 3号电机温度(℃)
-  motor_overheat_3?: boolean; // 3号电机超温报警
-  motor_running_3?: boolean;  // 3号电机运行状态
+  // 5. 综合报警与急停
+  general_fault?: boolean;       // 总故障
+  emergency_stop_console?: boolean; // 操作台急停
+  emergency_stop_remote?: boolean;  // 集控急停
 
-  // ===================== C. 滚筒与制动 =====================
-  drum_temp?: number;         // 滚筒温度(℃)
-  drum_overheat?: boolean;    // 滚筒超温报警
-  brake_status?: boolean;     // 闸松闸状态(True为松闸/运行)
-  brake_fault?: boolean;      // 闸故障
+  // 6. 皮带六大保护故障
+  fault_smoke?: boolean;         // 烟雾故障
+  fault_tear?: boolean;          // 纵撕故障
+  fault_deviation?: boolean;     // 跑偏故障
+  fault_coal_piling?: boolean;   // 堆煤故障
+  fault_skid?: boolean;          // 打滑故障
+  fault_pull_cord?: boolean;     // 拉线故障
 
-  // ===================== D. 安全保护 (报警状态) =====================
-  smoke_alarm?: boolean;       // 烟雾保护
-  tear_alarm?: boolean;        // 纵撕/撕裂保护
-  deviation_alarm?: boolean;   // 跑偏保护
-  coal_piling_alarm?: boolean; // 堆煤保护
-  skid_alarm?: boolean;        // 打滑保护
-  emergency_stop?: boolean;    // 急停标识
-
-  // ===================== E. 关联设备 (给煤机) =====================
-  feeder_running?: boolean;    // 给煤机运行
-  feeder_coal_level?: number;  // 给煤机煤位
+  // 7. 机械与电气过载故障
+  fault_motor_1_overheat?: boolean; // 电机1超温
+  fault_motor_2_overheat?: boolean; // 电机2超温
+  fault_drum_overheat?: boolean;    // 滚筒超温故障
+  fault_brake_return?: boolean;     // 闸返回故障
+  fault_belt_return?: boolean;      // 皮带返回故障
+  fault_tension?: boolean;          // 张力故障
 }
 
 // 设备实时数据联合类型
