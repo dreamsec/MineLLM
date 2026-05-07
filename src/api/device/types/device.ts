@@ -160,108 +160,82 @@ export interface HoistRealtimeData extends BaseRealtimeData {
   motor_temp_4?: number;
   motor_temp_5?: number;
   motor_temp_6?: number;
-  motor_temp_7?: number;
-  motor_temp_8?: number;
-  motor_temp_9?: number;
-  motor_temp_10?: number;
-  motor_temp_11?: number;
-  motor_temp_12?: number;
-  motor_temp_max?: number;
 
-  // ===================== 2. 天轮温度监测 (Float) =====================
-  sheave_temp_1?: number;
-  sheave_temp_2?: number;
-  sheave_temp_3?: number;
-  sheave_temp_4?: number;
-  sheave_temp_5?: number;
-  sheave_temp_6?: number;
-  sheave_temp_7?: number;
-  sheave_temp_8?: number;
-  sheave_temp_max?: number;
+  // ===================== 2. 轴承温度监测 (Float) =====================
+  bearing_temp_1?: number;
+  bearing_temp_2?: number;
+  bearing_temp_3?: number;
+  bearing_temp_4?: number;
 
-  // ===================== 3. 主轴温度监测 (Float) =====================
-  main_shaft_temp_1?: number;
-  main_shaft_temp_2?: number;
-  main_shaft_temp_3?: number;
-  main_shaft_temp_4?: number;
-  main_shaft_temp_max?: number;
-
-  // ===================== 4. 速度数值 (Float) =====================
-  plc_speed_1?: number;
-  plc_speed_2?: number;
-  actual_speed?: number;
-  guide_wheel_speed?: number;
-  speed_setpoint?: number;
-  handle_set_speed_check?: number;
-  speed_diff?: number;
-
-  // ===================== 5. 速度状态 (Boolean) =====================
-  speed_status_1?: boolean | number;
-  speed_status_2?: boolean | number;
-  speed_status_3?: boolean | number;
-  speed_status_4?: boolean | number;
-  deceleration?: boolean | number;
-
-  // ===================== 6. 深度与位置数值 (Float) =====================
-  main_skip_depth?: number;
-  vice_skip_depth?: number;
-  travel_diff?: number;
-
-  // ===================== 7. 位置开关量 (Boolean) =====================
-  main_skip_overwind?: boolean | number;
-  main_skip_stop_point?: boolean | number;
-  main_skip_deceleration_point?: boolean | number;
-  main_skip_monitor_2m?: boolean | number;
-  main_skip_calibration_point?: boolean | number;
-
-  vice_skip_overwind?: boolean | number;
-  vice_skip_stop_point?: boolean | number;
-  vice_skip_deceleration_point?: boolean | number;
-  vice_skip_monitor_2m?: boolean | number;
-  vice_skip_calibration_point?: boolean | number;
-
-  // ===================== 8. 运行模式 (Boolean) =====================
-  auto_run?: boolean | number;
-  semi_auto_run?: boolean | number;
-  manual_run?: boolean | number;
-  simple_run?: boolean | number;
-  repair_mode?: boolean | number;
-
-  // ===================== 9. 操作状态 (Boolean) =====================
-  lift_person?: boolean | number;
-  lift_material?: boolean | number;
-  heavy_load_down?: boolean | number;
-  handle_zero_position?: boolean | number;
-
-  // ===================== 10. 设备状态 (Boolean) =====================
-  inverter_enable?: boolean | number;
-  inverter_running?: boolean | number;
-  main_fan_run?: boolean | number;
-  external_water_cooling_run?: boolean | number;
-  main_transformer_merge?: boolean | number;
-  excitation_merge?: boolean | number;
-
-  // ===================== 11. 故障与报警 (Boolean) =====================
-  emergency_stop?: boolean | number;
-  fault_stop?: boolean | number;
-  fault_alarm?: boolean | number;
-  primary_hoist_fault?: boolean | number;
-  start_condition_insufficient?: boolean | number;
-
-  // ===================== 12. 电气与液压数值 (Float) =====================
-  motor_current?: number;
+  // ===================== 3. 模拟量核心运行数据 (Float) =====================
+  main_skip_speed?: number;
+  main_skip_pos?: number;
+  vice_skip_speed?: number;
+  vice_skip_pos?: number;
+  stator_current?: number;
   excitation_current?: number;
+  incoming_voltage?: number;
   brake_oil_pressure?: number;
-  brake_oil_temp?: number;
-  load_weight?: number;
-  wellhead_temp?: number;
 
-  // ===================== 13. 信号位 (Boolean) =====================
-  signal_0?: boolean | number;
-  signal_2?: boolean | number;
-  signal_3?: boolean | number;
-  signal_4?: boolean | number;
-  signal_5?: boolean | number;
+  // ===================== 4. 运行模式设置 (Boolean) =====================
+  mode_auto?: boolean | number;
+  mode_semi_auto?: boolean | number;
+  mode_manual?: boolean | number;
+  mode_repair?: boolean | number;
+  mode_lift_coal?: boolean | number;
+  mode_heavy_down?: boolean | number;
+  mode_light_load?: boolean | number;
+
+  // ===================== 5. 运行状态反馈 (Boolean) =====================
+  status_moving_up?: boolean | number;
+  status_moving_down?: boolean | number;
+  status_slow_up?: boolean | number;
+  status_slow_down?: boolean | number;
+  status_stopped?: boolean | number;
+  dir_confirmed?: boolean | number;
+  main_fan_run?: boolean | number;
+
+  // ===================== 6. 离散速度反馈 (Boolean) =====================
+  speed_fb_half?: boolean | number;
+  speed_fb_2?: boolean | number;
+  speed_fb_4?: boolean | number;
+  speed_fb_6?: boolean | number;
+  speed_fb_12?: boolean | number;
+
+  // ===================== 7. 关键位置节点 (Boolean) =====================
+  pos_1_overwind?: boolean | number;
+  pos_1_stop?: boolean | number;
+  pos_1_decelerate?: boolean | number;
+  pos_1_monitor_2m?: boolean | number;
+  pos_1_sync_calib?: boolean | number;
+  skip_1_unload_pos?: boolean | number;
+  pos_2_overwind?: boolean | number;
+  pos_2_stop?: boolean | number;
+  pos_2_decelerate?: boolean | number;
+  pos_2_monitor_2m?: boolean | number;
+  pos_2_sync_calib?: boolean | number;
+  skip_2_unload_pos?: boolean | number;
+
+  // ===================== 8. 核心操作与回路状态 (Boolean) =====================
+  loop_safety_closed?: boolean | number;
+  loop_lock_closed?: boolean | number;
+  loop_stop_closed?: boolean | number;
+  handle_speed_zero?: boolean | number;
+  handle_brake_zero?: boolean | number;
+  console_lock?: boolean | number;
+
+  // ===================== 9. 综合故障与报警 (Boolean) =====================
+  fault_emergency_stop?: boolean | number;
+  fault_comm?: boolean | number;
+  fault_low_voltage?: boolean | number;
+  fault_high_voltage?: boolean | number;
+  fault_motor_overload?: boolean | number;
+  fault_motor_overspeed?: boolean | number;
+  fault_temp_alarm?: boolean | number;
+  fault_temp_error?: boolean | number;
+  fault_brake_wear?: boolean | number;
+  fault_brake_deflection?: boolean | number;
+  fault_skip_jam?: boolean | number;
 }
 
 // 压风机实时数据接口
@@ -675,7 +649,6 @@ export interface GetEquipmentHistoryVariableData {
 
 // 查询变量历史数据响应类型
 export type GetEquipmentHistoryVariableResponse = IApiResponseData<GetEquipmentHistoryVariableData>;
-
 
 
 

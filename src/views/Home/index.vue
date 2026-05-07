@@ -252,6 +252,21 @@ const getDeviceName = (code: string) => {
   return code
 }
 
+// 统一兼容后端可能返回的 boolean / 0-1 / 字符串状态值
+const isActiveState = (value: unknown) => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const val = value.trim().toLowerCase()
+    return val === '1' || val === 'true' || val === 'on' || val === 'yes'
+  }
+  return false
+}
+
+const hasAnyActiveState = (data: Record<string, unknown>, keys: string[]) => {
+  return keys.some(key => isActiveState(data[key]))
+}
+
 // 获取设备状态和报警信息
 const getDeviceStatus = (code: string, data: any) => {
   if (!data) return { status: 'normal', statusText: '正常', message: '运行正常' }
@@ -261,13 +276,23 @@ const getDeviceStatus = (code: string, data: any) => {
   let alarmMsg = '运行正常'
 
   if (code.startsWith('TS')) {
-    // 提升机
-    if (data.fault_alarm || data.fault_stop || data.primary_hoist_fault) {
+    // 提升机：后端已拆分为多个故障字段，这里汇总成首页状态。
+    const hoistFaultKeys = [
+      'fault_emergency_stop',
+      'fault_comm',
+      'fault_low_voltage',
+      'fault_high_voltage',
+      'fault_motor_overload',
+      'fault_motor_overspeed',
+      'fault_temp_alarm',
+      'fault_temp_error',
+      'fault_brake_wear',
+      'fault_brake_deflection',
+      'fault_skip_jam'
+    ]
+    if (hasAnyActiveState(data, hoistFaultKeys)) {
       isAlarm = true
-      alarmMsg = '故障报警'
-    } else if (data.emergency_stop) {
-      isWarning = true
-      alarmMsg = '急停'
+      alarmMsg = isActiveState(data.fault_emergency_stop) ? '操作台急停' : '故障报警'
     }
   } else if (code.startsWith('YF')) {
     // 压风机
@@ -1367,6 +1392,5 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
 
 

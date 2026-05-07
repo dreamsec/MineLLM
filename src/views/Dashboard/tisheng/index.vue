@@ -119,21 +119,20 @@ function toBool(value: BoolLike): boolean | null {
 }
 
 const booleanKeys = new Set<keyof HoistRealtimeData>([
-  // 速度状态
-  'speed_status_1', 'speed_status_2', 'speed_status_3', 'speed_status_4', 'deceleration',
-  // 位置开关
-  'main_skip_overwind', 'main_skip_stop_point', 'main_skip_deceleration_point', 'main_skip_monitor_2m', 'main_skip_calibration_point',
-  'vice_skip_overwind', 'vice_skip_stop_point', 'vice_skip_deceleration_point', 'vice_skip_monitor_2m', 'vice_skip_calibration_point',
-  // 运行模式
-  'auto_run', 'semi_auto_run', 'manual_run', 'simple_run', 'repair_mode',
-  // 操作状态
-  'lift_person', 'lift_material', 'heavy_load_down', 'handle_zero_position',
-  // 设备状态
-  'inverter_enable', 'inverter_running', 'main_fan_run', 'external_water_cooling_run', 'main_transformer_merge', 'excitation_merge',
-  // 故障与报警
-  'emergency_stop', 'fault_stop', 'fault_alarm', 'primary_hoist_fault', 'start_condition_insufficient',
-  // 信号位
-  'signal_0', 'signal_2', 'signal_3', 'signal_4', 'signal_5'
+  // 运行模式设置
+  'mode_auto', 'mode_semi_auto', 'mode_manual', 'mode_repair', 'mode_lift_coal', 'mode_heavy_down', 'mode_light_load',
+  // 运行状态反馈
+  'status_moving_up', 'status_moving_down', 'status_slow_up', 'status_slow_down', 'status_stopped', 'dir_confirmed', 'main_fan_run',
+  // 离散速度反馈
+  'speed_fb_half', 'speed_fb_2', 'speed_fb_4', 'speed_fb_6', 'speed_fb_12',
+  // 关键位置节点
+  'pos_1_overwind', 'pos_1_stop', 'pos_1_decelerate', 'pos_1_monitor_2m', 'pos_1_sync_calib', 'skip_1_unload_pos',
+  'pos_2_overwind', 'pos_2_stop', 'pos_2_decelerate', 'pos_2_monitor_2m', 'pos_2_sync_calib', 'skip_2_unload_pos',
+  // 核心操作与回路状态
+  'loop_safety_closed', 'loop_lock_closed', 'loop_stop_closed', 'handle_speed_zero', 'handle_brake_zero', 'console_lock',
+  // 综合故障与报警
+  'fault_emergency_stop', 'fault_comm', 'fault_low_voltage', 'fault_high_voltage', 'fault_motor_overload', 'fault_motor_overspeed',
+  'fault_temp_alarm', 'fault_temp_error', 'fault_brake_wear', 'fault_brake_deflection', 'fault_skip_jam'
 ])
 
 function formatDisplayValue(key: keyof HoistRealtimeData, value: unknown): { display: string; bool: boolean | null } {
@@ -147,120 +146,93 @@ function formatDisplayValue(key: keyof HoistRealtimeData, value: unknown): { dis
 }
 
 const leftDefs = [
-  { key: 'actual_speed', label: '实际速度', unit: 'm/s' },
-  { key: 'speed_setpoint', label: '速度给定', unit: 'm/s' },
-  { key: 'guide_wheel_speed', label: '导向轮速度', unit: 'm/s' },
-  { key: 'speed_diff', label: '速度差', unit: 'm/s' },
-  { key: 'travel_diff', label: '行程差', unit: 'm' },
-  { key: 'main_skip_depth', label: '主箕斗深度', unit: 'm' },
-  { key: 'vice_skip_depth', label: '副箕斗深度', unit: 'm' },
-  { key: 'load_weight', label: '载重', unit: 't' },
-  { key: 'motor_current', label: '电机电流', unit: 'A' },
+  // 模拟量核心运行数据
+  { key: 'main_skip_speed', label: '主箕斗提升速度', unit: 'm/s' },
+  { key: 'main_skip_pos', label: '主箕斗提升位置', unit: 'm' },
+  { key: 'vice_skip_speed', label: '副箕斗提升速度', unit: 'm/s' },
+  { key: 'vice_skip_pos', label: '副箕斗提升位置', unit: 'm' },
+  { key: 'stator_current', label: '定子电流', unit: 'A' },
   { key: 'excitation_current', label: '励磁电流', unit: 'A' },
-  { key: 'brake_oil_pressure', label: '闸控油压', unit: 'MPa' },
-  { key: 'brake_oil_temp', label: '闸控油温', unit: '°C' },
-  { key: 'wellhead_temp', label: '井口温度', unit: '°C' },
-  { key: 'motor_temp_max', label: '电机最高温度', unit: '°C' },
-  { key: 'sheave_temp_max', label: '天轮最高温度', unit: '°C' },
-  { key: 'main_shaft_temp_max', label: '主轴最高温度', unit: '°C' }
-] as const
-const rightDefs = [
-  // 速度(数值)
-  { key: 'plc_speed_1', label: 'PLC速度1', unit: 'm/s' },
-  { key: 'plc_speed_2', label: 'PLC速度2', unit: 'm/s' },
-  { key: 'handle_set_speed_check', label: '手柄给定判速', unit: 'm/s' },
+  { key: 'incoming_voltage', label: '进线电压', unit: 'V' },
+  { key: 'brake_oil_pressure', label: '制动油压', unit: 'MPa' },
 
-  // 速度(状态)
-  { key: 'speed_status_1', label: '速度状态1', unit: '' },
-  { key: 'speed_status_2', label: '速度状态2', unit: '' },
-  { key: 'speed_status_3', label: '速度状态3', unit: '' },
-  { key: 'speed_status_4', label: '速度状态4', unit: '' },
-  { key: 'deceleration', label: '减速', unit: '' },
-
-  // 位置开关量(主箕斗)
-  { key: 'main_skip_overwind', label: '主箕斗过卷', unit: '' },
-  { key: 'main_skip_stop_point', label: '主箕斗停点', unit: '' },
-  { key: 'main_skip_deceleration_point', label: '主箕斗减速点', unit: '' },
-  { key: 'main_skip_monitor_2m', label: '主箕斗2M监视点', unit: '' },
-  { key: 'main_skip_calibration_point', label: '主箕斗校正点', unit: '' },
-
-  // 位置开关量(副箕斗)
-  { key: 'vice_skip_overwind', label: '副箕斗过卷', unit: '' },
-  { key: 'vice_skip_stop_point', label: '副箕斗停点', unit: '' },
-  { key: 'vice_skip_deceleration_point', label: '副箕斗减速点', unit: '' },
-  { key: 'vice_skip_monitor_2m', label: '副箕斗2M监视点', unit: '' },
-  { key: 'vice_skip_calibration_point', label: '副箕斗校正点', unit: '' },
-
-  // 运行模式
-  { key: 'auto_run', label: '全自动运行', unit: '' },
-  { key: 'semi_auto_run', label: '半自动运行', unit: '' },
-  { key: 'manual_run', label: '手动运行', unit: '' },
-  { key: 'simple_run', label: '简易运行', unit: '' },
-  { key: 'repair_mode', label: '检修', unit: '' },
-
-  // 操作状态
-  { key: 'lift_person', label: '提人', unit: '' },
-  { key: 'lift_material', label: '提物', unit: '' },
-  { key: 'heavy_load_down', label: '重载下放', unit: '' },
-  { key: 'handle_zero_position', label: '手柄零位', unit: '' },
-
-  // 设备状态
-  { key: 'inverter_enable', label: '变频允许', unit: '' },
-  { key: 'inverter_running', label: '变频运行', unit: '' },
-  { key: 'main_fan_run', label: '主风机运行', unit: '' },
-  { key: 'external_water_cooling_run', label: '外水冷运行', unit: '' },
-  { key: 'main_transformer_merge', label: '主变合', unit: '' },
-  { key: 'excitation_merge', label: '励磁变合', unit: '' },
-
-  // 故障与报警
-  { key: 'emergency_stop', label: '紧急停车', unit: '' },
-  { key: 'fault_stop', label: '事故停车', unit: '' },
-  { key: 'fault_alarm', label: '事故报警', unit: '' },
-  { key: 'primary_hoist_fault', label: '一次提升故障', unit: '' },
-  { key: 'start_condition_insufficient', label: '开车条件不足', unit: '' },
-
-  // 信号位
-  { key: 'signal_0', label: '信号0', unit: '' },
-  { key: 'signal_2', label: '信号2', unit: '' },
-  { key: 'signal_3', label: '信号3', unit: '' },
-  { key: 'signal_4', label: '信号4', unit: '' },
-  { key: 'signal_5', label: '信号5', unit: '' },
-
-  // 温度明细
+  // 温度监测
   { key: 'motor_temp_1', label: '电机温度1', unit: '°C' },
   { key: 'motor_temp_2', label: '电机温度2', unit: '°C' },
   { key: 'motor_temp_3', label: '电机温度3', unit: '°C' },
   { key: 'motor_temp_4', label: '电机温度4', unit: '°C' },
   { key: 'motor_temp_5', label: '电机温度5', unit: '°C' },
   { key: 'motor_temp_6', label: '电机温度6', unit: '°C' },
-  { key: 'motor_temp_7', label: '电机温度7', unit: '°C' },
-  { key: 'motor_temp_8', label: '电机温度8', unit: '°C' },
-  { key: 'motor_temp_9', label: '电机温度9', unit: '°C' },
-  { key: 'motor_temp_10', label: '电机温度10', unit: '°C' },
-  { key: 'motor_temp_11', label: '电机温度11', unit: '°C' },
-  { key: 'motor_temp_12', label: '电机温度12', unit: '°C' },
-  { key: 'sheave_temp_1', label: '天轮温度1', unit: '°C' },
-  { key: 'sheave_temp_2', label: '天轮温度2', unit: '°C' },
-  { key: 'sheave_temp_3', label: '天轮温度3', unit: '°C' },
-  { key: 'sheave_temp_4', label: '天轮温度4', unit: '°C' },
-  { key: 'sheave_temp_5', label: '天轮温度5', unit: '°C' },
-  { key: 'sheave_temp_6', label: '天轮温度6', unit: '°C' },
-  { key: 'sheave_temp_7', label: '天轮温度7', unit: '°C' },
-  { key: 'sheave_temp_8', label: '天轮温度8', unit: '°C' },
-  { key: 'main_shaft_temp_1', label: '主轴温度1', unit: '°C' },
-  { key: 'main_shaft_temp_2', label: '主轴温度2', unit: '°C' },
-  { key: 'main_shaft_temp_3', label: '主轴温度3', unit: '°C' },
-  { key: 'main_shaft_temp_4', label: '主轴温度4', unit: '°C' }
+  { key: 'bearing_temp_1', label: '轴承温度1', unit: '°C' },
+  { key: 'bearing_temp_2', label: '轴承温度2', unit: '°C' },
+  { key: 'bearing_temp_3', label: '轴承温度3', unit: '°C' },
+  { key: 'bearing_temp_4', label: '轴承温度4', unit: '°C' }
+] as const
+const rightDefs = [
+  // 运行模式设置
+  { key: 'mode_auto', label: '自动模式', unit: '' },
+  { key: 'mode_semi_auto', label: '半自动模式', unit: '' },
+  { key: 'mode_manual', label: '手动模式', unit: '' },
+  { key: 'mode_repair', label: '检修模式', unit: '' },
+  { key: 'mode_lift_coal', label: '提煤模式', unit: '' },
+  { key: 'mode_heavy_down', label: '重物下放模式', unit: '' },
+  { key: 'mode_light_load', label: '轻载模式', unit: '' },
+
+  // 运行状态反馈
+  { key: 'status_moving_up', label: '上行状态', unit: '' },
+  { key: 'status_moving_down', label: '下行状态', unit: '' },
+  { key: 'status_slow_up', label: '慢上状态', unit: '' },
+  { key: 'status_slow_down', label: '慢下状态', unit: '' },
+  { key: 'status_stopped', label: '停车状态', unit: '' },
+  { key: 'dir_confirmed', label: '运行方向已确定', unit: '' },
+  { key: 'main_fan_run', label: '主风机运行', unit: '' },
+
+  // 离散速度反馈
+  { key: 'speed_fb_half', label: '速度反馈0.5m/s', unit: '' },
+  { key: 'speed_fb_2', label: '速度反馈2m/s', unit: '' },
+  { key: 'speed_fb_4', label: '速度反馈4m/s', unit: '' },
+  { key: 'speed_fb_6', label: '速度反馈6m/s', unit: '' },
+  { key: 'speed_fb_12', label: '速度反馈12m/s', unit: '' },
+
+  // 关键位置节点(1系统/主箕斗)
+  { key: 'pos_1_overwind', label: '1系统过卷点', unit: '' },
+  { key: 'pos_1_stop', label: '1系统停车点', unit: '' },
+  { key: 'pos_1_decelerate', label: '1系统减速点', unit: '' },
+  { key: 'pos_1_monitor_2m', label: '1系统2m/s检查点', unit: '' },
+  { key: 'pos_1_sync_calib', label: '1系统同步校正点', unit: '' },
+  { key: 'skip_1_unload_pos', label: '箕斗1在卸载位', unit: '' },
+
+  // 关键位置节点(2系统/副箕斗)
+  { key: 'pos_2_overwind', label: '2系统过卷点', unit: '' },
+  { key: 'pos_2_stop', label: '2系统停车点', unit: '' },
+  { key: 'pos_2_decelerate', label: '2系统减速点', unit: '' },
+  { key: 'pos_2_monitor_2m', label: '2系统2m/s检查点', unit: '' },
+  { key: 'pos_2_sync_calib', label: '2系统同步校正点', unit: '' },
+  { key: 'skip_2_unload_pos', label: '箕斗2在卸载位', unit: '' },
+
+  // 核心操作与回路状态
+  { key: 'loop_safety_closed', label: '总安全回路已合', unit: '' },
+  { key: 'loop_lock_closed', label: '闭锁回路已合', unit: '' },
+  { key: 'loop_stop_closed', label: '停车回路已合', unit: '' },
+  { key: 'handle_speed_zero', label: '速度手柄零位', unit: '' },
+  { key: 'handle_brake_zero', label: '闸手柄零位', unit: '' },
+  { key: 'console_lock', label: '操作台闭锁', unit: '' },
+
+  // 综合故障与报警
+  { key: 'fault_emergency_stop', label: '操作台急停', unit: '' },
+  { key: 'fault_comm', label: '通讯故障', unit: '' },
+  { key: 'fault_low_voltage', label: '低压故障', unit: '' },
+  { key: 'fault_high_voltage', label: '高压故障', unit: '' },
+  { key: 'fault_motor_overload', label: '电机超载', unit: '' },
+  { key: 'fault_motor_overspeed', label: '电机超速', unit: '' },
+  { key: 'fault_temp_alarm', label: '温度报警综合', unit: '' },
+  { key: 'fault_temp_error', label: '温度故障综合', unit: '' },
+  { key: 'fault_brake_wear', label: '闸瓦磨损', unit: '' },
+  { key: 'fault_brake_deflection', label: '闸盘偏摆', unit: '' },
+  { key: 'fault_skip_jam', label: '卡箕斗故障', unit: '' }
 ] as const
 const leftItems = computed(() => leftDefs.map(def => {
-  let raw = hoistData.value?.[def.key as keyof HoistRealtimeData]
-  // 特殊处理：井口温度需除以10
-  if (def.key === 'wellhead_temp' && raw != null) {
-    const num = Number(raw)
-    if (!isNaN(num)) {
-      raw = num / 10
-    }
-  }
+  const raw = hoistData.value?.[def.key as keyof HoistRealtimeData]
   const { display, bool } = formatDisplayValue(def.key as keyof HoistRealtimeData, raw)
   return { ...def, display, bool }
 }))
@@ -280,38 +252,58 @@ let refreshTimer: number | undefined
 
 /**
  * 格式化数据发送给 Unity
- * 示例格式：主罐深度|副罐深度|实际速度|载重|模式(自动/手动/检修)|报警状态
+ * 示例格式：电气参数|轴承与液压|箕斗位置速度|模式与故障
  */
 function formatDataForUnity(data: HoistRealtimeData): string {
   if (!data) return "";
 
   const bool01 = (v: BoolLike) => (toBool(v) ? 1 : 0)
+  const maxValue = (...values: Array<number | undefined>): number => {
+    // 后端现在只给分项温度，这里取最大值给 Unity 做总览展示。
+    return values.reduce<number>((max, value) => {
+      const num = Number(value)
+      return Number.isFinite(num) ? Math.max(max, num) : max
+    }, 0)
+  }
+  const hasFault = [
+    data.fault_emergency_stop,
+    data.fault_comm,
+    data.fault_low_voltage,
+    data.fault_high_voltage,
+    data.fault_motor_overload,
+    data.fault_motor_overspeed,
+    data.fault_temp_alarm,
+    data.fault_temp_error,
+    data.fault_brake_wear,
+    data.fault_brake_deflection,
+    data.fault_skip_jam
+  ].some(item => toBool(item) === true)
 
   const values = [
-    // --- 电机部分 (Motor) ---
-    data.motor_current || 0,        // 0: 电机电流
+    // --- 电气部分 ---
+    data.stator_current || 0,       // 0: 定子电流
     data.excitation_current || 0,   // 1: 励磁电流
-    data.motor_temp_max || 0,       // 2: 电机最高温度
+    data.incoming_voltage || 0,     // 2: 进线电压
+    maxValue(data.motor_temp_1, data.motor_temp_2, data.motor_temp_3, data.motor_temp_4, data.motor_temp_5, data.motor_temp_6),
 
-    // --- 天轮部分 (Sheave) ---
-    data.sheave_temp_max || 0,      // 3: 天轮最高温度
-    data.main_shaft_temp_max || 0,  // 4: 主轴最高温度
+    // --- 轴承与液压部分 ---
+    maxValue(data.bearing_temp_1, data.bearing_temp_2, data.bearing_temp_3, data.bearing_temp_4),
     data.brake_oil_pressure || 0,   // 5: 制动油压
 
-    // --- 笼罐部分 (Cage/Skip) ---
-    data.main_skip_depth || 0,      // 6: 主罐深度
-    data.vice_skip_depth || 0,      // 7: 副罐深度
-    data.actual_speed || 0,         // 8: 实际速度
-    data.load_weight || 0,          // 9: 载重
+    // --- 箕斗部分 ---
+    data.main_skip_pos || 0,        // 6: 主箕斗位置
+    data.vice_skip_pos || 0,        // 7: 副箕斗位置
+    data.main_skip_speed || 0,      // 8: 主箕斗速度
+    data.vice_skip_speed || 0,      // 9: 副箕斗速度
 
     // 状态位 (0或1)
-    bool01(data.auto_run),          // 10: 自动
-    bool01(data.fault_alarm),       // 11: 报警
-    bool01(data.manual_run)         // 12: 手动
+    bool01(data.mode_auto),         // 10: 自动模式
+    hasFault ? 1 : 0,               // 11: 综合故障
+    bool01(data.mode_manual)        // 12: 手动模式
   ];
 
-  // 拼接字符串：电机 | 天轮 | 笼罐
-  return "电机电流:" + values[0] + "A,励磁电流:" + values[1] + "A,电机最高温度:" + values[2] + "°C|天轮最高温度:" + values[3] + "°C,主轴最高温度:" + values[4] + "°C,制动油压:" + values[5] + "MPa|主罐深度:" + values[6] + "m,副罐深度:" + values[7] + "m,实际速度:" + values[8] + "m/s,载重:" + values[9] + "t,自动运行:" + values[10] + ",故障报警:" + values[11];
+  // 拼接字符串：电气 | 轴承液压 | 箕斗 | 状态
+  return "定子电流:" + values[0] + "A,励磁电流:" + values[1] + "A,进线电压:" + values[2] + "V,电机最高温度:" + values[3] + "°C|轴承最高温度:" + values[4] + "°C,制动油压:" + values[5] + "MPa|主箕斗位置:" + values[6] + "m,副箕斗位置:" + values[7] + "m,主箕斗速度:" + values[8] + "m/s,副箕斗速度:" + values[9] + "m/s|自动模式:" + values[10] + ",故障报警:" + values[11] + ",手动模式:" + values[12];
 }
 
 async function loadRealtime() {
@@ -1353,6 +1345,3 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
-
-

@@ -189,12 +189,11 @@ const UNITY_CONFIG = {
 // 接收消息的 Unity 游戏对象名
 const UNITY_TARGET_OBJ = "SendMessageTongFeng"
 
-// 第一个方法名 (原有)
-const UNITY_METHOD_NAME = "UpdateTMPTexts"
+// 文本数据仍然走原来的 Unity 方法，避免影响已有的数值展示
+const UNITY_TEXT_METHOD_NAME = "UpdateTMPTexts"
 
-// 【新增】第二个方法名
-// TODO: 请在此处替换为您Unity脚本中实际的第二个函数名称
-const UNITY_METHOD_NAME_2 = "UpdateOtherFunction"
+// 根据 run_feedback 同时控制两台通风机启停的 Unity 方法
+const UNITY_MOVEMENT_METHOD_NAME = "SetBothMachinesState"
 
 type UnityInstance = {
   SendMessage: (gameObject: string, methodName: string, message: string) => void
@@ -362,6 +361,32 @@ function formatDataForUnity(data: VentilatorRealtimeData): string {
   return `风速:${val1}m/s,风量:${val2}m³/s,总压:${val3}Pa,负压:${val4}Pa|电压${val5}V,电流:${val6}A,水平振动:${val7}mm/s,垂直振动:${val8}mm/s|电压${val9}V,电流:${val10}A,水平振动:${val11}mm/s,垂直振动:${val12}mm/s`;
 }
 
+function formatMovementStateForUnity(): string {
+  // 新版 WebGLBridge.SetBothMachinesState 接收 "机器1状态,机器2状态"
+  // 例如："true,false" 表示机器1转动、机器2停止
+  return EQUIPMENT_CODES
+    .map(code => (toBool(ventilatorByCode[code]?.run_feedback) ? 'true' : 'false'))
+    .join(',')
+}
+
+function syncUnity() {
+  if (!unityInstance) return
+
+  // 原有文本面板只同步 TF001，保持之前的 Unity 文本逻辑不变
+  const textData = ventilatorByCode.TF001
+  if (textData) {
+    unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_TEXT_METHOD_NAME, formatDataForUnity(textData))
+  }
+
+  // 新增：根据两台通风机的 run_feedback 发送 "true,false" 这样的双机状态
+  const movementState = formatMovementStateForUnity()
+  console.debug('[Tongfeng Unity] SetBothMachinesState 参数:', movementState, typeof movementState, {
+    TF001: ventilatorByCode.TF001?.run_feedback,
+    TF002: ventilatorByCode.TF002?.run_feedback
+  })
+  unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_MOVEMENT_METHOD_NAME, movementState)
+}
+
 /**
  * 核心逻辑：获取数据 -> 更新Vue -> 发送给Unity
  */
@@ -380,13 +405,7 @@ async function loadRealtimeAndSync() {
       }
     })
 
-    // 发送给 Unity：默认同步 TF001，避免破坏现有 Unity 逻辑
-    const unityData = ventilatorByCode.TF001
-    if (unityInstance && unityData) {
-      const messageToSend = formatDataForUnity(unityData)
-      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, messageToSend)
-      unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME_2, messageToSend)
-    }
+    syncUnity()
 
   } catch (e) {
     console.error('获取数据失败', e)
@@ -423,17 +442,8 @@ function initUnity() {
           console.log("Unity 实例加载成功")
           unityInstance = instance
 
-          // 加载完成后，如果有缓存数据，立即发送一次
-          const cached = ventilatorByCode.TF001
-          if (unityInstance && cached) {
-            const messageToSend = formatDataForUnity(cached)
-
-            // 发送给第一个方法
-            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME, messageToSend)
-
-            // 【修改点】发送给第二个方法
-            unityInstance?.SendMessage(UNITY_TARGET_OBJ, UNITY_METHOD_NAME_2, messageToSend)
-          }
+          // 加载完成后，如果已缓存后端数据，立即把文本和转动状态同步到 Unity
+          syncUnity()
         })
         .catch((message: unknown) => {
           console.error("Unity 加载报错:", message)
@@ -1477,6 +1487,3 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
-
-
