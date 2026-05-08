@@ -131,16 +131,22 @@ const booleanKeys = new Set<keyof HoistRealtimeData>([
   'pos_2_overwind', 'pos_2_stop', 'pos_2_decelerate', 'pos_2_monitor_2m', 'pos_2_sync_calib', 'skip_2_unload_pos',
   // 核心操作与回路状态
   'loop_safety_closed', 'loop_lock_closed', 'loop_stop_closed', 'handle_speed_zero', 'handle_brake_zero', 'console_lock',
-  // 综合故障与报警
+])
+
+// 故障类 key：true = 正常（无故障），false = 故障
+const faultBooleanKeys = new Set<keyof HoistRealtimeData>([
   'fault_emergency_stop', 'fault_comm', 'fault_low_voltage', 'fault_high_voltage', 'fault_motor_overload', 'fault_motor_overspeed',
   'fault_temp_alarm', 'fault_temp_error', 'fault_brake_wear', 'fault_brake_deflection', 'fault_skip_jam'
 ])
 
 function formatDisplayValue(key: keyof HoistRealtimeData, value: unknown): { display: string; bool: boolean | null } {
   if (value === null || value === undefined) return { display: '--', bool: null }
-  if (booleanKeys.has(key)) {
+  if (booleanKeys.has(key) || faultBooleanKeys.has(key)) {
     const b = toBool(value as BoolLike)
     if (b === null) return { display: '--', bool: null }
+    if (faultBooleanKeys.has(key)) {
+      return { display: b ? '正常' : '故障', bool: b }
+    }
     return { display: b ? '是' : '否', bool: b }
   }
   return { display: formatDecimal(value as number | string), bool: null }
