@@ -61,3 +61,33 @@ export function getEquipmentHistoryVariableApi(params: Device.GetEquipmentHistor
     params
   })
 }
+
+/** 导出指定设备日报为Word文档 */
+export function exportDailyReportApi(equipmentCode: string, reportDate: string) {
+  return request<Blob>({
+    url: "/api/v1/equipment-report/daily/export",
+    method: "get",
+    params: { equipment_code: equipmentCode, report_date: reportDate },
+    responseType: "blob"
+  })
+}
+
+/** 导出指定日期所有设备日报汇总 */
+export function exportAllDailyReportsApi(reportDate: string) {
+  return request<Blob>({
+    url: "/api/v1/equipment-report/daily/export-all",
+    method: "post",
+    params: { report_date: reportDate },
+    responseType: "blob"
+  })
+}
+
+/** 导出指定日期、指定设备类型的日报汇总 */
+export function exportByTypeDailyReportsApi(equipmentType: string, reportDate: string) {
+  return request<Blob>({
+    url: "/api/v1/equipment-report/daily/export-by-type",
+    method: "post",
+    params: { equipment_type: equipmentType, report_date: reportDate },
+    responseType: "blob"
+  })
+}

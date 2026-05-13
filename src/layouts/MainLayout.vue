@@ -7,6 +7,9 @@
           <h2 class="logo">煤矿设备运维多模态大模型平台</h2>
         </div>
         <div class="header-right">
+          <el-button type="warning" size="small" @click="showReportDialog = true">
+            日报生成
+          </el-button>
           <el-dropdown>
             <span class="user-info">
               <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
@@ -91,6 +94,55 @@
         </el-main>
       </el-container>
     </el-container>
+
+    <!-- 日报生成弹窗 -->
+    <el-dialog
+      v-model="showReportDialog"
+      title="日报生成"
+      width="450px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="设备类型">
+          <el-select v-model="selectedType" style="width: 100%">
+            <el-option label="所有设备" value="" />
+            <el-option
+              v-for="t in EQUIPMENT_TYPES"
+              :key="t"
+              :label="t"
+              :value="t"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="selectedType" label="设备编号">
+          <el-select v-model="selectedCode" style="width: 100%">
+            <el-option label="所有设备" value="" />
+            <el-option
+              v-for="c in currentTypeCodes"
+              :key="c"
+              :label="c"
+              :value="c"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="报告日期">
+          <el-date-picker
+            v-model="reportDate"
+            type="date"
+            placeholder="选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showReportDialog = false">取消</el-button>
+        <el-button type="primary" :loading="downloading" @click="handleReportDownload">
+          下载日报
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -99,7 +151,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Fold, Expand } from '@element-plus/icons-vue'
 import * as ElementPlusIcons from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useUserStoreHook } from '@/store/modules/user'
+import { exportDailyReportApi, exportAllDailyReportsApi, exportByTypeDailyReportsApi } from '@/api/device'
 
 
 const router = useRouter()
@@ -107,6 +161,66 @@ const route = useRoute()
 
 // 响应式状态
 const isCollapse = ref(false)
+
+// 日报生成弹窗
+const EQUIPMENT_TYPES = ['提升机', '压风机', '通风机', '排水机', '运输机']
+const EQUIPMENT_TYPE_MAP: Record<string, string[]> = {
+  '提升机': ['TS001'],
+  '压风机': ['YF001', 'YF002', 'YF003', 'YF004', 'YF005', 'YF006', 'YF007'],
+  '通风机': ['TF001', 'TF002'],
+  '排水机': ['PS001', 'PS002', 'PS003'],
+  '运输机': ['YS001'],
+}
+const showReportDialog = ref(false)
+const selectedType = ref('')
+const selectedCode = ref('')
+const reportDate = ref(new Date().toISOString().slice(0, 10))
+const downloading = ref(false)
+
+const currentTypeCodes = computed(() => {
+  if (!selectedType.value) return []
+  return EQUIPMENT_TYPE_MAP[selectedType.value] || []
+})
+
+function getReportFileName() {
+  const date = reportDate.value
+  if (!selectedType.value) {
+    return `${date}_全部设备日报汇总.docx`
+  }
+  if (!selectedCode.value) {
+    return `${date}_${selectedType.value}日报汇总.docx`
+  }
+  return `${selectedCode.value}_${date}_日报.docx`
+}
+
+async function handleReportDownload() {
+  downloading.value = true
+  try {
+    let res: Blob
+    if (!selectedType.value) {
+      res = await exportAllDailyReportsApi(reportDate.value)
+    } else if (!selectedCode.value) {
+      res = await exportByTypeDailyReportsApi(selectedType.value, reportDate.value)
+    } else {
+      res = await exportDailyReportApi(selectedCode.value, reportDate.value)
+    }
+    const blob = res instanceof Blob ? res : new Blob([res])
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = getReportFileName()
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success('日报下载成功')
+    showReportDialog.value = false
+  } catch {
+    ElMessage.error('日报下载失败，请稍后重试')
+  } finally {
+    downloading.value = false
+  }
+}
 
 // 菜单路由配置
 const menuRoutes = computed(() => {
@@ -187,6 +301,12 @@ const handleLogout = async () => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header-right .user-info {
