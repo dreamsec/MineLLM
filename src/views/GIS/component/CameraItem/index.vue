@@ -252,6 +252,10 @@ const modelOptions = ref([
   { value: 'door', label: '风门检测' },
   { value: 'coal', label: '箕斗余煤' },
   { value: 'person', label: '人员检测' },
+  { value: 'vehicle', label: '钢丝绳检测' },
+  { value: 'handRope', label: '首绳检测' },
+  { value: 'tailRope', label: '尾绳检测' }
+
 ]);
 
 // 当前选中的模型

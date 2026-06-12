@@ -31,3 +31,7 @@ coverage
 
 *.data
 
+# IDE plugin files
+.claude/
+.understand-anything/
+
