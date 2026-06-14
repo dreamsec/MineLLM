@@ -779,6 +779,25 @@ const sendMessageInternal = async (
   background: rgba(0, 188, 212, 0.2);
 }
 
+.tool-section {
+  border-color: rgba(82, 196, 26, 0.45);
+  background: rgba(8, 30, 18, 0.55);
+}
+
+.tool-section .section-header {
+  background: rgba(82, 196, 26, 0.14);
+  color: #95de64;
+}
+
+.tool-section .section-header:hover {
+  background: rgba(82, 196, 26, 0.22);
+}
+
+.tool-section .header-title,
+.tool-section .toggle-icon {
+  color: #95de64;
+}
+
 .header-title {
   font-weight: bold;
 }
@@ -802,7 +821,8 @@ const sendMessageInternal = async (
 }
 
 .tool-content {
-  background: #111;
+  background: rgba(7, 24, 14, 0.92);
+  border-top-color: rgba(82, 196, 26, 0.25);
 }
 
 .code-block {

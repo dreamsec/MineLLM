@@ -98,7 +98,7 @@
                     <!-- 按照parts数组顺序直接渲染 -->
                     <div v-for="part in message.parts" :key="`part-${part.id}`" class="content-part">
                       <!-- 思考部分 -->
-                      <div v-if="part.type === 'thinking'" class="expandable-section">
+                      <div v-if="part.type === 'thinking'" class="expandable-section thinking-section">
                         <div
                           class="section-header"
                           @click="toggleSection(message.id, `thinking-${part.stepIndex}`)"
@@ -116,7 +116,7 @@
                       </div>
 
                       <!-- 工具调用部分 -->
-                      <div v-else-if="part.type === 'tool'" class="expandable-section">
+                      <div v-else-if="part.type === 'tool'" class="expandable-section tool-section">
                         <div
                           class="section-header"
                           @click="toggleSection(message.id, `tool-${part.stepIndex}`)"
@@ -2136,6 +2136,29 @@ watch(inputText, () => {
   background: #f0f0f0;
 }
 
+.tool-section {
+  border-color: #b7eb8f;
+  background: #fbfff7;
+}
+
+.tool-section .section-header {
+  background: #f6ffed;
+  border-left: 4px solid #52c41a;
+}
+
+.tool-section .section-header:hover {
+  background: #edffe2;
+}
+
+.tool-section .section-header i:first-child,
+.tool-section .section-header > span:first-of-type {
+  color: #237804;
+}
+
+.tool-section .section-header i:last-child {
+  color: #52c41a;
+}
+
 .section-header i:first-child {
   color: #1890ff;
   width: 16px;
@@ -2193,7 +2216,8 @@ watch(inputText, () => {
 }
 
 .tool-content {
-  background: #f6ffed;
+  background: #fbfff7;
+  border-top-color: #d9f7be;
 }
 
 .tool-call pre {
