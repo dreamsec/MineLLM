@@ -34,7 +34,8 @@ interface additionalProp1 {
 //响应参数
 export interface ResponseData {
   code: number
-  data: string
+  // SSE 中 normal 事件是字符串，tool 事件是对象，结束事件可能为空。
+  data: string | Record<string, unknown> | null
   message: string
   data_type: string
   done: boolean

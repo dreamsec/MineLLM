@@ -56,11 +56,11 @@
                     class="section-header"
                     @click="toggleSection(msg.id, `tool-${part.stepIndex}`)"
                   >
-                    <span class="header-title">🔧 工具调用: {{ part.tool_calls?.[0]?.function.name || 'Unknown' }}</span>
+                    <span class="header-title">{{ getToolHeader(part) }}</span>
                     <span class="toggle-icon">{{ isExpanded(msg.id, `tool-${part.stepIndex}`) ? '▼' : '▶' }}</span>
                   </div>
                   <div v-if="isExpanded(msg.id, `tool-${part.stepIndex}`)" class="section-content tool-content">
-                    <pre class="code-block">{{ part.content }}</pre>
+                    <AiToolRenderer :tool="getToolDisplayData(part)" theme="dark" />
                   </div>
                 </div>
 
@@ -95,7 +95,17 @@
 import { ref, watch, nextTick, reactive } from 'vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import { getAiResponse, newChatSessionId } from '@/api/ai'
+import {
+  createToolDisplayData,
+  getToolHeaderText,
+  isAiToolCallPayload,
+  isAiToolResultPayload,
+  mergeToolResultData,
+  parseSseJsonLine,
+} from '@/utils/aiToolStream'
+import type { AiToolDisplayData, AiToolResult, AiToolStatus } from '@/utils/aiToolStream'
 
 const props = defineProps<{
   visible: boolean
@@ -129,6 +139,10 @@ interface MessagePart {
   thinkTime?: string
   tool_calls?: ToolDetail[]
   tool_call_id?: string
+  toolName?: string
+  toolStatus?: AiToolStatus
+  toolArguments?: Record<string, unknown>
+  toolResult?: AiToolResult
 }
 
 interface Message {
@@ -245,6 +259,73 @@ const toggleSection = (messageId: number, sectionType: string) => {
 const isExpanded = (messageId: number, sectionType: string) => {
   const key = `${messageId}`
   return expandedSections.value[key]?.has(sectionType) || false
+}
+
+const parseLegacyToolArguments = (argumentsText?: string) => {
+  if (!argumentsText) return undefined
+  try {
+    return JSON.parse(argumentsText) as Record<string, unknown>
+  } catch {
+    return { arguments: argumentsText }
+  }
+}
+
+const getToolDisplayData = (part: MessagePart): AiToolDisplayData => {
+  const toolName = part.toolName || part.tool_calls?.[0]?.function.name || 'unknown'
+  return {
+    callId: part.tool_call_id || '',
+    name: toolName,
+    status: part.toolStatus || (part.toolResult?.success === false ? 'error' : 'success'),
+    arguments: part.toolArguments || parseLegacyToolArguments(part.tool_calls?.[0]?.function.arguments),
+    result: part.toolResult,
+    legacyContent: part.content,
+  }
+}
+
+const getToolHeader = (part: MessagePart) => getToolHeaderText(getToolDisplayData(part))
+
+const upsertToolPart = (
+  messageIndex: number,
+  tool: AiToolDisplayData,
+  stepIndex: number,
+) => {
+  const message = messages.value[messageIndex]
+  if (!message) return
+
+  if (!message.parts) {
+    message.parts = []
+  }
+
+  const existingPart = message.parts.find((part) => (
+    part.type === 'tool' && part.tool_call_id === tool.callId
+  ))
+  const content = tool.status === 'running'
+    ? getToolHeaderText(tool)
+    : tool.result?.content || tool.legacyContent || ''
+
+  if (existingPart) {
+    existingPart.content = content
+    existingPart.toolName = tool.name
+    existingPart.toolStatus = tool.status
+    existingPart.toolArguments = tool.arguments || existingPart.toolArguments
+    existingPart.toolResult = tool.result
+    existingPart.stepIndex = existingPart.stepIndex || stepIndex
+  } else {
+    // 新工具协议用 call_id 串联开始和结果，前端只保留一个工具展示块。
+    message.parts.push({
+      id: Date.now() + Math.random(),
+      type: 'tool',
+      content,
+      stepIndex,
+      tool_call_id: tool.callId,
+      toolName: tool.name,
+      toolStatus: tool.status,
+      toolArguments: tool.arguments,
+      toolResult: tool.result,
+    })
+  }
+
+  scrollToBottom()
 }
 
 // 添加消息部分（思考、工具调用、响应）
@@ -398,7 +479,8 @@ const sendMessageInternal = async (
         console.log('收到行:', line)
         if (line.trim() === '') continue
         try {
-          const result = JSON.parse(line)
+          const result = parseSseJsonLine(line)
+          if (!result) continue
           const payload = result.data
           console.log('payload:', payload)
           const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
@@ -409,7 +491,38 @@ const sendMessageInternal = async (
               messages.value[aiMessageIndex].modelLoading = false
             }
 
-            // 1) 工具调用：后端可能返回对象结构
+            if (result.data_type === 'tool') {
+              finishThinking(aiMessageIndex)
+
+              if (isAiToolCallPayload(payload)) {
+                currentThinkStepIndex++
+                const tool = createToolDisplayData(payload)
+                upsertToolPart(aiMessageIndex, tool, currentThinkStepIndex)
+                toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
+                continue
+              }
+
+              if (isAiToolResultPayload(payload)) {
+                const existingPart = messages.value[aiMessageIndex].parts?.find((part) => (
+                  part.type === 'tool' && part.tool_call_id === payload.call_id
+                ))
+                const stepIndex = existingPart?.stepIndex || ++currentThinkStepIndex
+                const tool = mergeToolResultData(
+                  existingPart ? getToolDisplayData(existingPart) : undefined,
+                  payload,
+                )
+                upsertToolPart(aiMessageIndex, tool, stepIndex)
+                if (!existingPart) {
+                  toggleSection(aiMessage.id, `tool-${stepIndex}`)
+                }
+                continue
+              }
+
+              console.warn('未知工具事件:', payload)
+              continue
+            }
+
+            // 1) 旧版工具调用：兼容 tool_call_id/content/session_id 结构
             if (isToolStreamPayload(payload)) {
               currentThinkStepIndex++
               // 处理工具响应

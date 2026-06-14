@@ -122,14 +122,11 @@
                           @click="toggleSection(message.id, `tool-${part.stepIndex}`)"
                         >
                           <i class="fas fa-server"></i>
-                          <span>MCP工具调用：{{part.tool_calls?.[0]?.function.name}}</span>
+                          <span>{{ getToolHeader(part) }}</span>
                           <i :class="['fas', isExpanded(message.id, `tool-${part.stepIndex}`) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                         </div>
                         <div v-if="isExpanded(message.id, `tool-${part.stepIndex}`)" class="section-content tool-content">
-                          <div class="tool-call">
-                            <pre>"content":{{ part.content }}<br>"tool_calls": {{part.tool_calls}}<br>"tool_call_id": {{part.tool_call_id}}
-                            </pre>
-                          </div>
+                          <AiToolRenderer :tool="getToolDisplayData(part)" theme="light" />
                         </div>
                       </div>
                       <!-- 响应内容直接展示 -->
@@ -298,8 +295,18 @@ import {nextTick, onMounted, reactive, ref, watch} from 'vue'
 import { ElMessage } from 'element-plus'
 import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary} from '@/api/ai/index.ts'
 import { getKbContentTypesApi } from '@/api/knowledgebase/index.ts'
+import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import {
+  createToolDisplayData,
+  getToolHeaderText,
+  isAiToolCallPayload,
+  isAiToolResultPayload,
+  mergeToolResultData,
+  parseSseJsonLine,
+} from '@/utils/aiToolStream'
+import type { AiToolDisplayData, AiToolResult, AiToolStatus } from '@/utils/aiToolStream'
 
 const md = new MarkdownIt({
   html: false,
@@ -324,6 +331,10 @@ interface MessagePart {
   parent_message_id?:number
   stepIndex?: number // 用于标识思考步骤顺序
   thinkTime?: string // 记录思考时间戳
+  toolName?: string
+  toolStatus?: AiToolStatus
+  toolArguments?: Record<string, unknown>
+  toolResult?: AiToolResult
 }
 
 interface toolDetail {
@@ -492,6 +503,74 @@ const isExpanded = (messageId: number, sectionType: string) => {
   return expandedSections.value[key]?.has(sectionType) || false
 }
 
+const parseLegacyToolArguments = (argumentsText?: string) => {
+  if (!argumentsText) return undefined
+  try {
+    return JSON.parse(argumentsText) as Record<string, unknown>
+  } catch {
+    return { arguments: argumentsText }
+  }
+}
+
+const getToolDisplayData = (part: MessagePart): AiToolDisplayData => {
+  const toolName = part.toolName || part.tool_calls?.[0]?.function.name || 'unknown'
+  return {
+    callId: part.tool_call_id || '',
+    name: toolName,
+    status: part.toolStatus || (part.toolResult?.success === false ? 'error' : 'success'),
+    arguments: part.toolArguments || parseLegacyToolArguments(part.tool_calls?.[0]?.function.arguments),
+    result: part.toolResult,
+    legacyContent: part.content,
+  }
+}
+
+const getToolHeader = (part: MessagePart) => getToolHeaderText(getToolDisplayData(part))
+
+const upsertToolPart = (
+  messageIndex: number,
+  tool: AiToolDisplayData,
+  stepIndex: number,
+) => {
+  const message = messages.value[messageIndex]
+  if (!message) return
+
+  if (!message.parts) {
+    message.parts = []
+  }
+
+  const existingPart = message.parts.find((part) => (
+    part.type === 'tool' && part.tool_call_id === tool.callId
+  ))
+  const content = tool.status === 'running'
+    ? getToolHeaderText(tool)
+    : tool.result?.content || tool.legacyContent || ''
+
+  if (existingPart) {
+    existingPart.content = content
+    existingPart.toolName = tool.name
+    existingPart.toolStatus = tool.status
+    existingPart.toolArguments = tool.arguments || existingPart.toolArguments
+    existingPart.toolResult = tool.result
+    existingPart.stepIndex = existingPart.stepIndex || stepIndex
+  } else {
+    // 新协议的 tool_call 和 tool_result 通过 call_id 合并到同一个展示块。
+    message.parts.push({
+      id: Date.now() + Math.random(),
+      session_id: currentSessionId.value || '',
+      type: 'tool',
+      content,
+      stepIndex,
+      tool_call_id: tool.callId,
+      toolName: tool.name,
+      toolStatus: tool.status,
+      toolArguments: tool.arguments,
+      toolResult: tool.result,
+    })
+  }
+
+  scrollToBottom()
+}
+
 
 
 // 提问
@@ -606,7 +685,8 @@ const sendMessage = async () => {
         a++
         if (line.trim() === '') continue;
         try {
-          const result = JSON.parse(line);
+          const result = parseSseJsonLine(line);
+          if (!result) continue
           const payload = result.data;
           console.log(payload)
           const aiMessageIndex = messages.value.findIndex((msg) => msg.id === aiMessage.id)
@@ -617,7 +697,38 @@ const sendMessage = async () => {
               messages.value[aiMessageIndex].modelLoading = false
             }
 
-            // 1) 工具调用：后端可能返回对象结构
+            if (result.data_type === 'tool') {
+              finishThinking(aiMessageIndex)
+
+              if (isAiToolCallPayload(payload)) {
+                currentThinkStepIndex++
+                const tool = createToolDisplayData(payload)
+                upsertToolPart(aiMessageIndex, tool, currentThinkStepIndex)
+                toggleSection(aiMessage.id, `tool-${currentThinkStepIndex}`) // 默认展开新的工具部分
+                continue
+              }
+
+              if (isAiToolResultPayload(payload)) {
+                const existingPart = messages.value[aiMessageIndex].parts?.find((part) => (
+                  part.type === 'tool' && part.tool_call_id === payload.call_id
+                ))
+                const stepIndex = existingPart?.stepIndex || ++currentThinkStepIndex
+                const tool = mergeToolResultData(
+                  existingPart ? getToolDisplayData(existingPart) : undefined,
+                  payload,
+                )
+                upsertToolPart(aiMessageIndex, tool, stepIndex)
+                if (!existingPart) {
+                  toggleSection(aiMessage.id, `tool-${stepIndex}`)
+                }
+                continue
+              }
+
+              console.warn('未知工具事件:', payload)
+              continue
+            }
+
+            // 1) 旧版工具调用：兼容后端曾经返回的 tool_call_id/content/session_id 结构
             if (isToolStreamPayload(payload)) {
               currentThinkStepIndex++
               // 处理工具响应
