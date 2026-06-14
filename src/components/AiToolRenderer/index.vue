@@ -11,7 +11,7 @@
 
     <template v-else>
       <div v-if="tool.result?.content" class="tool-summary">
-        {{ tool.result.content }}
+        {{ formatMetricText(tool.result.content) }}
       </div>
 
       <div v-if="tool.name === 'generate_chart'" class="chart-tool">
@@ -26,7 +26,7 @@
           <summary>字段说明</summary>
           <div class="field-grid">
             <span v-for="[field, label] in chartFieldEntries" :key="field">
-              {{ field }}：{{ label }}
+              {{ label }}（{{ field }}）
             </span>
           </div>
         </details>
@@ -81,12 +81,12 @@
         </div>
 
         <div v-if="summaryEntries.length" class="summary-grid">
-          <div v-for="[field, summary] in summaryEntries" :key="field" class="summary-card">
-            <div class="summary-title">{{ field }}</div>
+          <div v-for="entry in summaryEntries" :key="entry.field" class="summary-card">
+            <div class="summary-title" :title="entry.field">{{ entry.label }}</div>
             <div class="summary-values">
-              <span>最小：{{ formatValue(summary.min) }}</span>
-              <span>最大：{{ formatValue(summary.max) }}</span>
-              <span>平均：{{ formatValue(summary.avg) }}</span>
+              <span>最小：{{ formatValue(entry.summary.min) }}</span>
+              <span>最大：{{ formatValue(entry.summary.max) }}</span>
+              <span>平均：{{ formatValue(entry.summary.avg) }}</span>
             </div>
           </div>
         </div>
@@ -95,12 +95,12 @@
           <table>
             <thead>
               <tr>
-                <th v-for="column in queryColumns" :key="column">{{ column }}</th>
+                <th v-for="column in queryColumns" :key="column.key" :title="column.key">{{ column.label }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(row, index) in queryRows" :key="index">
-                <td v-for="column in queryColumns" :key="column">{{ formatValue(row[column]) }}</td>
+                <td v-for="column in queryColumns" :key="column.key">{{ formatValue(row[column.key]) }}</td>
               </tr>
             </tbody>
           </table>
@@ -116,7 +116,7 @@
         <div class="knowledge-list">
           <div v-for="item in knowledgeResults" :key="item.index" class="knowledge-item">
             <div class="knowledge-source">{{ item.source || '未知来源' }}</div>
-            <div class="knowledge-content">{{ item.content }}</div>
+            <div class="knowledge-content">{{ formatMetricText(item.content) }}</div>
           </div>
         </div>
       </div>
@@ -137,7 +137,7 @@ import { computed } from 'vue'
 import AiEChart from './AiEChart.vue'
 import type { AiToolDisplayData } from '@/utils/aiToolStream'
 import { getToolRunningText } from '@/utils/aiToolStream'
-import { normalizeChartToolData } from '@/utils/aiChartOption'
+import { formatMetricText, getMetricFieldLabel, normalizeChartToolData } from '@/utils/aiChartOption'
 
 const props = withDefaults(defineProps<{
   tool: AiToolDisplayData
@@ -222,10 +222,17 @@ const queryData = computed(() => {
   return isRecord(toolData.value) ? (toolData.value as QueryData) : undefined
 })
 
-const summaryEntries = computed(() => Object.entries(queryData.value?.summary || {}))
+const summaryEntries = computed(() => Object.entries(queryData.value?.summary || {}).map(([field, summary]) => ({
+  field,
+  label: getMetricFieldLabel(field),
+  summary,
+})))
 const queryRows = computed(() => (queryData.value?.records || []).slice(0, 8))
 const hasMoreRows = computed(() => (queryData.value?.records?.length || 0) > queryRows.value.length)
-const queryColumns = computed(() => Object.keys(queryRows.value[0] || {}).slice(0, 8))
+const queryColumns = computed(() => Object.keys(queryRows.value[0] || {}).slice(0, 8).map((key) => ({
+  key,
+  label: getMetricFieldLabel(key),
+})))
 
 const knowledgeData = computed(() => {
   return isRecord(toolData.value) ? (toolData.value as KnowledgeData) : undefined
@@ -237,7 +244,7 @@ const getKeyParams = (params?: EquipmentItem['key_params']) => {
   if (!params) return []
   return Object.entries(params).map(([key, item]) => ({
     key,
-    label: item.label || key,
+    label: formatMetricText(item.label || key),
     value: item.value,
   }))
 }

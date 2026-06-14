@@ -20,6 +20,23 @@ const TIME_FIELD_KEYS = new Set([
 
 // 这里复用各机器页面里已经展示给用户看的中文字段名，避免图例出现“温度_1”这类不可读名称。
 const FIELD_LABELS: Record<string, string> = {
+  collected_at: '采集时间',
+  created_at: '创建时间',
+  updated_at: '更新时间',
+  timestamp: '时间戳',
+  time: '时间',
+  equipment_code: '设备编码',
+  equipment_name: '设备名称',
+  equipment_type: '设备类型',
+  equipment_status: '设备状态',
+  status_indicator: '状态指示',
+  record_count: '返回条数',
+  total_count: '总条数',
+  count: '数量',
+  min: '最小值',
+  max: '最大值',
+  avg: '平均值',
+
   main_skip_speed: '主箕斗提升速度',
   main_skip_pos: '主箕斗提升位置',
   vice_skip_speed: '副箕斗提升速度',
@@ -121,7 +138,7 @@ const isNumericField = (key: string, records: ChartRecord[]) => {
   return records.some((record) => toNumber(record[key]) !== null)
 }
 
-const getFieldLabel = (key: string) => {
+export const getMetricFieldLabel = (key: string) => {
   if (FIELD_LABELS[key]) return FIELD_LABELS[key]
 
   const motorTemp = key.match(/^motor_temp_(\d+)$/)
@@ -131,6 +148,11 @@ const getFieldLabel = (key: string) => {
   if (bearingTemp) return `轴承温度${bearingTemp[1]}`
 
   return key
+}
+
+export const formatMetricText = (text: string) => {
+  // 后端摘要里可能直接拼出 stator_current 这类字段名，这里统一替换成页面上的中文名称。
+  return text.replace(/\b[a-z][a-z0-9_]*\b/g, (key) => getMetricFieldLabel(key))
 }
 
 const getSeriesTopic = (series: ChartSeries[]) => {
@@ -153,7 +175,7 @@ const inferSeriesFieldKeys = (records: ChartRecord[], series: ChartSeries[]) => 
   const numericKeys = Object.keys(firstRecord).filter((key) => isNumericField(key, records))
   const topic = getSeriesTopic(series)
   const topicKeys = topic
-    ? numericKeys.filter((key) => getFieldLabel(key).includes(topic))
+    ? numericKeys.filter((key) => getMetricFieldLabel(key).includes(topic))
     : []
 
   const candidates = topicKeys.length >= series.length ? topicKeys : numericKeys
@@ -202,7 +224,7 @@ export const normalizeChartToolData = (chartData: unknown): NormalizeChartResult
     const fieldKey = seriesFieldKeys[index]
     if (!fieldKey) return
 
-    const label = getFieldLabel(fieldKey)
+    const label = getMetricFieldLabel(fieldKey)
     fieldLabels[fieldKey] = label
 
     // 后端图表已经给出数据值，前端这里只负责把通用名称翻译成设备字段中文。
