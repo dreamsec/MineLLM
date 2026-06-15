@@ -14,6 +14,8 @@ export interface CameraData {
   rtsp: string
   // 状态 - 0表示离线，1表示在线
   status: number
+  // 所属位置：gis / yafeng-1 / yafeng-2 / yafeng-3 等
+  location?: string
   // X坐标
   x: number
   // Y坐标
@@ -32,6 +34,8 @@ export interface GetCamerasRequestParams {
   ip?: string
   // 状态 - 可选，用于筛选摄像头状态
   status?: number
+  // 所属位置 - 可选，用于筛选 GIS 或 Unity 场景摄像头
+  location?: string
   // 页码 - 可选，指定要获取的页码，默认为1
   page?: number
   // 每页数量 - 可选，指定每页显示的摄像头数量
@@ -60,6 +64,8 @@ export interface AddCameraRequestParams {
   password: string
   // RTSP地址
   rtsp: string
+  // 所属位置：gis / yafeng-1 / yafeng-2 / yafeng-3 等
+  location?: string
   // X坐标
   x: number
   // Y坐标
@@ -82,6 +88,8 @@ export type AddCameraResponseData = IApiResponseData<{
   rtsp: string
   // 状态 - 0表示离线，1表示在线
   status: number
+  // 所属位置：gis / yafeng-1 / yafeng-2 / yafeng-3 等
+  location?: string
   // X坐标
   x: number
   // Y坐标
@@ -106,6 +114,8 @@ export interface UpdateCameraRequestParams {
   password: string
   // RTSP地址
   rtsp: string
+  // 所属位置：gis / yafeng-1 / yafeng-2 / yafeng-3 等
+  location?: string
   // 状态 - 0表示离线，1表示在线
   status: number
   // X坐标
@@ -130,6 +140,8 @@ export type UpdateCameraResponseData = IApiResponseData<{
   rtsp: string
   // 状态 - 0表示离线，1表示在线
   status: number
+  // 所属位置：gis / yafeng-1 / yafeng-2 / yafeng-3 等
+  location?: string
   // X坐标
   x: number
   // Y坐标

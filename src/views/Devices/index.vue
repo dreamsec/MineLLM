@@ -82,6 +82,11 @@
           </el-table-column>
 
 
+          <el-table-column v-if="selectedType === '摄像头'" label="所属位置" width="150">
+            <template #default="scope">
+              {{ getCameraLocationLabel(scope.row.location) }}
+            </template>
+          </el-table-column>
           <el-table-column v-if="selectedType === '机械设备'" prop="location" label="安装位置" width="150" />
           <!-- <el-table-column v-if="selectedType === '机械设备'" prop="installDate" label="安装日期" width="120" /> -->
           <el-table-column v-if="selectedType === '摄像头'" prop="createTime" label="创建时间" width="150" />
@@ -135,6 +140,7 @@
               <p><strong>设备类型：</strong>{{ selectedDevice.type }}</p>
               <p><strong>IP地址：</strong>{{ selectedDevice.ip }}</p>
               <p><strong>RTSP地址：</strong>{{ selectedDevice.rtsp }}</p>
+              <p><strong>所属位置：</strong>{{ getCameraLocationLabel(selectedDevice.location) }}</p>
               <p><strong>状态：</strong>{{ selectedDevice.status  }}</p>
               <p><strong>创建时间：</strong>{{ selectedDevice.createTime }}</p>
             </div>
@@ -243,6 +249,16 @@
           </el-form-item>
           <el-form-item label="密码" prop="password">
             <el-input v-model="addFormData.password" type="password" placeholder="请输入密码" />
+          </el-form-item>
+          <el-form-item label="所属位置" prop="location">
+            <el-select v-model="addFormData.location" placeholder="请选择摄像头所属位置">
+              <el-option
+                v-for="option in CAMERA_LOCATION_OPTIONS"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
           </el-form-item>
           <!-- 新增坐标输入框 -->
           <el-form-item label="X坐标" prop="x">
@@ -368,6 +384,16 @@
           <el-form-item label="密码" prop="password">
             <el-input v-model="editFormData.password" type="password" placeholder="请输入密码" />
           </el-form-item>
+          <el-form-item label="所属位置" prop="location">
+            <el-select v-model="editFormData.location" placeholder="请选择摄像头所属位置">
+              <el-option
+                v-for="option in CAMERA_LOCATION_OPTIONS"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </el-form-item>
           <!-- 添加坐标输入框 -->
           <el-form-item label="X坐标" prop="x">
             <el-input-number v-model="editFormData.x" :min="0" :step="0.01" :precision="2" placeholder="请输入X坐标" />
@@ -427,7 +453,8 @@ import type { ElForm } from 'element-plus'
 import { getDevicesApi , addDeviceApi,updateDeviceApi,deleteDeviceApi} from '@/api/device'
 import { getAllCamerasApi, addCameraApi, updateCameraApi, deleteCameraApi } from '@/api/camera'
 import type { DeviceData } from '@/api/device/types/device'
-import type { CameraData } from '@/api/camera/types/camera'
+import type { CameraData, UpdateCameraRequestParams } from '@/api/camera/types/camera'
+import { CAMERA_LOCATION_GIS, CAMERA_LOCATION_OPTIONS } from '@/constants/cameraLocation'
 
 // 设备类型定义 - 移除"全部设备"选项
 const deviceTypes = [
@@ -478,6 +505,7 @@ const addFormData = reactive({
   rtsp: '',
   username: '',
   password: '',
+  location: CAMERA_LOCATION_GIS,
   remark: '',
   x: 0,
   y: 0
@@ -503,6 +531,7 @@ const editFormData = reactive({
   rtsp: '',
   username: '',
   password: '',
+  location: CAMERA_LOCATION_GIS,
   remark: '',
   status: '',
   x: 0,
@@ -534,6 +563,7 @@ const formRules = {
     }
   ],
   rtsp: [{ required: true, message: '请输入RTSP地址', trigger: 'blur' }],
+  location: [{ required: true, message: '请选择摄像头所属位置', trigger: 'change' }],
   rated_power: [{ type: 'number', min: 0, message: '功率不能为负数', trigger: 'blur' }],
   rated_voltage: [{ type: 'number', min: 0, message: '电压不能为负数', trigger: 'blur' }],
   rated_current: [{ type: 'number', min: 0, message: '电流不能为负数', trigger: 'blur' }]
@@ -555,6 +585,11 @@ function getTagType(type: string): string {
     '传感器': 'primary'
   }
   return typeMap[type] || 'default'
+}
+
+function getCameraLocationLabel(location?: string): string {
+  const normalized = location || CAMERA_LOCATION_GIS
+  return CAMERA_LOCATION_OPTIONS.find(option => option.value === normalized)?.label || normalized
 }
 
 // 计算属性：过滤后的设备列表（统一格式）
@@ -592,7 +627,7 @@ const filteredDevices = computed(() => {
       rtsp: camera.rtsp,
       username: camera.username,
       password: camera.password,
-      location: '',
+      location: camera.location || CAMERA_LOCATION_GIS,
       installDate: '',
       status: camera.status === 0 ? '停用' : '运行',
       createTime: formatDate(camera.create_time),
@@ -694,6 +729,7 @@ function openAddDeviceDialog(): void {
     rtsp: '',
     username: '',
     password: '',
+    location: CAMERA_LOCATION_GIS,
     remark: '',
     x: 0,
     y: 0
@@ -717,6 +753,7 @@ function editDevice(device: any ): void {
       rtsp: camera.rtsp || '',
       username: camera.username || '',
       password: camera.password || '',
+      location: camera.location || CAMERA_LOCATION_GIS,
       status: camera.status,
       x: camera.x,
       y: camera.y
@@ -846,6 +883,7 @@ function handleAddSubmit(): void {
           rtsp: addFormData.rtsp,
           username: addFormData.username,
           password: addFormData.password,
+          location: addFormData.location,
           // 新增坐标字段
           x: addFormData.x,
           y: addFormData.y
@@ -900,14 +938,19 @@ function handleEditSubmit(): void {
     if (valid) {
       // 根据设备类型进行不同的API调用
       if (selectedType.value === '摄像头') {
+        if (currentEditId.value === null) {
+          ElMessage.warning('缺少摄像头ID，无法更新')
+          return
+        }
         // 摄像头编辑逻辑
-        const edit_cameraData = {
+        const edit_cameraData: UpdateCameraRequestParams = {
           id: currentEditId.value,
           name: editFormData.equipment_name,
           ip: editFormData.ip,
           rtsp: editFormData.rtsp,
           username: editFormData.username,
           password: editFormData.password,
+          location: editFormData.location,
           // 新增状态字段
           status: editFormData.status === '停用' ? 0 : 1,
           // 新增坐标字段

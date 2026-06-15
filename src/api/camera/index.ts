@@ -19,11 +19,14 @@ export function getCamerasApi(params: Camera.GetCamerasRequestParams) {
  * 获取所有摄像头（不进行分页）
  * @returns 摄像头列表数据
  */
-export function getAllCamerasApi() {
+export function getAllCamerasApi(location?: string) {
   // 设置page为1，page_size为一个较大的数来获取所有摄像头
-  const params = {
+  const params: Camera.GetCamerasRequestParams = {
     page: 1,
     page_size: 1000 // 假设最大摄像头数量不超过1000
+  }
+  if (location) {
+    params.location = location
   }
 
   return getCamerasApi(params)

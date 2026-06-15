@@ -71,6 +71,53 @@
       </div>
 
     </div>
+
+    <CameraVideoDialog
+      v-model="cameraDialogVisible"
+      :camera-id="activeCameraId"
+    />
+
+    <el-dialog
+      v-model="addUnityCameraDialogVisible"
+      :title="`绑定压风机摄像头图标 ${pendingUnityIconId ?? ''}`"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="100px">
+        <el-alert
+          type="info"
+          show-icon
+          :closable="false"
+          class="unity-camera-tip"
+          :title="`当前将新增 location=${unityCameraAddForm.location} 的摄像头，保存后 Unity 图标会自动打开该视频。`"
+        />
+        <el-form-item label="摄像头名称">
+          <el-input v-model="unityCameraAddForm.name" placeholder="请输入摄像头名称" />
+        </el-form-item>
+        <el-form-item label="IP地址">
+          <el-input v-model="unityCameraAddForm.ip" placeholder="请输入IP地址" />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="unityCameraAddForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="unityCameraAddForm.password" type="password" placeholder="请输入密码" />
+        </el-form-item>
+        <el-form-item label="RTSP地址">
+          <el-input v-model="unityCameraAddForm.rtsp" placeholder="请输入RTSP地址" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="unity-camera-actions">
+          <el-button @click="cancelAddUnityCamera">取消</el-button>
+          <el-button type="primary" :loading="addUnityCameraLoading" @click="submitAddUnityCamera">
+            保存并打开
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -82,8 +129,13 @@ defineOptions({
 })
 
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { getRealtimeDataApi } from '@/api/device'
 import type { CompressorRealtimeData } from '@/api/device/types/device'
+import { addCameraApi, getAllCamerasApi } from '@/api/camera'
+import type { AddCameraRequestParams, CameraData } from '@/api/camera/types/camera'
+import { getYafengIconIdFromLocation, getYafengCameraLocation } from '@/constants/cameraLocation'
+import CameraVideoDialog from '@/components/CameraVideoDialog/index.vue'
 
 // ----------------------------------------------------------------------
 // 1. Unity 配置区域 (请根据实际打包生成的文件名修改)
@@ -111,6 +163,7 @@ type UnityInstance = {
 declare global {
   interface Window {
     createUnityInstance: (canvas: HTMLCanvasElement, config: Record<string, unknown>) => Promise<UnityInstance>;
+    handleUnityIconClick?: (id: number | string) => void;
   }
 }
 
@@ -294,6 +347,155 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 let unityInstance: UnityInstance | null = null
 let refreshTimer: number | undefined
 
+// Unity 场景中的图标编号 -> 后端摄像头真实 id，由摄像头 location 自动生成。
+const unityCameraMap = ref<Record<number, number>>({})
+const cameraDialogVisible = ref(false)
+const activeCameraId = ref<number | null>(null)
+const addUnityCameraDialogVisible = ref(false)
+const addUnityCameraLoading = ref(false)
+const pendingUnityIconId = ref<number | null>(null)
+const unityCameraAddForm = ref<AddCameraRequestParams>({
+  name: '',
+  ip: '',
+  username: '',
+  password: '',
+  rtsp: '',
+  location: '',
+  // Unity 摄像头不依赖 GIS 坐标，后端仍要求 x/y 时统一写 0。
+  x: 0,
+  y: 0
+})
+
+function resetUnityCameraAddForm(iconId: number) {
+  unityCameraAddForm.value = {
+    name: `压风机摄像头${iconId}`,
+    ip: '',
+    username: '',
+    password: '',
+    rtsp: '',
+    location: getYafengCameraLocation(iconId),
+    x: 0,
+    y: 0
+  }
+}
+
+function openAddUnityCameraDialog(iconId: number) {
+  pendingUnityIconId.value = iconId
+  resetUnityCameraAddForm(iconId)
+  addUnityCameraDialogVisible.value = true
+}
+
+function cancelAddUnityCamera() {
+  addUnityCameraDialogVisible.value = false
+  pendingUnityIconId.value = null
+}
+
+async function findUnityCameraByIcon(iconId: number): Promise<CameraData | null> {
+  const location = getYafengCameraLocation(iconId)
+  const response = await getAllCamerasApi(location)
+  const list = response.data?.list || []
+  return list.find(camera => camera.location === location) || null
+}
+
+async function loadUnityCameraMap() {
+  try {
+    const response = await getAllCamerasApi()
+    const nextMap: Record<number, number> = {}
+    const list = response.data?.list || []
+
+    list.forEach((camera) => {
+      const iconId = getYafengIconIdFromLocation(camera.location)
+      if (!iconId) return
+      // location 约定为 yafeng-1 / yafeng-2 / yafeng-3，对应 Unity 传来的图标编号。
+      nextMap[iconId] = camera.id
+    })
+
+    unityCameraMap.value = nextMap
+  } catch (error) {
+    console.error('获取压风机 Unity 摄像头映射失败:', error)
+    ElMessage.error('获取压风机摄像头配置失败')
+  }
+}
+
+async function openCameraFromUnity(unityIconId: number | string) {
+  const iconId = Number(unityIconId)
+
+  if (!Number.isFinite(iconId)) {
+    ElMessage.warning(`Unity 摄像头编号无效：${unityIconId}`)
+    return
+  }
+
+  try {
+    const camera = await findUnityCameraByIcon(iconId)
+    if (!camera) {
+      openAddUnityCameraDialog(iconId)
+      return
+    }
+
+    unityCameraMap.value[iconId] = camera.id
+    activeCameraId.value = camera.id
+    cameraDialogVisible.value = true
+  } catch (error) {
+    console.error('查询压风机 Unity 摄像头失败:', error)
+    ElMessage.error('查询压风机摄像头失败')
+  }
+}
+
+async function submitAddUnityCamera() {
+  const iconId = pendingUnityIconId.value
+  if (!iconId) {
+    ElMessage.warning('缺少 Unity 摄像头编号')
+    return
+  }
+
+  const form = unityCameraAddForm.value
+  if (!form.name.trim()) {
+    ElMessage.warning('请输入摄像头名称')
+    return
+  }
+  if (!form.ip.trim()) {
+    ElMessage.warning('请输入IP地址')
+    return
+  }
+  if (!form.rtsp.trim()) {
+    ElMessage.warning('请输入RTSP地址')
+    return
+  }
+
+  addUnityCameraLoading.value = true
+  try {
+    const payload: AddCameraRequestParams = {
+      ...form,
+      location: getYafengCameraLocation(iconId),
+      x: 0,
+      y: 0
+    }
+    const res = await addCameraApi(payload)
+    const createdCameraId = (res as any).data?.id
+
+    await loadUnityCameraMap()
+    const cameraId = createdCameraId || unityCameraMap.value[iconId]
+
+    if (!cameraId) {
+      ElMessage.success('摄像头添加成功，请再次点击 Unity 图标打开视频')
+      addUnityCameraDialogVisible.value = false
+      return
+    }
+
+    unityCameraMap.value[iconId] = cameraId
+    activeCameraId.value = cameraId
+    cameraDialogVisible.value = true
+    addUnityCameraDialogVisible.value = false
+    pendingUnityIconId.value = null
+    ElMessage.success('摄像头添加成功')
+  } catch (error) {
+    console.error('新增压风机 Unity 摄像头失败:', error)
+    ElMessage.error('摄像头添加失败')
+  } finally {
+    addUnityCameraLoading.value = false
+  }
+}
+
 /**
  * 将业务数据拼接成 Unity 约定的字符串格式
  * 例如: "0.8|220|15|..." 或者 JSON 字符串，取决于 C# 怎么解析
@@ -395,13 +597,19 @@ function initUnity() {
 // 4. 生命周期
 // ----------------------------------------------------------------------
 onMounted(() => {
+  // Unity WebGL 的 .jslib 会调用这个全局函数，把场景图标编号传给 Vue。
+  window.handleUnityIconClick = openCameraFromUnity
+
   // 1. 先获取一次数据
   loadAllRealtime()
 
-  // 2. 初始化 Unity
+  // 2. 加载压风机 Unity 摄像头映射
+  loadUnityCameraMap()
+
+  // 3. 初始化 Unity
   initUnity()
 
-  // 3. 开启轮询 (参考代码是3秒)
+  // 4. 开启轮询 (参考代码是3秒)
   refreshTimer = window.setInterval(loadAllRealtime, 2000)
 })
 
@@ -414,6 +622,9 @@ watch(activeUnityCode, () => {
 })
 
 onUnmounted(() => {
+  // 离开压风机页面时清理全局回调，避免其他页面误触发旧弹窗逻辑。
+  window.handleUnityIconClick = undefined
+
   if (refreshTimer) {
     clearInterval(refreshTimer)
     refreshTimer = undefined
@@ -443,6 +654,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+.unity-camera-tip {
+  margin-bottom: 16px;
+}
+
+.unity-camera-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .dashboard-header {
@@ -1656,6 +1877,3 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
-
-

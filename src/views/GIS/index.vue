@@ -9,6 +9,7 @@ import CameraItem from './component/CameraItem/index.vue';
 import { getAllCamerasApi, addCameraApi, updateCameraApi, deleteCameraApi } from '@/api/camera';
 import type { AddCameraRequestParams, UpdateCameraRequestParams } from '@/api/camera/types/camera'
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { isGisCameraLocation } from '@/constants/cameraLocation';
 
 interface Camera {
   id: number;
@@ -18,6 +19,7 @@ interface Camera {
   password: string;
   rtsp: string;
   status: number;
+  location?: string;
   vx: number;
   vy: number;
   create_time: string;
@@ -161,7 +163,7 @@ const fetchCameraData = async () => {
     // 检查响应数据格式并适配
     if (response.data && response.data.list) {
       // 将后端返回的数据适配到当前所需的格式
-      CameraList.value = response.data.list.map((camera: any) => ({
+      CameraList.value = response.data.list.filter((camera: any) => isGisCameraLocation(camera.location)).map((camera: any) => ({
         id: camera.id,
         name: camera.name,
         ip: camera.ip,
@@ -169,6 +171,7 @@ const fetchCameraData = async () => {
         password: camera.password || '123456',
         rtsp: camera.rtsp,
         status: camera.status || 0,
+        location: camera.location || '',
         vx: camera.vx || (camera.x || 0), // 如果没有vx，使用x或默认0
         vy: camera.vy || (camera.y || 0), // 如果没有vy，使用y或默认0
         create_time: camera.create_time || new Date().toISOString().split('T')[0],
@@ -376,6 +379,7 @@ const onCameraSelected = async (item: any) => {
       password: item.password,
       rtsp: item.rtsp,
       status: item.status ?? 1,
+      location: item.location || '',
       vx: item.vx,
       vy: item.vy,
       create_time: item.create_time,
