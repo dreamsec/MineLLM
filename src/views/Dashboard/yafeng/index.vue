@@ -79,40 +79,67 @@
 
     <el-dialog
       v-model="addUnityCameraDialogVisible"
-      :title="`绑定压风机摄像头图标 ${pendingUnityIconId ?? ''}`"
-      width="520px"
+      width="560px"
       append-to-body
       :close-on-click-modal="false"
+      class="unity-camera-dialog"
     >
-      <el-form label-width="100px">
-        <el-alert
-          type="info"
-          show-icon
-          :closable="false"
-          class="unity-camera-tip"
-          :title="`当前将新增 location=${unityCameraAddForm.location} 的摄像头，保存后 Unity 图标会自动打开该视频。`"
-        />
-        <el-form-item label="摄像头名称">
-          <el-input v-model="unityCameraAddForm.name" placeholder="请输入摄像头名称" />
-        </el-form-item>
-        <el-form-item label="IP地址">
-          <el-input v-model="unityCameraAddForm.ip" placeholder="请输入IP地址" />
-        </el-form-item>
-        <el-form-item label="用户名">
-          <el-input v-model="unityCameraAddForm.username" placeholder="请输入用户名" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input v-model="unityCameraAddForm.password" type="password" placeholder="请输入密码" />
-        </el-form-item>
-        <el-form-item label="RTSP地址">
-          <el-input v-model="unityCameraAddForm.rtsp" placeholder="请输入RTSP地址" />
-        </el-form-item>
-      </el-form>
+      <template #header>
+        <div class="unity-camera-header">
+          <div>
+            <div class="unity-camera-kicker">Unity 摄像头绑定</div>
+            <div class="unity-camera-title">压风机图标 {{ pendingUnityIconId ?? '--' }}</div>
+          </div>
+          <div class="unity-camera-location">{{ unityCameraAddForm.location || '未分配' }}</div>
+        </div>
+      </template>
+
+      <div class="unity-camera-panel">
+        <div class="unity-camera-summary">
+          <div class="unity-camera-summary-icon" aria-hidden="true"></div>
+          <div class="unity-camera-summary-content">
+            <div class="unity-camera-summary-title">未检测到已绑定摄像头</div>
+            <div class="unity-camera-summary-text">
+              填写摄像头信息后会写入当前 location，保存成功后立即打开实时视频。
+            </div>
+          </div>
+        </div>
+
+        <el-form label-position="top" class="unity-camera-form">
+          <div class="unity-camera-grid">
+            <el-form-item label="摄像头名称">
+              <el-input v-model="unityCameraAddForm.name" placeholder="例如：压风机房东侧摄像头" />
+            </el-form-item>
+            <el-form-item label="IP地址">
+              <el-input v-model="unityCameraAddForm.ip" placeholder="例如：192.168.1.20" />
+            </el-form-item>
+            <el-form-item label="用户名">
+              <el-input v-model="unityCameraAddForm.username" placeholder="请输入用户名" />
+            </el-form-item>
+            <el-form-item label="密码">
+              <el-input
+                v-model="unityCameraAddForm.password"
+                type="password"
+                show-password
+                placeholder="请输入密码"
+              />
+            </el-form-item>
+            <el-form-item class="unity-camera-full" label="RTSP地址">
+              <el-input v-model="unityCameraAddForm.rtsp" placeholder="rtsp://..." />
+            </el-form-item>
+          </div>
+        </el-form>
+      </div>
 
       <template #footer>
         <div class="unity-camera-actions">
-          <el-button @click="cancelAddUnityCamera">取消</el-button>
-          <el-button type="primary" :loading="addUnityCameraLoading" @click="submitAddUnityCamera">
+          <el-button class="unity-camera-cancel" @click="cancelAddUnityCamera">取消</el-button>
+          <el-button
+            class="unity-camera-submit"
+            type="primary"
+            :loading="addUnityCameraLoading"
+            @click="submitAddUnityCamera"
+          >
             保存并打开
           </el-button>
         </div>
@@ -656,14 +683,257 @@ onUnmounted(() => {
   position: relative;
 }
 
-.unity-camera-tip {
-  margin-bottom: 16px;
+/* Unity 摄像头绑定弹窗：覆盖 Element Plus 默认白底，让它融入压风机大屏风格。 */
+:global(.unity-camera-dialog) {
+  --el-dialog-bg-color: rgba(4, 18, 42, 0.96);
+  --el-text-color-primary: #edf8ff;
+  --el-text-color-regular: rgba(237, 248, 255, 0.78);
+  --el-border-color: rgba(92, 207, 255, 0.28);
+  overflow: hidden;
+  border: 1px solid rgba(92, 207, 255, 0.36);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(39, 196, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(10, 39, 82, 0.98), rgba(3, 14, 34, 0.98));
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.45),
+    inset 0 0 32px rgba(30, 144, 255, 0.08);
+}
+
+:global(.unity-camera-dialog .el-dialog__header) {
+  padding: 0;
+  margin-right: 0;
+}
+
+:global(.unity-camera-dialog .el-dialog__headerbtn) {
+  top: 16px;
+  right: 18px;
+}
+
+:global(.unity-camera-dialog .el-dialog__close) {
+  color: rgba(237, 248, 255, 0.72);
+}
+
+:global(.unity-camera-dialog .el-dialog__body) {
+  padding: 0 22px 18px;
+}
+
+:global(.unity-camera-dialog .el-dialog__footer) {
+  padding: 0 22px 22px;
+}
+
+.unity-camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 54px 18px 22px;
+  border-bottom: 1px solid rgba(92, 207, 255, 0.16);
+}
+
+.unity-camera-kicker {
+  margin-bottom: 5px;
+  color: #58d8ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.unity-camera-title {
+  color: #f5fbff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.unity-camera-location {
+  max-width: 180px;
+  padding: 7px 10px;
+  border: 1px solid rgba(76, 211, 255, 0.42);
+  border-radius: 6px;
+  background: rgba(11, 46, 88, 0.78);
+  color: #9feaff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: inset 0 0 18px rgba(76, 211, 255, 0.08);
+}
+
+.unity-camera-panel {
+  padding-top: 18px;
+}
+
+.unity-camera-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid rgba(92, 207, 255, 0.22);
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(15, 61, 105, 0.72), rgba(7, 31, 62, 0.52));
+}
+
+.unity-camera-summary-icon {
+  position: relative;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(82, 224, 255, 0.45);
+  border-radius: 8px;
+  background: rgba(15, 64, 108, 0.92);
+  box-shadow: inset 0 0 18px rgba(82, 224, 255, 0.14);
+}
+
+.unity-camera-summary-icon::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 13px;
+  width: 20px;
+  height: 15px;
+  border: 2px solid #78e7ff;
+  border-radius: 5px;
+}
+
+.unity-camera-summary-icon::after {
+  content: '';
+  position: absolute;
+  right: 7px;
+  top: 16px;
+  width: 8px;
+  height: 10px;
+  background: #78e7ff;
+  clip-path: polygon(0 18%, 100% 0, 100% 100%, 0 82%);
+}
+
+.unity-camera-summary-content {
+  min-width: 0;
+}
+
+.unity-camera-summary-title {
+  margin-bottom: 5px;
+  color: #f5fbff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.unity-camera-summary-text {
+  color: rgba(237, 248, 255, 0.68);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.unity-camera-form {
+  margin-top: 2px;
+}
+
+.unity-camera-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 14px;
+}
+
+.unity-camera-full {
+  grid-column: 1 / -1;
+}
+
+:global(.unity-camera-dialog .el-form-item) {
+  margin-bottom: 0;
+}
+
+:global(.unity-camera-dialog .el-form-item__label) {
+  margin-bottom: 7px;
+  color: rgba(237, 248, 255, 0.76);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:global(.unity-camera-dialog .el-input__wrapper) {
+  min-height: 40px;
+  border: 1px solid rgba(92, 207, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(5, 22, 50, 0.86);
+  box-shadow: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+:global(.unity-camera-dialog .el-input__wrapper:hover) {
+  border-color: rgba(92, 207, 255, 0.44);
+  background: rgba(7, 29, 62, 0.92);
+}
+
+:global(.unity-camera-dialog .el-input__wrapper.is-focus) {
+  border-color: rgba(74, 163, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(74, 163, 255, 0.16);
+}
+
+:global(.unity-camera-dialog .el-input__inner) {
+  color: #f5fbff;
+}
+
+:global(.unity-camera-dialog .el-input__inner::placeholder) {
+  color: rgba(190, 218, 236, 0.44);
 }
 
 .unity-camera-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
+}
+
+:global(.unity-camera-actions .el-button) {
+  min-width: 96px;
+  height: 38px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+:global(.unity-camera-cancel) {
+  border-color: rgba(150, 188, 214, 0.34);
+  background: rgba(8, 27, 56, 0.72);
+  color: rgba(237, 248, 255, 0.82);
+}
+
+:global(.unity-camera-cancel:hover) {
+  border-color: rgba(92, 207, 255, 0.48);
+  background: rgba(10, 41, 78, 0.86);
+  color: #f5fbff;
+}
+
+:global(.unity-camera-submit) {
+  border: none;
+  background: linear-gradient(135deg, #1f8fff, #20d2ff);
+  box-shadow: 0 10px 22px rgba(31, 143, 255, 0.28);
+}
+
+:global(.unity-camera-submit:hover) {
+  background: linear-gradient(135deg, #2ea0ff, #43ddff);
+}
+
+@media (max-width: 640px) {
+  :global(.unity-camera-dialog) {
+    width: calc(100vw - 28px) !important;
+  }
+
+  .unity-camera-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-right: 48px;
+  }
+
+  .unity-camera-location {
+    max-width: 100%;
+  }
+
+  .unity-camera-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dashboard-header {
