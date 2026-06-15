@@ -77,9 +77,23 @@ export type GetNewChatSessionIdResponseData = IApiResponseData<newChatSessionIdR
 
 // 会话消息响应参数
 export interface ChatMessageData {
+  id?: number | string;
   session_id: string;
   role: string;
-  content: string;
+  content: string | null;
+  tool_calls?: Array<{
+    index?: number;
+    id: string;
+    type?: string;
+    function: {
+      name: string;
+      arguments?: string;
+    };
+  }> | null;
+  tool_call_id?: string | null;
+  // 历史工具消息会把图表等结构化数据放在这里，前端据此恢复工具渲染。
+  tool_data?: string | Record<string, unknown> | null;
+  created_at?: string;
 }
 
 export type GetChatSessionMessagesResponse = IApiResponseData<ChatMessageData[]>

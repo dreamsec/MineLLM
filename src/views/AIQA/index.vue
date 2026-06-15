@@ -298,6 +298,7 @@ import { getKbContentTypesApi } from '@/api/knowledgebase/index.ts'
 import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import { buildHistoryMessages } from '@/utils/aiHistoryMessages'
 import {
   createToolDisplayData,
   getToolHeaderText,
@@ -326,7 +327,7 @@ interface MessagePart {
   session_id: string
   type: 'thinking' | 'tool' | 'response'
   content: string
-  tool_calls?:[toolDetail]
+  tool_calls?: toolDetail[]
   tool_call_id?:string
   parent_message_id?:number
   stepIndex?: number // 用于标识思考步骤顺序
@@ -338,11 +339,12 @@ interface MessagePart {
 }
 
 interface toolDetail {
-  index: number,
+  index?: number,
   id: string,
+  type?: string,
   function: {
     name: string,
-    arguments: string
+    arguments?: string
   },
 }
 
@@ -350,7 +352,7 @@ interface ToolStreamPayload {
   tool_call_id: string
   content: string
   session_id: string
-  tool_calls?: [toolDetail]
+  tool_calls?: toolDetail[]
   parent_message_id?: number
 }
 
@@ -810,7 +812,7 @@ const addMessagePart = (
   session_id: string = currentSessionId.value || '',
   stepIndex?: number,
   thinkTime?: string,
-  tool_calls?:[toolDetail],
+  tool_calls?: toolDetail[],
   tool_call_id?:string,
   parent_message_id?:number,
 ) => {
@@ -1095,33 +1097,9 @@ const loadSession = async (sessionId: string) => {
   try {
     const response = await getChatSessionMessages(sessionId)
     if (response.code === 1 && Array.isArray(response.data)) {
-      // 将后端返回的消息转换为前端消息格式
-      response.data.forEach((msg, index) => {
-
-
-        // 确保正确识别用户和助手消息
-        const messageType = msg.role === 'user' ? 'user' : 'assistant'
-
-        const messageData: Message = {
-          id: Date.now() + index,
-          type: messageType,
-          content: msg.content || '',
-          timestamp: Date.now(),
-          parts: messageType === 'assistant'
-            ? [
-              {
-                id: Date.now() + index + 1000,
-                session_id: msg.session_id,
-                type: 'response',
-                content: msg.content || '',
-                stepIndex: 0,
-              },
-            ]
-            : undefined,
-        }
-
-        messages.value.push(messageData)
-      })
+      // 历史接口现在会返回 assistant.tool_calls 和 role=tool 的工具结果，
+      // 这里转换成实时流相同的 messages.parts 结构，图表、查询表格等才能重新渲染。
+      messages.value.push(...buildHistoryMessages(response.data))
     }
 
     // 滚动到底部
