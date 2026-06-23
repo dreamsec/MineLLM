@@ -191,6 +191,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '设备管理', icon: 'Setting' }
       },
       {
+        path: '/equipment-threshold',
+        name: 'EquipmentThreshold',
+        component: () => import('../views/System/EquipmentThreshold.vue'),
+        meta: { title: '阈值管理', icon: 'SetUp' }
+      },
+      {
         path: '/ins',
         name: 'Inspection',
         component: () => import('../views/Inspection/index.vue'),

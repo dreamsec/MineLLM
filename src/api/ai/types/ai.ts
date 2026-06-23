@@ -1,9 +1,11 @@
 //请求参数
 import type {IGetTableData} from "@/api/data/types/data.ts";
+import type { ChatType } from "@/utils/chatType";
 
 export interface RequestData {
   session_id: string
   content: string
+  chat_type?: ChatType
   message?:  message
   history?: [HistoryMessage]
 }
@@ -45,6 +47,7 @@ export interface ResponseData {
 export interface newChatSessionIdRequestData {
   model_name: string
   title: string
+  chat_type?: ChatType
 }
 
 // 新建会话返回参数
@@ -52,6 +55,7 @@ export interface newChatSessionIdResponseData {
   id:string
   session_id: string
   model_name: string
+  chat_type?: ChatType
   title: string
   status:boolean
   created_at:string
@@ -64,6 +68,7 @@ export interface GetChatSessionListResponseData {
   session_id: string
   title: string
   model_name: string
+  chat_type?: ChatType
   status: number
   created_at: string
   updated_at: string

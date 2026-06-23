@@ -7,6 +7,9 @@
           <h2 class="logo">煤矿设备运维多模态大模型平台</h2>
         </div>
         <div class="header-right">
+          <el-button type="primary" plain size="small" @click="router.push('/equipment-threshold')">
+            阈值管理
+          </el-button>
           <el-button type="warning" size="small" @click="showReportDialog = true">
             日报生成
           </el-button>

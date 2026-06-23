@@ -201,7 +201,44 @@
             </div>
 
             <div class="input-tips">
-              <span class="tip">按 Enter 发送，Shift + Enter 换行</span>
+              <div class="composer-tools">
+                <el-dropdown
+                  trigger="click"
+                  placement="top-start"
+                  popper-class="chat-type-dropdown-popper"
+                  :disabled="isLoading"
+                  @command="handleChatTypeChange"
+                >
+                  <button
+                    type="button"
+                    :class="['chat-type-trigger', `chat-type-${currentChatType}`, { disabled: isLoading }]"
+                    :disabled="isLoading"
+                    :title="currentChatTypeOption.description"
+                    aria-label="对话模式"
+                  >
+                    <i class="fas fa-sliders-h"></i>
+                    <span>{{ currentChatTypeOption.label }}</span>
+                    <i class="fas fa-chevron-down selector-arrow"></i>
+                  </button>
+                  <template #dropdown>
+                    <el-dropdown-menu class="chat-type-menu">
+                      <el-dropdown-item
+                        v-for="option in CHAT_TYPE_OPTIONS"
+                        :key="option.value"
+                        :command="option.value"
+                        :class="{ active: currentChatType === option.value }"
+                      >
+                        <div class="chat-type-option-content">
+                          <span class="chat-type-option-label">{{ option.label }}</span>
+                          <span class="chat-type-option-desc">{{ option.description }}</span>
+                        </div>
+                        <i v-if="currentChatType === option.value" class="fas fa-check chat-type-check"></i>
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+                <span class="tip">按 Enter 发送，Shift + Enter 换行</span>
+              </div>
               <span class="char-count">{{ inputText.length }}/2000</span>
             </div>
           </div>
@@ -291,7 +328,7 @@
 </template>
 
 <script setup lang="ts">
-import {nextTick, onMounted, reactive, ref, watch} from 'vue'
+import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue'
 import { ElMessage } from 'element-plus'
 import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary} from '@/api/ai/index.ts'
 import { getKbContentTypesApi } from '@/api/knowledgebase/index.ts'
@@ -299,6 +336,12 @@ import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import { buildHistoryMessages } from '@/utils/aiHistoryMessages'
+import {
+  CHAT_TYPE_OPTIONS,
+  DEFAULT_CHAT_TYPE,
+  normalizeChatType,
+  shouldRestoreChatTypeFromSession,
+} from '@/utils/chatType'
 import {
   createToolDisplayData,
   getToolHeaderText,
@@ -308,6 +351,7 @@ import {
   parseSseJsonLine,
 } from '@/utils/aiToolStream'
 import type { AiToolDisplayData, AiToolResult, AiToolStatus } from '@/utils/aiToolStream'
+import type { ChatType } from '@/utils/chatType'
 
 const md = new MarkdownIt({
   html: false,
@@ -388,6 +432,7 @@ interface ChatSession {
   session_id: string
   title: string
   model_name: string
+  chat_type?: ChatType
   status: number
   created_at: string
   updated_at: string
@@ -408,8 +453,17 @@ const messages = ref<Message[]>([])
 const inputText = ref<string>('')
 const isLoading = ref<boolean>(false)
 const currentSessionId = ref<string | null>("-1") // 当前对话ID，null表示无对话
+const currentChatType = ref<ChatType>(DEFAULT_CHAT_TYPE)
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const inputTextarea = ref<HTMLTextAreaElement | null>(null)
+
+const currentChatTypeOption = computed(() => {
+  return CHAT_TYPE_OPTIONS.find((option) => option.value === currentChatType.value) || CHAT_TYPE_OPTIONS[0]
+})
+
+const handleChatTypeChange = (value: unknown) => {
+  currentChatType.value = normalizeChatType(value)
+}
 
 // 快捷问题
 const quickQuestions = ref<QuickQuestion[]>([
@@ -578,6 +632,8 @@ const upsertToolPart = (
 // 提问
 const sendMessage = async () => {
   if (!inputText.value.trim() || isLoading.value) return
+  // 锁定本次发送使用的对话模式，避免后续切换影响已经发出的消息。
+  const sendingChatType = currentChatType.value
 
   const userMessage: Message = {
     id: Date.now(),
@@ -598,8 +654,9 @@ const sendMessage = async () => {
   })
 
   if (currentSessionId.value === "-1"){
-    await newChatSessionId({model_name:"qwen3:32b",title:"新对话"}).then((res) => {
+    await newChatSessionId({model_name:"qwen3:32b",title:"新对话", chat_type: sendingChatType}).then((res) => {
       currentSessionId.value = res.data.session_id
+      currentChatType.value = normalizeChatType(res.data.chat_type ?? sendingChatType)
     })
   }
   console.log(currentSessionId.value)
@@ -639,6 +696,7 @@ const sendMessage = async () => {
   getAiResponse({
     session_id: currentSessionId.value || '',
     content: userMessage.content,
+    chat_type: sendingChatType,
     // message: {
     //   session_id: currentSessionId.value || '',
     //   role: 'user',
@@ -1070,6 +1128,7 @@ const newChat = () => {
   messages.value = []
   inputText.value = ''
   currentSessionId.value = '-1'
+  // 新建对话不重置模式，用户可以先选普通模式再发送第一条消息。
 }
 
 
@@ -1092,6 +1151,10 @@ const exportChat = () => {
 const loadSession = async (sessionId: string) => {
   // 加载历史对话
   currentSessionId.value = sessionId
+  const selectedSession = chatSessions.value.find((session) => session.session_id === sessionId)
+  if (shouldRestoreChatTypeFromSession('session-load')) {
+    currentChatType.value = normalizeChatType(selectedSession?.chat_type)
+  }
   messages.value = [] // 清空当前消息列表
 
   try {
@@ -1152,6 +1215,7 @@ const refreshSessionList = async () => {
     const response = await getChatSessionList()
     if (response && response.data && Array.isArray(response.data)) {
       chatSessions.value = response.data as ChatSession[]
+      // 列表刷新只同步标题/摘要等展示信息，不能覆盖用户刚在输入框里切换的对话模式。
     }
   } catch (error) {
     console.error('获取会话列表失败:', error)
@@ -1818,9 +1882,120 @@ watch(inputText, () => {
 .input-tips {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   margin-top: 8px;
   font-size: 12px;
   color: #8d9abc;
+}
+
+.composer-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chat-type-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid #c8ddff;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #1f63d7;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.chat-type-trigger.chat-type-normal {
+  background: #f4fbf7;
+  border-color: #caead8;
+  color: #16804d;
+}
+
+.chat-type-trigger:hover {
+  border-color: #8fb2f2;
+  background: #f5f9ff;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.12);
+}
+
+.chat-type-trigger.chat-type-normal:hover {
+  border-color: #8dd9b1;
+  background: #f9fffb;
+  box-shadow: 0 4px 12px rgba(22, 128, 77, 0.1);
+}
+
+.chat-type-trigger.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chat-type-trigger i:first-child {
+  font-size: 12px;
+}
+
+.selector-arrow {
+  font-size: 10px;
+  color: currentColor;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+:global(.chat-type-dropdown-popper) {
+  border: 1px solid #dbe7fc !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 30px rgba(31, 42, 68, 0.14) !important;
+  overflow: hidden;
+}
+
+:global(.chat-type-dropdown-popper .el-dropdown-menu) {
+  padding: 6px;
+}
+
+:global(.chat-type-dropdown-popper .el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 176px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  line-height: 1.25;
+  color: var(--text-main);
+}
+
+:global(.chat-type-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):hover),
+:global(.chat-type-dropdown-popper .el-dropdown-menu__item.active) {
+  background: #eef6ff;
+  color: #1f63d7;
+}
+
+:global(.chat-type-dropdown-popper .chat-type-option-content) {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:global(.chat-type-dropdown-popper .chat-type-option-label) {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+:global(.chat-type-dropdown-popper .chat-type-option-desc) {
+  color: #7b89aa;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+:global(.chat-type-dropdown-popper .chat-type-check) {
+  color: #1f63d7;
+  font-size: 12px;
 }
 
 .info-panel {

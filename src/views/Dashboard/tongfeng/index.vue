@@ -175,11 +175,15 @@ import type { VentilatorRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 // 1. Unity 配置区域
 // ----------------------------------------------------------------------
+// Unity 文件重新打包后只需要修改这个版本号，用于绕过浏览器旧缓存。
+const UNITY_BUILD_VERSION = "20260616"
+const withUnityVersion = (url: string) => `${url}?v=${UNITY_BUILD_VERSION}`
+
 const UNITY_CONFIG = {
-  loaderUrl: "/airMachine/Build/airMachine.loader.js",
-  dataUrl: "/airMachine/Build/airMachine.data.unityweb",
-  frameworkUrl: "/airMachine/Build/airMachine.framework.js.unityweb",
-  codeUrl: "/airMachine/Build/airMachine.wasm.unityweb",
+  loaderUrl: withUnityVersion("/airMachine/Build/airMachine.loader.js"),
+  dataUrl: withUnityVersion("/airMachine/Build/airMachine.data.unityweb"),
+  frameworkUrl: withUnityVersion("/airMachine/Build/airMachine.framework.js.unityweb"),
+  codeUrl: withUnityVersion("/airMachine/Build/airMachine.wasm.unityweb"),
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

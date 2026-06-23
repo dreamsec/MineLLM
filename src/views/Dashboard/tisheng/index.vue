@@ -75,11 +75,15 @@ import { formatDecimal } from '@/utils/format'
 // ----------------------------------------------------------------------
 // 1. Unity 配置 (假设路径在 /NewElevator/Build/ 下)
 // ----------------------------------------------------------------------
+// Unity 文件重新打包后只需要修改这个版本号，用于绕过浏览器旧缓存。
+const UNITY_BUILD_VERSION = "20260616"
+const withUnityVersion = (url: string) => `${url}?v=${UNITY_BUILD_VERSION}`
+
 const UNITY_CONFIG = {
-  loaderUrl: "/NewElevator/Build/NewElevator.loader.js",
-  dataUrl: "/NewElevator/Build/NewElevator.data.unityweb",
-  frameworkUrl: "/NewElevator/Build/NewElevator.framework.js.unityweb",
-  codeUrl: "/NewElevator/Build/NewElevator.wasm.unityweb",
+  loaderUrl: withUnityVersion("/NewElevator/Build/NewElevator.loader.js"),
+  dataUrl: withUnityVersion("/NewElevator/Build/NewElevator.data.unityweb"),
+  frameworkUrl: withUnityVersion("/NewElevator/Build/NewElevator.framework.js.unityweb"),
+  codeUrl: withUnityVersion("/NewElevator/Build/NewElevator.wasm.unityweb"),
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

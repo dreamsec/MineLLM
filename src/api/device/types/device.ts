@@ -648,6 +648,34 @@ export interface GetEquipmentHistoryVariableData {
 // 查询变量历史数据响应类型
 export type GetEquipmentHistoryVariableResponse = IApiResponseData<GetEquipmentHistoryVariableData>;
 
+import type {
+  EquipmentThresholdType,
+  ThresholdApiData,
+  ThresholdPayload,
+} from '@/constants/equipmentThreshold'
+
+// 设备阈值数据：后端字段较多，具体字段由设备类型配置决定
+export type EquipmentThresholdData = ThresholdApiData
+
+// 保存阈值时只提交用户填写过的上下限字段
+export type UpsertEquipmentThresholdRequestParams = Partial<ThresholdPayload>
+
+export type UpsertEquipmentThresholdResponseData = IApiResponseData<EquipmentThresholdData>
+
+export type GetEquipmentThresholdResponseData = IApiResponseData<EquipmentThresholdData | null>
+
+export interface GetEquipmentThresholdListRequestParams {
+  equipment_type?: EquipmentThresholdType | ''
+  page?: number
+  page_size?: number
+}
+
+export type GetEquipmentThresholdListResponseData = IApiResponseData<{
+  total: number
+  list: EquipmentThresholdData[]
+}>
+
+export type DeleteEquipmentThresholdResponseData = IApiResponseData<null>
 
 
 

@@ -168,11 +168,15 @@ import CameraVideoDialog from '@/components/CameraVideoDialog/index.vue'
 // 1. Unity 配置区域 (请根据实际打包生成的文件名修改)
 // ----------------------------------------------------------------------
 // 假设你的 Unity 打包输出在 /CompressorFan/Build/ 目录下，且文件名通常与文件夹一致
+// Unity 文件重新打包后只需要修改这个版本号，用于绕过浏览器旧缓存。
+const UNITY_BUILD_VERSION = "20260616"
+const withUnityVersion = (url: string) => `${url}?v=${UNITY_BUILD_VERSION}`
+
 const UNITY_CONFIG = {
-  loaderUrl: "/CompressorFan/Build/CompressorFan.loader.js",
-  dataUrl: "/CompressorFan/Build/CompressorFan.data.unityweb",
-  frameworkUrl: "/CompressorFan/Build/CompressorFan.framework.js.unityweb",
-  codeUrl: "/CompressorFan/Build/CompressorFan.wasm.unityweb",
+  loaderUrl: withUnityVersion("/CompressorFan/Build/CompressorFan.loader.js"),
+  dataUrl: withUnityVersion("/CompressorFan/Build/CompressorFan.data.unityweb"),
+  frameworkUrl: withUnityVersion("/CompressorFan/Build/CompressorFan.framework.js.unityweb"),
+  codeUrl: withUnityVersion("/CompressorFan/Build/CompressorFan.wasm.unityweb"),
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",

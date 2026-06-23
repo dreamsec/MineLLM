@@ -91,3 +91,40 @@ export function exportByTypeDailyReportsApi(equipmentType: string, reportDate: s
     responseType: "blob"
   })
 }
+
+/** 获取单台设备阈值配置 */
+export function getEquipmentThresholdApi(equipmentCode: string) {
+  return request<Device.GetEquipmentThresholdResponseData>({
+    url: `/api/v1/equipment-threshold/${equipmentCode}`,
+    method: "get"
+  })
+}
+
+/** 创建或更新单台设备阈值配置 */
+export function upsertEquipmentThresholdApi(
+  equipmentCode: string,
+  data: Device.UpsertEquipmentThresholdRequestParams
+) {
+  return request<Device.UpsertEquipmentThresholdResponseData>({
+    url: `/api/v1/equipment-threshold/${equipmentCode}`,
+    method: "post",
+    data
+  })
+}
+
+/** 分页查询设备阈值列表，后续可用于批量维护页 */
+export function getEquipmentThresholdListApi(params: Device.GetEquipmentThresholdListRequestParams) {
+  return request<Device.GetEquipmentThresholdListResponseData>({
+    url: "/api/v1/equipment-threshold/list",
+    method: "get",
+    params
+  })
+}
+
+/** 删除单台设备阈值配置 */
+export function deleteEquipmentThresholdApi(equipmentCode: string) {
+  return request<Device.DeleteEquipmentThresholdResponseData>({
+    url: `/api/v1/equipment-threshold/${equipmentCode}`,
+    method: "delete"
+  })
+}

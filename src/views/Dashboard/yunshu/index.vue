@@ -114,11 +114,15 @@ import type { ConveyorRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 // 1. Unity 配置 (假设路径在 /Belt/Build/ 下，请根据实际情况修改文件名)
 // ----------------------------------------------------------------------
+// Unity 文件重新打包后只需要修改这个版本号，用于绕过浏览器旧缓存。
+const UNITY_BUILD_VERSION = "20260616"
+const withUnityVersion = (url: string) => `${url}?v=${UNITY_BUILD_VERSION}`
+
 const UNITY_CONFIG = {
-  loaderUrl: "/Belt/Build/Belt.loader.js",      // 请确认文件名
-  dataUrl: "/Belt/Build/Belt.data.unityweb",            // 请确认文件名
-  frameworkUrl: "/Belt/Build/Belt.framework.js.unityweb", // 请确认文件名
-  codeUrl: "/Belt/Build/Belt.wasm.unityweb",            // 请确认文件名
+  loaderUrl: withUnityVersion("/Belt/Build/Belt.loader.js"),      // 请确认文件名
+  dataUrl: withUnityVersion("/Belt/Build/Belt.data.unityweb"),            // 请确认文件名
+  frameworkUrl: withUnityVersion("/Belt/Build/Belt.framework.js.unityweb"), // 请确认文件名
+  codeUrl: withUnityVersion("/Belt/Build/Belt.wasm.unityweb"),            // 请确认文件名
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",
@@ -1531,6 +1535,5 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
 
 

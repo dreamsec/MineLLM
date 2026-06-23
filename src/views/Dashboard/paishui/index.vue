@@ -56,11 +56,15 @@ import type { PumpRealtimeData } from '@/api/device/types/device'
 // ----------------------------------------------------------------------
 // 1. Unity 配置 (假设路径在 /waterMachine/Build/ 下)
 // ----------------------------------------------------------------------
+// Unity 文件重新打包后只需要修改这个版本号，用于绕过浏览器旧缓存。
+const UNITY_BUILD_VERSION = "20260616"
+const withUnityVersion = (url: string) => `${url}?v=${UNITY_BUILD_VERSION}`
+
 const UNITY_CONFIG = {
-  loaderUrl: "/waterMachine/Build/waterMachine.loader.js",
-  dataUrl: "/waterMachine/Build/waterMachine.data.unityweb",
-  frameworkUrl: "/waterMachine/Build/waterMachine.framework.js.unityweb",
-  codeUrl: "/waterMachine/Build/waterMachine.wasm.unityweb",
+  loaderUrl: withUnityVersion("/waterMachine/Build/waterMachine.loader.js"),
+  dataUrl: withUnityVersion("/waterMachine/Build/waterMachine.data.unityweb"),
+  frameworkUrl: withUnityVersion("/waterMachine/Build/waterMachine.framework.js.unityweb"),
+  codeUrl: withUnityVersion("/waterMachine/Build/waterMachine.wasm.unityweb"),
   streamingAssetsUrl: "StreamingAssets",
   productVersion: "0.1",
   companyName: "DefaultCompany",
@@ -1509,6 +1513,5 @@ onUnmounted(() => {
   }
 }
 </style>
-
 
 
