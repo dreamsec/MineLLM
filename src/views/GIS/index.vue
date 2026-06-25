@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, onActivated, nextTick, onMounted, onBeforeUnmount} from 'vue'
+import {ref, computed, onActivated, nextTick, onMounted, onBeforeUnmount} from 'vue'
 // 图标资源
 import surfaceImage from '@/assets/map/map.svg'; // 使用项目中现有的图片作为底图
 import cameraIcon from '@/assets/img/camera.png';
@@ -464,6 +464,14 @@ const initSidebarState = () => {
 
 const leftSidebarCollapsed = ref(initSidebarState());
 const rightSidebarCollapsed = ref(initSidebarState());
+// 地图容器左边界和侧边栏宽度保持一致；切换侧边栏时用它计算 pan 补偿量。
+const GIS_MAIN_LEFT_EXPANDED = 320;
+const GIS_MAIN_LEFT_COLLAPSED = 60;
+const getMainBoxLeft = (collapsed: boolean) => collapsed ? GIS_MAIN_LEFT_COLLAPSED : GIS_MAIN_LEFT_EXPANDED;
+const mainBoxStyle = computed(() => ({
+  left: `${getMainBoxLeft(leftSidebarCollapsed.value)}px`,
+  right: '0px'
+}));
 
 // 图层状态
 const layerStates = ref({
@@ -598,7 +606,10 @@ const videoFeeds = ref([
 
 // 侧边栏切换方法
 const toggleLeftSidebar = () => {
+  const oldLeft = getMainBoxLeft(leftSidebarCollapsed.value);
   leftSidebarCollapsed.value = !leftSidebarCollapsed.value;
+  const newLeft = getMainBoxLeft(leftSidebarCollapsed.value);
+  keepMapPositionWhenMainBoxMoves(oldLeft, newLeft);
 };
 
 const toggleRightSidebar = () => {
@@ -607,6 +618,34 @@ const toggleRightSidebar = () => {
 
 // ————————————————————————————————————————————————————————————————————————————— 地图
 const svgTiger = ref();
+const keepMapPositionWhenMainBoxMoves = (oldLeft: number, newLeft: number) => {
+  const deltaX = oldLeft - newLeft;
+  if (!deltaX) return;
+
+  const currentPan = svgTiger.value?.getPan?.() || {
+    x: offsetX.value,
+    y: offsetY.value
+  };
+  const nextPan = {
+    x: currentPan.x + deltaX,
+    y: currentPan.y
+  };
+
+  // 容器左边界变化时反向调整 pan.x，让屏幕上的 GIS 画面保持不动。
+  svgTiger.value?.pan?.(nextPan);
+  offsetX.value = nextPan.x;
+  offsetY.value = nextPan.y;
+};
+
+// GIS 初始视角：对应你截图里调好的缩放倍数和地图偏移位置。
+const GIS_INITIAL_VIEW = {
+  scale: 1.2535075894757968,
+  pan: {
+    x: -148.01716763187886,
+    y: -55.40552903750506
+  }
+} as const;
+
 // 定义 initPanZoom 函数
 const initPanZoom = () => {
   try {
@@ -684,14 +723,13 @@ const initPanZoom = () => {
     // 设置初始缩放和偏移
     setTimeout(() => {
       if (svgTiger.value) {
-        // 设置初始缩放倍数
-        svgTiger.value.zoom(9.047156060638505);
-        // 设置初始偏移
-        svgTiger.value.pan({x: -3508.437833819267, y: -2458.49846377436});
-        // 更新状态变量
-        scale.value = 9.047156060638505;
-        offsetX.value = -3508.437833819267;
-        offsetY.value = -2458.49846377436;
+        // 初始化到指定视角，保证进入 GIS 页面时就是业务确认过的位置。
+        svgTiger.value.zoom(GIS_INITIAL_VIEW.scale);
+        svgTiger.value.pan(GIS_INITIAL_VIEW.pan);
+        // 同步 Vue 状态，确保摄像头图标坐标和地图视角一致。
+        scale.value = GIS_INITIAL_VIEW.scale;
+        offsetX.value = GIS_INITIAL_VIEW.pan.x;
+        offsetY.value = GIS_INITIAL_VIEW.pan.y;
       }
     }, 100);
   } catch (error) {
@@ -846,7 +884,7 @@ onActivated(() => {
          ref="mainBoxRef"
          @dragover="handleDragOver"
          @drop="handleDropCamera"
-         :style="{left: leftSidebarCollapsed ? '60px' : '320px', right: '0px'}">
+         :style="mainBoxStyle">
       <!-- SVG底图容器 -->
       <div class="svg-container" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }">
         <embed id="svg-trigger" type="image/svg+xml" style="width: 100%; height: 100%;"
@@ -1067,7 +1105,8 @@ onActivated(() => {
   left: 320px; /* 左侧边栏宽度 */
   right: 0px; /* 右侧边栏宽度 */
   bottom: 0;
-  transition: left 0.3s ease, right 0.3s ease;
+  /* 地图容器移动时会同步补偿 pan，不能再做 left/right 过渡，否则画面会出现漂移感。 */
+  transition: none;
   z-index: 1;
 }
 
