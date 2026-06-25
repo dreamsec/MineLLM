@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="header-left">
         <h1>设备管理</h1>
-        <p>管理煤矿提升机相关设备，包括摄像头、传感器等设备</p>
+        <p>管理煤矿提升机相关设备，包括机械设备、摄像头等设备</p>
       </div>
     </div>
 
@@ -23,7 +23,6 @@
           >
             <el-icon v-if="type.id === '机械设备'" ><Tools /></el-icon>
             <el-icon v-else-if="type.id === '摄像头'"><VideoCamera /></el-icon>
-            <el-icon v-else-if="type.id === '传感器'"><DataAnalysis /></el-icon>
             {{ type.name }}
           </div>
         </div>
@@ -145,23 +144,6 @@
               <p><strong>创建时间：</strong>{{ selectedDevice.createTime }}</p>
             </div>
           </div>
-          <div v-else-if="selectedDevice.type === '传感器'" class="sensor-detail">
-            <div class="detail-info">
-              <p><strong>设备名称：</strong>{{ selectedDevice.name }}</p>
-              <p><strong>设备编码：</strong>{{ selectedDevice.code }}</p>
-              <p><strong>设备类型：</strong>{{ selectedDevice.type }}</p>
-              <p><strong>设备型号：</strong>{{ selectedDevice.model }}</p>
-              <p><strong>制造商：</strong>{{ selectedDevice.manufacturer }}</p>
-              <p><strong>安装位置：</strong>{{ selectedDevice.location }}</p>
-              <p><strong>安装日期：</strong>{{ selectedDevice.installDate }}</p>
-              <p><strong>额定功率：</strong>{{ selectedDevice.power }} kW</p>
-              <p><strong>额定电压：</strong>{{ selectedDevice.voltage }} V</p>
-              <p><strong>额定电流：</strong>{{ selectedDevice.current }} A</p>
-              <p><strong>状态：</strong>{{ selectedDevice.status === 'online' ? '在线' : '离线' }}</p>
-              <p><strong>创建时间：</strong>{{ selectedDevice.createTime }}</p>
-              <p><strong>备注：</strong>{{ selectedDevice.remark }}</p>
-            </div>
-          </div>
           <div v-else class="mechanical-detail">
             <div class="detail-info">
               <p><strong>设备名称：</strong>{{ selectedDevice.name }}</p>
@@ -269,7 +251,7 @@
           </el-form-item>
         </template>
 
-        <!-- 设备和传感器特有字段 -->
+        <!-- 机械设备特有字段 -->
         <template v-else>
           <el-form-item label="设备编码" prop="equipment_code">
             <el-input v-model="addFormData.equipment_code" placeholder="请输入设备编码" />
@@ -403,7 +385,7 @@
           </el-form-item>
         </template>
 
-        <!-- 设备和传感器特有字段 -->
+        <!-- 机械设备特有字段 -->
         <template v-else>
           <el-form-item label="设备编码" prop="equipment_code">
             <el-input v-model="editFormData.equipment_code" placeholder="请输入设备编码" />
@@ -456,11 +438,10 @@ import type { DeviceData } from '@/api/device/types/device'
 import type { CameraData, UpdateCameraRequestParams } from '@/api/camera/types/camera'
 import { CAMERA_LOCATION_GIS, CAMERA_LOCATION_OPTIONS } from '@/constants/cameraLocation'
 
-// 设备类型定义 - 移除"全部设备"选项
+// 设备类型定义：当前页面只保留机械设备和摄像头，不再展示传感器入口。
 const deviceTypes = [
   { id: '机械设备', name: '机械设备' },
-  { id: '摄像头', name: '摄像头' },
-  { id: '传感器', name: '传感器' }
+  { id: '摄像头', name: '摄像头' }
 ]
 
 // 响应式数据
@@ -474,7 +455,7 @@ const currentEditType = ref<string>('')
 const selectedDevice = ref<any>(null)
 const originalEquipmentCode = ref<string>('')
 
-// 分别存储设备、传感器和摄像头数据
+// 分别存储机械设备和摄像头数据
 const mechanicalDevices = ref<DeviceData[]>([])
 const cameras = ref<CameraData[]>([])
 
@@ -581,8 +562,7 @@ function formatDate(dateString: string): string {
 function getTagType(type: string): string {
   const typeMap: Record<string, string> = {
     '机械设备': 'success',
-    '摄像头': 'info',
-    '传感器': 'primary'
+    '摄像头': 'info'
   }
   return typeMap[type] || 'default'
 }
@@ -596,8 +576,9 @@ function getCameraLocationLabel(location?: string): string {
 const filteredDevices = computed(() => {
   let allDevices: any[] = []
 
-  // 添加设备和传感器数据 - 处理中文equipment_type
+  // 过滤掉后端历史数据里的传感器，避免左侧入口删除后仍混入机械设备列表。
   const formattedDevices = mechanicalDevices.value
+    .filter(device => device.equipment_type !== '传感器')
     .map(device => ({
       id: device.id,
       type: device.equipment_type, // 直接使用中文类型
@@ -663,8 +644,6 @@ const filteredDevices = computed(() => {
     })
   } else if (selectedType.value === '摄像头') {
     allDevices = formattedCameras
-  } else if (selectedType.value === '传感器') {
-    allDevices = formattedDevices
   }
 
   // 应用搜索过滤
@@ -899,8 +878,8 @@ function handleAddSubmit(): void {
             ElMessage.error('摄像头添加失败')
             console.error(error)
           })
-      } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
-        // 机械设备和传感器新增逻辑
+      } else if (selectedType.value === '机械设备') {
+        // 机械设备新增逻辑
         const add_deviceData = {
           equipment_code: addFormData.equipment_code,
           equipment_name: addFormData.equipment_name,
@@ -968,8 +947,8 @@ function handleEditSubmit(): void {
             ElMessage.error('摄像头更新失败')
             console.error(error)
           })
-      } else if (selectedType.value === '机械设备' || selectedType.value === '传感器') {
-        // 机械设备和传感器编辑逻辑
+      } else if (selectedType.value === '机械设备') {
+        // 机械设备编辑逻辑
         const edit_deviceData = {
           equipment_code: editFormData.equipment_code,
           equipment_name: editFormData.equipment_name,
