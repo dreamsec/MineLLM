@@ -449,6 +449,22 @@
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="isUploading" class="upload-status-float">
+        <div class="upload-status-icon">
+          <span></span>
+        </div>
+        <div class="upload-status-content">
+          <div class="upload-status-title">文档上传中</div>
+          <div class="upload-status-text">请保持页面打开，上传完成后会自动刷新列表。</div>
+          <div class="upload-status-progress">
+            <div class="upload-status-progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+          </div>
+        </div>
+        <div class="upload-status-percent">{{ uploadProgress }}%</div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -467,6 +483,11 @@ import {
   deleteKbContentTypeApi,
   downloadKbFileApi
 } from '@/api/knowledgebase'
+import {
+  filterKnowledgeDocuments,
+  hasKnowledgeClientFilters,
+  paginateKnowledgeDocuments
+} from './knowledgeSearchFilters'
 
 // 定义组件名称
 defineOptions({
@@ -596,6 +617,9 @@ const totalRecords = ref<number>(0)
 // content_type 映射表（id -> name）用于类型显示
 const contentTypeMap = ref<Record<number, string>>({})
 
+// 后端列表接口暂时只支持分类和分页；搜索/高级筛选时前端分批拉取后再本地筛选。
+const KNOWLEDGE_FILTER_BATCH_SIZE = 500
+
 // 进度与预览
 const isUploading = ref(false)
 const uploadProgress = ref(0)
@@ -605,73 +629,53 @@ const showPreviewModal = ref(false)
 const previewUrl = ref<string | null>(null)
 
 // 计算属性
-const filteredDocuments = computed(() => {
-  let filtered = [...documents.value]
+const hasClientSideFilters = computed(() => hasKnowledgeClientFilters(searchQuery.value, searchFilters))
 
-  // 分类筛选
-  if (selectedCategory.value) {
-    filtered = filtered.filter((doc) => doc.categoryId === selectedCategory.value!.id)
-  }
-
-  // 搜索筛选
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.summary.toLowerCase().includes(query) ||
-        doc.author.toLowerCase().includes(query) ||
-        doc.tags.some((tag) => tag.toLowerCase().includes(query)),
-    )
-  }
-
-  // 高级筛选
-  if (searchFilters.type) {
-    filtered = filtered.filter((doc) => doc.type === searchFilters.type)
-  }
-
-  // 排序
-  filtered.sort((a, b) => {
-    let aVal = a[sortBy.value as keyof Document] as string | number
-    let bVal = b[sortBy.value as keyof Document] as string | number
-
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      aVal = aVal.toLowerCase()
-      bVal = bVal.toLowerCase()
-    }
-
-    if (sortOrder.value === 'asc') {
-      return aVal > bVal ? 1 : -1
-    } else {
-      return aVal < bVal ? 1 : -1
-    }
+const allFilteredDocuments = computed(() => {
+  return filterKnowledgeDocuments(documents.value, {
+    query: searchQuery.value,
+    filters: searchFilters,
+    categoryId: selectedCategory.value?.id ?? null,
+    sortBy: sortBy.value,
+    sortOrder: sortOrder.value
   })
-
-  return filtered
 })
 
-const totalDocs = computed(() => totalRecords.value)
-const totalPages = computed(() => Math.ceil(totalRecords.value / pageSize.value))
+const filteredDocuments = computed(() => {
+  // 使用搜索/高级筛选时，documents 已经加载了当前分类下的全量数据，这里再做前端分页。
+  if (hasClientSideFilters.value) {
+    return paginateKnowledgeDocuments(allFilteredDocuments.value, currentPage.value, pageSize.value)
+  }
+
+  return allFilteredDocuments.value
+})
+
+const totalDocs = computed(() => hasClientSideFilters.value ? allFilteredDocuments.value.length : totalRecords.value)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalDocs.value / pageSize.value)))
 
 // 方法
-const handleSearch = () => {
+const reloadDocumentsFromFirstPage = async () => {
   currentPage.value = 1
+  await fetchDocuments()
+}
+
+const handleSearch = () => {
+  void reloadDocumentsFromFirstPage()
 }
 
 const clearSearch = () => {
   searchQuery.value = ''
-  currentPage.value = 1
+  void reloadDocumentsFromFirstPage()
 }
 
 const selectCategory = (category: Category) => {
   // 切换选中分类并重置页码，同时触发真实数据加载
   selectedCategory.value = selectedCategory.value?.id === category.id ? null : category
-  currentPage.value = 1
-  fetchDocuments()
+  void reloadDocumentsFromFirstPage()
 }
 
 const applyAdvancedSearch = () => {
-  currentPage.value = 1
+  void reloadDocumentsFromFirstPage()
 }
 
 const resetFilters = () => {
@@ -680,7 +684,7 @@ const resetFilters = () => {
     startDate: '',
     endDate: '',
   })
-  currentPage.value = 1
+  void reloadDocumentsFromFirstPage()
 }
 
 const viewDocument = (doc: Document) => {
@@ -691,7 +695,7 @@ const viewDocument = (doc: Document) => {
 const editDocument = (doc: Document) => {
   documentForm.id = doc.id
   documentForm.filename = doc.title
-  documentForm.categoryId = doc.
+  documentForm.categoryId = doc.categoryId
   documentForm.author = doc.author
   documentForm.abstract = doc.summary
   documentForm.file = null
@@ -766,23 +770,33 @@ const saveDocument = async () => {
     }
     isUploading.value = true
     uploadProgress.value = 0
-    const res = await uploadKbFileApi({
-      filename: stripExtension(documentForm.filename || file.name),
-      content_type_name: contentTypeName,
-      author: documentForm.author,
-      abstract: documentForm.abstract
-    }, file, (e) => {
-      if (e.total) {
-        uploadProgress.value = Math.round((e.loaded / e.total) * 100)
+    try {
+      const res = await uploadKbFileApi({
+        filename: stripExtension(documentForm.filename || file.name),
+        content_type_name: contentTypeName,
+        author: documentForm.author,
+        abstract: documentForm.abstract
+      }, file, (e) => {
+        if (e.total) {
+          uploadProgress.value = Math.round((e.loaded / e.total) * 100)
+        }
+      })
+      if ((res as any).code === 1) {
+        uploadProgress.value = 100
+        closeDialogs()
+        resetDocumentForm()
+        await fetchDocuments()
+      } else {
+        alert('上传文档失败: ' + ((res as any).message || '未知错误'))
       }
-    })
-    if ((res as any).code === 1) {
-      closeDialogs()
-      resetDocumentForm()
-      await fetchDocuments()
+    } catch (error) {
+      console.error('上传文档异常:', error)
+      alert('上传文档失败，请稍后重试')
+    } finally {
+      // 无论成功或失败都清理上传状态，避免上传提示卡住。
+      isUploading.value = false
+      uploadProgress.value = 0
     }
-    isUploading.value = false
-    uploadProgress.value = 0
   }
 }
 
@@ -843,27 +857,35 @@ const executeImport = async () => {
   // 执行批量导入：逐个文件调用上传 API
   isUploading.value = true
   uploadProgress.value = 0
-  for (let i = 0; i < importFiles.value.length; i++) {
-    const item = importFiles.value[i]
-    const cat = categories.value.find(c => String(c.id) === String(item.category))
-    const contentTypeName = cat?.name || ''
-    const res = await uploadKbFileApi({
-      filename: (item.file.name || '').replace(/\.[^.\s]+$/, ''),
-      content_type_name: contentTypeName,
-      author: '当前用户',
-      abstract: '批量导入'
-    }, item.file, (e) => {
-      if (e.total) {
-        const single = Math.round((e.loaded / e.total) * 100)
-        uploadProgress.value = Math.round(((i + single / 100) / importFiles.value.length) * 100)
-      }
-    })
+  try {
+    for (let i = 0; i < importFiles.value.length; i++) {
+      const item = importFiles.value[i]
+      const cat = categories.value.find(c => String(c.id) === String(item.category))
+      const contentTypeName = cat?.name || ''
+      await uploadKbFileApi({
+        filename: (item.file.name || '').replace(/\.[^.\s]+$/, ''),
+        content_type_name: contentTypeName,
+        author: '当前用户',
+        abstract: '批量导入'
+      }, item.file, (e) => {
+        if (e.total) {
+          const single = Math.round((e.loaded / e.total) * 100)
+          uploadProgress.value = Math.round(((i + single / 100) / importFiles.value.length) * 100)
+        }
+      })
+    }
+    uploadProgress.value = 100
+    showImportDialog.value = false
+    importFiles.value = []
+    await fetchDocuments()
+  } catch (error) {
+    console.error('批量导入异常:', error)
+    alert('批量导入失败，请稍后重试')
+  } finally {
+    // 批量导入失败或成功后都关闭上传状态，保证用户能得到明确反馈。
+    isUploading.value = false
+    uploadProgress.value = 0
   }
-  showImportDialog.value = false
-  importFiles.value = []
-  await fetchDocuments()
-  isUploading.value = false
-  uploadProgress.value = 0
 }
 
 // 关闭导入对话框并清空已选择的导入文件
@@ -952,35 +974,61 @@ const fetchCategories = async () => {
   }
 }
 
-// 加载文件列表（后端：GET /list，支持 content_type_name + 分页）
-const fetchDocuments = async () => {
+const mapKbFileToDocument = (file: any): Document => ({
+  id: file.id,
+  title: file.filename + file.suffix,
+  type: mapContentTypeToDocType(contentTypeMap.value[file.content_type_id]),
+  categoryId: file.content_type_id,
+  summary: file.abstract || '',
+  content: '',
+  author: file.author,
+  createTime: new Date(file.create_time).getTime(),
+  updateTime: new Date(file.update_time).getTime(),
+  viewCount: file.cnt,
+  rating: 0,
+  tags: [],
+  mimeType: file.mime_type
+})
+
+const buildKbListParams = (page: number, listPageSize: number) => {
   const params: any = {
-    page: currentPage.value,
-    page_size: pageSize.value
+    page,
+    page_size: listPageSize
   }
   if (selectedCategory.value) {
     params.content_type_name = selectedCategory.value.name
   }
-  const res = await listKbFilesApi(params)
+  return params
+}
+
+// 加载文件列表（后端：GET /list，支持 content_type_name + 分页）
+const fetchDocuments = async () => {
+  const shouldLoadAllForFilters = hasClientSideFilters.value
+  const listPageSize = shouldLoadAllForFilters ? KNOWLEDGE_FILTER_BATCH_SIZE : pageSize.value
+  const listPage = shouldLoadAllForFilters ? 1 : currentPage.value
+  const res = await listKbFilesApi(buildKbListParams(listPage, listPageSize))
   if ((res as any).code === 1) {
     const pageData = (res as any).data
     totalRecords.value = pageData.total || 0
+    let rawFiles = pageData.list || []
+
+    if (shouldLoadAllForFilters && totalRecords.value > rawFiles.length) {
+      const totalBatchPages = Math.ceil(totalRecords.value / KNOWLEDGE_FILTER_BATCH_SIZE)
+      const restRequests = []
+      for (let page = 2; page <= totalBatchPages; page++) {
+        restRequests.push(listKbFilesApi(buildKbListParams(page, KNOWLEDGE_FILTER_BATCH_SIZE)))
+      }
+
+      const restResponses = await Promise.all(restRequests)
+      for (const restRes of restResponses) {
+        if ((restRes as any).code === 1) {
+          rawFiles = rawFiles.concat(((restRes as any).data?.list || []))
+        }
+      }
+    }
+
     // 将后端 FileLibraryResponseModel 映射为前端 Document
-  documents.value = (pageData.list || []).map((f: any) => ({
-      id: f.id,
-      title: f.filename + f.suffix,
-      type: mapContentTypeToDocType(contentTypeMap.value[f.content_type_id]),
-      categoryId: f.content_type_id,
-      summary: f.abstract || '',
-      content: '',
-      author: f.author,
-      createTime: new Date(f.create_time).getTime(),
-      updateTime: new Date(f.update_time).getTime(),
-      viewCount: f.cnt,
-      rating: 0,
-      tags: [],
-      mimeType: f.mime_type
-    }))
+    documents.value = rawFiles.map(mapKbFileToDocument)
   }
 }
 
@@ -1014,6 +1062,7 @@ onMounted(async () => {
 
 // 翻页时重新加载
 watch([currentPage, pageSize], async () => {
+  if (hasClientSideFilters.value) return
   await fetchDocuments()
 })
 
@@ -1733,6 +1782,87 @@ const closePreview = () => {
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+}
+
+.upload-status-float {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1200;
+  width: min(360px, calc(100vw - 48px));
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(24, 144, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.22);
+}
+
+.upload-status-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+}
+
+.upload-status-icon span {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #91caff;
+  border-top-color: #1677ff;
+  border-radius: 50%;
+  animation: upload-spin 0.8s linear infinite;
+}
+
+.upload-status-content {
+  min-width: 0;
+}
+
+.upload-status-title {
+  margin-bottom: 3px;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.upload-status-text {
+  margin-bottom: 9px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.upload-status-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5edf7;
+}
+
+.upload-status-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #36cffa, #1677ff);
+  transition: width 0.2s ease;
+}
+
+.upload-status-percent {
+  color: #1677ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .modal-dialog {

@@ -766,6 +766,7 @@ onUnmounted(() => {
   // ── 图表卡片 ──────────────────────────────────────
   .chart-card {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(16px);
@@ -777,9 +778,11 @@ onUnmounted(() => {
 
     :deep(.el-card__body) {
       flex: 1;
+      min-height: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .chart-card-header {
@@ -831,10 +834,32 @@ onUnmounted(() => {
 
     .chart-container {
       flex: 1;
+      min-width: 0;
+      min-height: 0;
       width: 100%;
-      min-height: 380px;
       position: relative;
+      overflow: hidden;
       animation: pulseGlow 6s ease-in-out infinite;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+
+      // 隐藏图表区域原生滚动条，避免破坏深色大屏视觉。
+      &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
+
+      :deep(*) {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      :deep(*::-webkit-scrollbar) {
+        width: 0;
+        height: 0;
+        display: none;
+      }
     }
   }
 
