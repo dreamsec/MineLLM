@@ -260,7 +260,13 @@
               <div class="session-main">
                 <!-- 历史卡片不展示底层模型名称，仅保留删除对话入口 -->
                 <button class="session-delete-btn" @click.stop="deleteSession(session.session_id)" title="删除对话">
-                  <i class="fas fa-times"></i>
+                  <svg class="session-delete-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M6 6l1 15h10l1-15" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                  </svg>
                 </button>
                 <h4 class="session-title">{{ session.title }}</h4>
                 <p class="session-summary" v-if="session.summary">{{ session.summary }}</p>
@@ -2066,22 +2072,40 @@ watch(inputText, () => {
   position: absolute;
   top: 9px;
   right: 9px;
-  width: 20px;
-  height: 20px;
-  border: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d8dee8;
   border-radius: 50%;
-  background: transparent;
-  color: #a4b2d4;
+  background: #f3f5f8;
+  color: #7b8798;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
   transition: all 0.2s ease;
 }
 
 .session-delete-btn:hover {
-  background: #fff0f0;
-  color: #e64545;
+  /* 删除入口改为灰色弱提示，避免在历史卡片里过于突兀。 */
+  border-color: #aeb8c7;
+  background: #e5e9ef;
+  color: #4b5563;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+}
+
+.session-delete-icon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
 .session-title {
