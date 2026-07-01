@@ -103,6 +103,13 @@ export interface ChatMessageData {
 
 export type GetChatSessionMessagesResponse = IApiResponseData<ChatMessageData[]>
 
+// 上传临时文档响应
+export interface UploadDocResponseData {
+  filename: string
+  chunks: number
+  session_id: string
+}
+
 // 使用统计响应参数
 export interface UsageSummaryData {
   total_visits: number

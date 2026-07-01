@@ -2,6 +2,7 @@ import { request } from "@/utils/service"
 import  type * as AI from "./types/ai.ts"
 import {getToken} from "@/utils/cache/cookies.ts";
 import type { newChatSessionIdRequestData } from "./types/ai.ts";
+import type { AxiosProgressEvent } from "axios";
 
 /** 获取AI回复 */
 export function getAiResponse(data: AI.RequestData) {
@@ -52,5 +53,32 @@ export function deleteChatSession(sessionId: string) {
     url: `/api/v1/chat/delete_session`,
     method: "delete",
     params:  { session_id: sessionId }
+  })
+}
+
+/** 上传临时文档到当前会话（multipart/form-data） */
+export function uploadTempDocApi(
+  sessionId: string,
+  file: File,
+  onUploadProgress?: (e: AxiosProgressEvent) => void
+) {
+  const formData = new FormData()
+  formData.append("session_id", sessionId)
+  formData.append("file", file)
+  return request<IApiResponseData<AI.UploadDocResponseData>>({
+    url: `/api/v1/chat/upload_doc`,
+    method: "post",
+    data: formData,
+    onUploadProgress,
+    timeout: 1000 * 60 * 10 // 10 分钟超时，适配大文件上传
+  })
+}
+
+/** 移除会话中的临时文档 */
+export function removeTempDocApi(sessionId: string, filename: string) {
+  return request<IApiResponseData<null>>({
+    url: `/api/v1/chat/remove_doc`,
+    method: "delete",
+    params: { session_id: sessionId, filename }
   })
 }

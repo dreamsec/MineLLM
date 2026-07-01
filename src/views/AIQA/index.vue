@@ -176,6 +176,29 @@
 
           <!-- 输入框 -->
           <div class="input-container">
+            <!-- 已上传文档标签 -->
+            <div v-if="uploadedDocs.length > 0" class="doc-tags">
+              <div v-for="doc in uploadedDocs" :key="doc.filename" class="doc-tag">
+                <span class="doc-tag-icon">📄</span>
+                <span class="doc-tag-name">{{ doc.filename }}（{{ doc.chunks }}片段）</span>
+                <button
+                  class="doc-tag-remove"
+                  @click="removeUploadedDoc(doc.filename)"
+                  :disabled="isUploading"
+                  title="移除文档"
+                >✕</button>
+              </div>
+            </div>
+
+            <!-- 上传进度条 -->
+            <div v-if="uploadProgress" class="upload-progress">
+              <span class="upload-progress-label">⏳ 上传中：{{ uploadProgress.filename }}</span>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" :style="{ width: uploadProgress.percent + '%' }"></div>
+              </div>
+              <span class="upload-progress-text">{{ uploadProgress.percent }}%</span>
+            </div>
+
             <div class="input-wrapper">
               <textarea
                 v-model="inputText"
@@ -202,6 +225,22 @@
 
             <div class="input-tips">
               <div class="composer-tools">
+                <!-- 上传文档按钮 -->
+                <label
+                  class="upload-doc-btn"
+                  :class="{ disabled: isUploading }"
+                  title="上传文档（.docx / .txt，最大 10MB）"
+                >
+                  <span v-if="!isUploading">📎 上传文档</span>
+                  <span v-else class="uploading-spinner">⏳ 上传中...</span>
+                  <input
+                    type="file"
+                    accept=".docx,.txt"
+                    hidden
+                    @change="handleDocFileSelect"
+                    :disabled="isUploading"
+                  />
+                </label>
                 <el-dropdown
                   trigger="click"
                   placement="top-start"
@@ -336,7 +375,7 @@
 <script setup lang="ts">
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue'
 import { ElMessage } from 'element-plus'
-import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary} from '@/api/ai/index.ts'
+import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary, uploadTempDocApi, removeTempDocApi} from '@/api/ai/index.ts'
 import { getKbContentTypesApi } from '@/api/knowledgebase/index.ts'
 import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import MarkdownIt from 'markdown-it'
@@ -544,6 +583,19 @@ const inputPlaceholder = ref<string>('请输入您的问题...')
 
 // 添加展开状态管理
 const expandedSections = ref<Record<string, Set<string>>>({})
+
+// 文档上传相关状态
+interface UploadedDoc {
+  filename: string
+  chunks: number
+}
+const uploadedDocs = ref<UploadedDoc[]>([])
+const uploadProgress = ref<{ filename: string; percent: number } | null>(null)
+const isUploading = ref(false)
+
+// 允许的文件类型与大小限制
+const ALLOWED_DOC_TYPES = ['.docx', '.txt']
+const MAX_DOC_SIZE = 10 * 1024 * 1024 // 10MB
 
 // 切换展开状态
 const toggleSection = (messageId: number, sectionType: string) => {
@@ -1062,6 +1114,102 @@ const scrollToBottom = () => {
   }
 }
 
+// 处理文档文件选择上传
+const handleDocFileSelect = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  // 前端校验：文件扩展名
+  const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+  if (!ALLOWED_DOC_TYPES.includes(ext)) {
+    ElMessage.error('文件格式不支持，仅支持 .docx / .txt')
+    input.value = ''
+    return
+  }
+
+  // 前端校验：文件大小
+  if (file.size > MAX_DOC_SIZE) {
+    ElMessage.error('文件大小超过 10MB 限制')
+    input.value = ''
+    return
+  }
+
+  // 如果还没有会话，先自动创建一个（和 sendMessage 逻辑一致）
+  if (!currentSessionId.value || currentSessionId.value === '-1') {
+    try {
+      const res = await newChatSessionId({
+        model_name: 'qwen3:32b',
+        title: '文档问答',
+        chat_type: currentChatType.value,
+      })
+      currentSessionId.value = res.data.session_id
+    } catch {
+      ElMessage.error('创建会话失败，请稍后重试')
+      input.value = ''
+      return
+    }
+  }
+
+  isUploading.value = true
+  uploadProgress.value = { filename: file.name, percent: 0 }
+
+  try {
+    const res = await uploadTempDocApi(
+      currentSessionId.value,
+      file,
+      (e) => {
+        if (e.lengthComputable && e.total) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          uploadProgress.value = { filename: file.name, percent }
+        }
+      }
+    )
+
+    if (res.code === 1 && res.data) {
+      uploadedDocs.value.push({
+        filename: res.data.filename,
+        chunks: res.data.chunks,
+      })
+      ElMessage.success(res.message || `文档「${res.data.filename}」已索引（${res.data.chunks} 个片段）`)
+    } else {
+      ElMessage.error(res.message || '文档上传失败')
+    }
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { message?: string } }; message?: string }
+    const msg = err?.response?.data?.message || err?.message || '文档上传失败，请重试'
+    ElMessage.error(msg)
+  } finally {
+    isUploading.value = false
+    uploadProgress.value = null
+    input.value = ''
+  }
+}
+
+// 移除已上传文档
+const removeUploadedDoc = async (filename: string) => {
+  if (!currentSessionId.value || currentSessionId.value === '-1') return
+
+  try {
+    const res = await removeTempDocApi(currentSessionId.value, filename)
+    if (res.code === 1) {
+      uploadedDocs.value = uploadedDocs.value.filter((d) => d.filename !== filename)
+      ElMessage.success(`文档「${filename}」已移除`)
+    } else {
+      ElMessage.error(res.message || '移除文档失败')
+    }
+  } catch (error: unknown) {
+    // 如果后端未实现 remove_doc 接口，仅从前端移除
+    const err = error as { response?: { data?: { message?: string } }; message?: string }
+    const msg = err?.response?.data?.message || err?.message || ''
+    if (msg.includes('404') || msg.includes('not found') || msg.includes('Not Found')) {
+      uploadedDocs.value = uploadedDocs.value.filter((d) => d.filename !== filename)
+    } else {
+      ElMessage.error(msg || '移除文档失败')
+    }
+  }
+}
+
 const formatTime = (timestamp?: number) => {
   if (!timestamp) return ''
   const date = new Date(timestamp)
@@ -1134,6 +1282,9 @@ const newChat = () => {
   messages.value = []
   inputText.value = ''
   currentSessionId.value = '-1'
+  uploadedDocs.value = []
+  uploadProgress.value = null
+  isUploading.value = false
   // 新建对话不重置模式，用户可以先选普通模式再发送第一条消息。
 }
 
@@ -1157,6 +1308,9 @@ const exportChat = () => {
 const loadSession = async (sessionId: string) => {
   // 加载历史对话
   currentSessionId.value = sessionId
+  uploadedDocs.value = []
+  uploadProgress.value = null
+  isUploading.value = false
   const selectedSession = chatSessions.value.find((session) => session.session_id === sessionId)
   if (shouldRestoreChatTypeFromSession('session-load')) {
     currentChatType.value = normalizeChatType(selectedSession?.chat_type)
@@ -1900,6 +2054,141 @@ watch(inputText, () => {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+/* 上传文档按钮 */
+.upload-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid #c8ddff;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #1f63d7;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.upload-doc-btn:hover:not(.disabled) {
+  border-color: #8fb2f2;
+  background: #f5f9ff;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.12);
+}
+
+.upload-doc-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploading-spinner {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 文档标签 */
+.doc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #096dd9;
+}
+
+.doc-tag-icon {
+  font-size: 13px;
+}
+
+.doc-tag-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-tag-remove {
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+
+.doc-tag-remove:hover {
+  color: #ff4d4f;
+}
+
+.doc-tag-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* 上传进度条 */
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 6px;
+}
+
+.upload-progress-label {
+  font-size: 12px;
+  color: #d48806;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.upload-progress-track {
+  flex: 1;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1677ff, #69b1ff);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.upload-progress-text {
+  font-size: 11px;
+  color: #d48806;
+  min-width: 32px;
+  text-align: right;
 }
 
 .chat-type-trigger {
