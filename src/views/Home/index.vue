@@ -122,8 +122,11 @@ defineOptions({
 })
 
 import {ref, onMounted, onUnmounted} from 'vue'
-import { getRealtimeDataApi } from '@/api/device'
+import { getRealtimeDataApi, getEquipmentThresholdApi } from '@/api/device'
 import AiAssistant from '@/components/AiAssistant/index.vue'
+import { analyzeThresholdBreaches } from '@/utils/equipmentThresholdAlarm'
+import type { ThresholdApiData } from '@/constants/equipmentThreshold'
+import type { ThresholdAlarmBreach } from '@/utils/equipmentThresholdAlarm'
 
 // 设备列表
 const DEVICE_CODES = [
@@ -145,6 +148,7 @@ interface AlarmItem {
 
 // 存储实时数据
 const realtimeDeviceData = ref<Record<string, any>>({})
+const thresholdDeviceData = ref<Record<string, ThresholdApiData | null>>({})
 let dataPollingTimer: any = null // 使用 any 避免类型问题 (NodeJS.Timer vs number)
 
 // AI 助手控制
@@ -153,7 +157,7 @@ const aiContext = ref('')
 
 // 报警列表
 const alarmList = ref<AlarmItem[]>([])
-// 记录上一次的报警状态，防止重复添加。 key: deviceCode, value: alarmMessage
+// 记录上一次的报警状态，防止用户删除后同一个持续报警反复弹出。 key: deviceCode, value: stable alarm signature
 const lastAlarmState = new Map<string, string>()
 
 // 获取实时数据
@@ -161,14 +165,30 @@ const fetchRealtimeData = async () => {
     // 遍历所有设备并行请求
   const promises = DEVICE_CODES.map(async (code) => {
     try {
-      const res = await getRealtimeDataApi(code)
+      const [realtimeResult, thresholdResult] = await Promise.allSettled([
+        getRealtimeDataApi(code),
+        getEquipmentThresholdApi(code),
+      ])
+
+      if (thresholdResult.status === 'fulfilled') {
+        // 后端明确返回无阈值时清空缓存，避免继续拿旧阈值误报。
+        thresholdDeviceData.value[code] = thresholdResult.value.code === 1 ? thresholdResult.value.data || null : null
+      } else if (thresholdResult.status === 'rejected') {
+        console.warn(`获取设备 ${code} 阈值失败:`, thresholdResult.reason)
+      }
+
+      if (realtimeResult.status === 'rejected') {
+        throw realtimeResult.reason
+      }
+
+      const res = realtimeResult.value
       // 根据 API 定义, res 是 GetEquipmentRealtimeDataResponse
       // 假设我们要存的数据就在 res.data 中
       if (res && res.data) {
           realtimeDeviceData.value[code] = res.data
 
-          // 检查并生成报警
-          checkAndGenerateAlarm(code, res.data)
+          // 检查实时状态报警和阈值报警
+          checkAndGenerateAlarm(code, res.data, thresholdDeviceData.value[code])
       }
     } catch (error) {
       console.error(`获取设备 ${code} 实时数据失败:`, error)
@@ -179,20 +199,27 @@ const fetchRealtimeData = async () => {
 }
 
 // 检查并生成报警
-const checkAndGenerateAlarm = (code: string, data: any) => {
+const checkAndGenerateAlarm = (code: string, data: any, thresholdData?: ThresholdApiData | null) => {
   const { status, message, statusText } = getDeviceStatus(code, data)
+  const thresholdBreaches = analyzeThresholdBreaches({
+    equipmentCode: code,
+    realtimeData: data,
+    thresholdData,
+  })
 
-  if (status === 'alarm') {
+  if (status === 'alarm' || thresholdBreaches.length > 0) {
     // 如果当前有报警
-    const currentMsg = message
-    const lastMsg = lastAlarmState.get(code)
+    const currentSignature = buildAlarmSignature(status, message, thresholdBreaches)
+    const currentMsg = buildAlarmMessage(status, message, thresholdBreaches)
+    const currentStatusText = status === 'alarm' ? statusText : '阈值报警'
+    const lastSignature = lastAlarmState.get(code)
 
     // 如果是新的报警信息（与上一次不同），则添加到列表
     // 这样用户删除后，如果是同一个持续的报警，不会立即重新弹出来干扰
     // 只有当报警状态发生变化（例如从"温度保护"变成了"设备故障"）才会再次弹窗
-    if (lastMsg !== currentMsg) {
-       addItemToAlarmList(code, statusText, currentMsg)
-       lastAlarmState.set(code, currentMsg)
+    if (lastSignature !== currentSignature) {
+       addItemToAlarmList(code, currentStatusText, currentMsg)
+       lastAlarmState.set(code, currentSignature)
     }
   } else {
     // 如果设备恢复正常，清除该设备的上一次报警记录
@@ -216,6 +243,41 @@ const addItemToAlarmList = (code: string, statusText: string, message: string) =
   alarmList.value.unshift(newItem)
 }
 
+const buildAlarmSignature = (
+  status: string,
+  statusMessage: string,
+  thresholdBreaches: ThresholdAlarmBreach[],
+) => {
+  const parts: string[] = []
+  if (status === 'alarm') {
+    parts.push(`status:${statusMessage}`)
+  }
+
+  // 阈值报警签名只记录字段和方向，不记录实时数值，避免数值轻微波动导致已删除报警反复出现。
+  parts.push(
+    ...thresholdBreaches.map((breach) =>
+      `threshold:${breach.fieldKey}:${breach.sourceKey}:${breach.direction}`,
+    ),
+  )
+
+  return parts.join('|')
+}
+
+const buildAlarmMessage = (
+  status: string,
+  statusMessage: string,
+  thresholdBreaches: ThresholdAlarmBreach[],
+) => {
+  const messages: string[] = []
+  if (status === 'alarm') {
+    messages.push(statusMessage)
+  }
+  if (thresholdBreaches.length > 0) {
+    messages.push(`阈值超限：${thresholdBreaches.map((breach) => breach.message).join('；')}`)
+  }
+  return messages.join('；')
+}
+
 // 删除报警
 const removeAlarm = (id: string) => {
   alarmList.value = alarmList.value.filter(item => item.id !== id)
@@ -227,9 +289,11 @@ const handleAiAssist = (item: AlarmItem) => {
 
   // 获取当前设备的实时数据
   const deviceRealtimeData = realtimeDeviceData.value[item.code]
+  const deviceThresholdData = thresholdDeviceData.value[item.code]
   const dataStr = deviceRealtimeData ? JSON.stringify(deviceRealtimeData, null, 2) : '暂无数据'
+  const thresholdStr = deviceThresholdData ? JSON.stringify(deviceThresholdData, null, 2) : '暂无阈值配置'
 
-  aiContext.value = `请分析以下设备报警并给出处理建议：\n\n**基本信息**\n- 设备名称：${item.name} (${item.code})\n- 报警时间：${item.time}\n- 报警详情：${item.message}\n\n**实时运行数据**\n\`\`\`json\n${dataStr}\n\`\`\`\n\n请根据上述报警信息和实时运行数据，分析故障原因并给出处理建议。`
+  aiContext.value = `请分析以下设备报警并给出处理建议：\n\n**基本信息**\n- 设备名称：${item.name} (${item.code})\n- 报警时间：${item.time}\n- 报警详情：${item.message}\n\n**实时运行数据**\n\`\`\`json\n${dataStr}\n\`\`\`\n\n**阈值配置**\n\`\`\`json\n${thresholdStr}\n\`\`\`\n\n请根据上述报警信息、实时运行数据和阈值配置，分析故障原因并给出处理建议。`
   showAiAssistant.value = true
 }
 
@@ -1390,5 +1454,3 @@ article::-webkit-scrollbar {
   }
 }
 </style>
-
-

@@ -93,6 +93,48 @@ const toMessageId = (value: HistoryChatMessage['id'], fallback: number) => {
   return Number.isFinite(numeric) ? numeric : fallback
 }
 
+const toSortableTimestamp = (value: HistoryChatMessage['created_at']) => {
+  if (!value) return null
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+const toSortableId = (value: HistoryChatMessage['id']) => {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+const getRoleOrder = (role: HistoryChatMessage['role']) => {
+  if (role === 'user') return 0
+  if (role === 'assistant') return 1
+  if (role === 'tool') return 2
+  return 3
+}
+
+const sortHistoryMessages = (historyMessages: HistoryChatMessage[]) => {
+  return historyMessages
+    .map((message, index) => ({ message, index }))
+    .sort((left, right) => {
+      const leftTime = toSortableTimestamp(left.message.created_at)
+      const rightTime = toSortableTimestamp(right.message.created_at)
+      if (leftTime !== null && rightTime !== null && leftTime !== rightTime) {
+        return leftTime - rightTime
+      }
+
+      const leftId = toSortableId(left.message.id)
+      const rightId = toSortableId(right.message.id)
+      if (leftId !== null && rightId !== null && leftId !== rightId) {
+        return leftId - rightId
+      }
+
+      const roleOrder = getRoleOrder(left.message.role) - getRoleOrder(right.message.role)
+      if (roleOrder !== 0) return roleOrder
+
+      return left.index - right.index
+    })
+    .map((item) => item.message)
+}
+
 const normalizeToolCall = (call: HistoryToolCall, index: number): HistoryToolCall => ({
   index: call.index ?? index,
   id: call.id,
@@ -167,6 +209,9 @@ export const buildHistoryMessages = (historyMessages: HistoryChatMessage[]): His
     return activeAssistant
   }
 
+  // 后端历史接口可能不是严格按时间升序返回，先排序才能把 tool_call 和 tool_result 合并到同一个工具块。
+  const orderedHistoryMessages = sortHistoryMessages(historyMessages)
+
   const appendResponsePart = (source: HistoryChatMessage, content: string) => {
     const assistant = ensureAssistantMessage(source)
     const responsePart = assistant.parts?.find((part) => part.type === 'response')
@@ -187,7 +232,7 @@ export const buildHistoryMessages = (historyMessages: HistoryChatMessage[]): His
     assistant.content += content
   }
 
-  historyMessages.forEach((source) => {
+  orderedHistoryMessages.forEach((source) => {
     if (source.role === 'user') {
       activeAssistant = null
       activeStepIndex = 0
