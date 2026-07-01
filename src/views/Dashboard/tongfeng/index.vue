@@ -196,7 +196,7 @@ const UNITY_TARGET_OBJ = "SendMessageTongFeng"
 // 文本数据仍然走原来的 Unity 方法，避免影响已有的数值展示
 const UNITY_TEXT_METHOD_NAME = "UpdateTMPTexts"
 
-// 根据 run_feedback 同时控制两台通风机启停的 Unity 方法
+// 根据 motor1_run_feedback 同时控制两台通风机启停的 Unity 方法
 const UNITY_MOVEMENT_METHOD_NAME = "SetBothMachinesState"
 
 type UnityInstance = {
@@ -295,7 +295,6 @@ const motor2Defs = [
 ] as const satisfies readonly MetricDef[]
 
 const statusDefs = [
-  { key: 'run_feedback', label: '运行反馈', type: 'bool' },
   { key: 'inverter_run_feedback', label: '变频运行', type: 'bool' },
   { key: 'auto_mode', label: '自动', type: 'bool' },
   { key: 'manual_mode', label: '手动', type: 'bool' },
@@ -308,8 +307,7 @@ const alarmDefs = [
   { key: 'main_motor_alarm', label: '主电机报警', type: 'bool' },
   { key: 'lube_general_alarm', label: '润滑站报警', type: 'bool' },
   { key: 'stator_temp_alarm', label: '定子温度报警', type: 'bool' },
-  { key: 'bearing_temp_alarm', label: '主轴承温度报警', type: 'bool' },
-  { key: 'bearing_vibration_alarm', label: '主轴承振动报警', type: 'bool' }
+  { key: 'bearing_temp_alarm', label: '主轴承温度报警', type: 'bool' }
 ] as const satisfies readonly MetricDef[]
 
 const tf001AirItems = computed(() => buildItems('TF001', airDefs))
@@ -369,7 +367,7 @@ function formatMovementStateForUnity(): string {
   // 新版 WebGLBridge.SetBothMachinesState 接收 "机器1状态,机器2状态"
   // 例如："true,false" 表示机器1转动、机器2停止
   return EQUIPMENT_CODES
-    .map(code => (toBool(ventilatorByCode[code]?.run_feedback) ? 'true' : 'false'))
+    .map(code => (toBool(ventilatorByCode[code]?.motor1_run_feedback) ? 'true' : 'false'))
     .join(',')
 }
 
@@ -382,11 +380,11 @@ function syncUnity() {
     unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_TEXT_METHOD_NAME, formatDataForUnity(textData))
   }
 
-  // 新增：根据两台通风机的 run_feedback 发送 "true,false" 这样的双机状态
+  // 新增：根据两台通风机的 motor1_run_feedback 发送 "true,false" 这样的双机状态
   const movementState = formatMovementStateForUnity()
   console.debug('[Tongfeng Unity] SetBothMachinesState 参数:', movementState, typeof movementState, {
-    TF001: ventilatorByCode.TF001?.run_feedback,
-    TF002: ventilatorByCode.TF002?.run_feedback
+    TF001: ventilatorByCode.TF001?.motor1_run_feedback,
+    TF002: ventilatorByCode.TF002?.motor1_run_feedback
   })
   unityInstance.SendMessage(UNITY_TARGET_OBJ, UNITY_MOVEMENT_METHOD_NAME, movementState)
 }

@@ -234,7 +234,6 @@ const fieldGroups: FieldGroupDef[] = [
       { key: 'unit_exhaust_temp', label: '机组排气温度', unit: '°C', kind: 'number' },
       { key: 'host_exhaust_temp', label: '主机排气温度', unit: '°C', kind: 'number' },
       { key: 'air_tank_temp', label: '风包温度', unit: '°C', kind: 'number' },
-      { key: 'coolant_temp', label: '冷却剂温度', unit: '°C', kind: 'number' },
       { key: 'running_temp', label: '运行温度', unit: '°C', kind: 'number' }
     ]
   },
@@ -242,9 +241,7 @@ const fieldGroups: FieldGroupDef[] = [
     title: '实时运行监测（压力/真空）',
     fields: [
       { key: 'exhaust_pressure', label: '排气压力', unit: 'MPa', kind: 'number' },
-      { key: 'separation_pressure', label: '分离压力', unit: 'MPa', kind: 'number' },
-      { key: 'separation_diff_pressure', label: '分离压差', unit: 'MPa', kind: 'number' },
-      { key: 'intake_vacuum', label: '进气真空', unit: 'kPa', kind: 'number' }
+      { key: 'separation_pressure', label: '分离压力', unit: 'MPa', kind: 'number' }
     ]
   },
   {
@@ -266,7 +263,6 @@ const fieldGroups: FieldGroupDef[] = [
       { key: 'running_feedback', label: '运行反馈', kind: 'boolean' },
       { key: 'fault_exist', label: '故障存在', kind: 'boolean' },
       { key: 'comm_status', label: '通信状态', kind: 'boolean' },
-      { key: 'auto_manual_mode', label: '手自动模式', kind: 'boolean' },
       { key: 'remote_mode', label: '远控模式', kind: 'boolean' },
       { key: 'local_mode', label: '就地模式', kind: 'boolean' },
       { key: 'load_unload_mode', label: '加卸载模式', kind: 'boolean' },
@@ -278,10 +274,6 @@ const fieldGroups: FieldGroupDef[] = [
     fields: [
       { key: 'start_btn', label: '启动按钮', kind: 'boolean' },
       { key: 'stop_btn', label: '停止按钮', kind: 'boolean' },
-      { key: 'load_btn', label: '加载按钮', kind: 'boolean' },
-      { key: 'unload_btn', label: '卸载按钮', kind: 'boolean' },
-      { key: 'auto_btn', label: '自动按钮', kind: 'boolean' },
-      { key: 'manual_btn', label: '手动按钮', kind: 'boolean' },
       { key: 'auto_toggle_btn', label: '自动投退按钮', kind: 'boolean' }
     ]
   },
@@ -543,12 +535,9 @@ function formatDataForUnity(data: CompressorRealtimeData): string {
     + ",主机振动：" + num(data.host_vibration) + "mm/s"
     + "|排气压力：" + num(data.exhaust_pressure) + "MPa"
     + ",分离压力：" + num(data.separation_pressure) + "MPa"
-    + ",分离压差：" + num(data.separation_diff_pressure) + "MPa"
-    + ",进气真空：" + num(data.intake_vacuum) + "kPa"
     + "|机组排气温度：" + num(data.unit_exhaust_temp) + "°C"
     + ",主机排气温度：" + num(data.host_exhaust_temp) + "°C"
     + ",风包温度：" + num(data.air_tank_temp) + "°C"
-    + ",冷却剂温度：" + num(data.coolant_temp) + "°C"
     + ",运行温度：" + num(data.running_temp) + "°C"
     + "|运行反馈：" + boolText(data.running_feedback)
     + ",故障存在：" + boolText(data.fault_exist)

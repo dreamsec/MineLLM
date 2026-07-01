@@ -248,14 +248,11 @@ export interface CompressorRealtimeData extends BaseRealtimeData {
   unit_exhaust_temp?: number;
   host_exhaust_temp?: number;
   air_tank_temp?: number;
-  coolant_temp?: number;
   running_temp?: number;
 
   // 压力与真空
   exhaust_pressure?: number;
   separation_pressure?: number;
-  separation_diff_pressure?: number;
-  intake_vacuum?: number;
 
   // 电气参数
   current?: number;
@@ -277,7 +274,6 @@ export interface CompressorRealtimeData extends BaseRealtimeData {
   comm_status?: boolean | number;
 
   // 模式状态
-  auto_manual_mode?: boolean | number;
   remote_mode?: boolean | number;
   local_mode?: boolean | number;
   load_unload_mode?: boolean | number;
@@ -286,10 +282,6 @@ export interface CompressorRealtimeData extends BaseRealtimeData {
   // ===================== 3. 控制指令 (Boolean) =====================
   start_btn?: boolean | number;
   stop_btn?: boolean | number;
-  load_btn?: boolean | number;
-  unload_btn?: boolean | number;
-  auto_btn?: boolean | number;
-  manual_btn?: boolean | number;
   auto_toggle_btn?: boolean | number;
 
   // ===================== 4. 排污阀系统 (混合类型) =====================
@@ -385,7 +377,6 @@ export interface VentilatorRealtimeData extends BaseRealtimeData {
   fan_damper_alarm?: boolean | number;
 
   // ===================== 4. 运行状态与控制 (Boolean) =====================
-  run_feedback?: boolean | number;
   inverter_run_feedback?: boolean | number;
   motor1_run_feedback?: boolean | number;
   motor2_run_feedback?: boolean | number;
@@ -427,8 +418,6 @@ export interface VentilatorRealtimeData extends BaseRealtimeData {
   bearing_rise_warn_1?: boolean | number;
   bearing_rise_warn_2?: boolean | number;
 
-  bearing_vibration_alarm?: boolean | number;
-  bearing_vibration_warning?: boolean | number;
   front_axis_vert_vib_rise_warn?: boolean | number;
   front_axis_horiz_vib_rise_warn?: boolean | number;
   rear_axis_vert_vib_rise_warn?: boolean | number;
