@@ -168,7 +168,7 @@ const formatTime = (v: string | null | undefined) => {
 
 const leftDefs = [
   { key: 'belt_speed', label: '皮带速度', unit: 'm/s', format: formatNum },
-  { key: 'belt_tension', label: '皮带张力', unit: 'N', format: formatNum },
+  { key: 'belt_tension', label: '皮带张力', unit: 'kN', format: formatNum },
   { key: 'coal_bunker_level', label: '煤仓空高', unit: 'm', format: formatNum },
   { key: 'motor_1_temp', label: '1#电机温度', unit: '°C', format: formatNum },
   { key: 'motor_2_temp', label: '2#电机温度', unit: '°C', format: formatNum },
@@ -283,7 +283,7 @@ function formatDataForUnity(data: ConveyorRealtimeData): string {
 
   // 分组：运行数据 | 电机数据 | 保护/状态
   const runText =
-    `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}N`
+    `皮带速度:${n(data.belt_speed)}m/s,皮带张力:${n(data.belt_tension)}kN`
 
   const motorText =
     `1#电机:${n(data.motor_1_temp)}°C,` +
