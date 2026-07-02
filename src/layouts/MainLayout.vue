@@ -7,6 +7,24 @@
           <h2 class="logo">煤矿设备运维多模态大模型平台</h2>
         </div>
         <div class="header-right">
+          <el-tooltip :content="alarmVoiceTooltip" placement="bottom">
+            <el-button
+              class="alarm-voice-btn"
+              :type="alarmCenterStore.voiceEnabled ? 'success' : 'info'"
+              plain
+              size="small"
+              @click="alarmCenterStore.toggleAlarmVoice"
+            >
+              <el-icon>
+                <Bell v-if="alarmCenterStore.voiceEnabled" />
+                <MuteNotification v-else />
+              </el-icon>
+              <span>{{ alarmCenterStore.voiceEnabled ? '声音已开' : '声音已关' }}</span>
+              <span v-if="alarmCenterStore.activeAlarmCount" class="alarm-count">
+                {{ alarmCenterStore.activeAlarmCount }}
+              </span>
+            </el-button>
+          </el-tooltip>
           <el-button type="primary" plain size="small" @click="router.push('/equipment-threshold')">
             阈值管理
           </el-button>
@@ -162,13 +180,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Fold, Expand } from '@element-plus/icons-vue'
+import { Bell, Fold, Expand, MuteNotification } from '@element-plus/icons-vue'
 import * as ElementPlusIcons from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStoreHook } from '@/store/modules/user'
 import { exportReportApi } from '@/api/device'
+import { useAlarmCenterStore } from '@/store/modules/alarmCenter'
 import {
   REPORT_PERIOD_OPTIONS,
   buildReportFileName,
@@ -180,6 +199,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
+const alarmCenterStore = useAlarmCenterStore()
 
 // 响应式状态
 const isCollapse = ref(false)
@@ -203,6 +223,13 @@ const downloading = ref(false)
 const currentTypeCodes = computed(() => {
   if (!selectedType.value) return []
   return EQUIPMENT_TYPE_MAP[selectedType.value] || []
+})
+
+const alarmVoiceTooltip = computed(() => {
+  if (!alarmCenterStore.speechSupported) return '当前浏览器不支持语音播报'
+  return alarmCenterStore.voiceEnabled
+    ? '已开启报警语音，新报警会自动播报'
+    : '点击开启报警语音，后续新报警会自动播报'
 })
 
 const currentReportMeta = computed(() => getReportMeta(reportPeriodType.value))
@@ -299,6 +326,12 @@ onMounted(() => {
 
   window.addEventListener('resize', handleResize)
   handleResize()
+  // 全局报警轮询挂在主布局上，避免离开首页后停止监听新报警。
+  alarmCenterStore.startPolling()
+})
+
+onUnmounted(() => {
+  alarmCenterStore.stopPolling()
 })
 
 // 处理退出登录
@@ -346,6 +379,24 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.alarm-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alarm-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #f56c6c;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
 }
 
 .header-right .user-info {

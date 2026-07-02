@@ -126,15 +126,11 @@ defineOptions({
 })
 
 import {ref, onMounted, onUnmounted} from 'vue'
-import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
 import { getRealtimeDataApi, getEquipmentThresholdApi } from '@/api/device'
-import { dismissEquipmentAlarmApi, getActiveEquipmentAlarmsApi } from '@/api/equipment-alarm'
 import AiAssistant from '@/components/AiAssistant/index.vue'
-import {
-  mapAlarmEventToHomeItem,
-  normalizeAlarmEventList,
-  type HomeAlarmItem,
-} from '@/utils/homeAlarmEvent'
+import { useAlarmCenterStore } from '@/store/modules/alarmCenter'
+import type { HomeAlarmItem } from '@/utils/homeAlarmEvent'
 import type { ThresholdApiData } from '@/constants/equipmentThreshold'
 
 // 设备列表
@@ -150,15 +146,14 @@ const DEVICE_CODES = [
 const realtimeDeviceData = ref<Record<string, any>>({})
 const thresholdDeviceData = ref<Record<string, ThresholdApiData | null>>({})
 let dataPollingTimer: any = null // 使用 any 避免类型问题 (NodeJS.Timer vs number)
-let alarmPollingTimer: any = null
 
 // AI 助手控制
 const showAiAssistant = ref(false)
 const aiContext = ref('')
 
-// 报警列表
-const alarmList = ref<HomeAlarmItem[]>([])
-const dismissingAlarmIds = ref<Record<string, boolean>>({})
+// 报警列表由全局报警中心统一维护，首页只负责展示和触发忽略操作。
+const alarmCenterStore = useAlarmCenterStore()
+const { alarmList, dismissingAlarmIds } = storeToRefs(alarmCenterStore)
 
 // 获取实时数据
 const fetchRealtimeData = async () => {
@@ -195,40 +190,9 @@ const fetchRealtimeData = async () => {
   await Promise.all(promises)
 }
 
-// 获取后端统一维护的活跃报警事件，首页只负责展示，不再自行生成报警记录。
-const fetchActiveAlarms = async () => {
-  try {
-    const res = await getActiveEquipmentAlarmsApi()
-    const events = normalizeAlarmEventList(res?.data)
-    alarmList.value = events.map((event) =>
-      mapAlarmEventToHomeItem(event, getDeviceName(event.equipment_code)),
-    )
-  } catch (error) {
-    console.error('获取活跃报警失败:', error)
-  }
-}
-
 // 删除报警卡片时通知后端做忽略处理，历史统计仍然保留该报警事件。
 const removeAlarm = async (item: HomeAlarmItem) => {
-  if (dismissingAlarmIds.value[item.id]) return
-
-  dismissingAlarmIds.value = {
-    ...dismissingAlarmIds.value,
-    [item.id]: true,
-  }
-
-  try {
-    await dismissEquipmentAlarmApi(item.eventId)
-    alarmList.value = alarmList.value.filter(alarm => alarm.id !== item.id)
-    ElMessage.success('报警已忽略')
-  } catch (error) {
-    console.error('忽略报警失败:', error)
-    ElMessage.error('报警忽略失败，请稍后重试')
-  } finally {
-    const nextState = { ...dismissingAlarmIds.value }
-    delete nextState[item.id]
-    dismissingAlarmIds.value = nextState
-  }
+  await alarmCenterStore.dismissAlarm(item)
 }
 
 // AI助手占位功能
@@ -363,19 +327,13 @@ const getDeviceStatus = (code: string, data: any) => {
 onMounted(() => {
   // 启动实时数据轮询
   fetchRealtimeData()
-  fetchActiveAlarms()
   dataPollingTimer = setInterval(fetchRealtimeData, 1000000)
-  alarmPollingTimer = setInterval(fetchActiveAlarms, 60000)
 })
 
 onUnmounted(() => {
   if (dataPollingTimer) {
     clearInterval(dataPollingTimer)
     dataPollingTimer = null
-  }
-  if (alarmPollingTimer) {
-    clearInterval(alarmPollingTimer)
-    alarmPollingTimer = null
   }
 })
 
