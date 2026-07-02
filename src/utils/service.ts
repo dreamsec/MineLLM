@@ -1,7 +1,7 @@
 import axios, {type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { ElMessage, ElNotification } from "element-plus"
 import { get } from "lodash-es"
-import { getToken, getToken2 } from "./cache/cookies"  // 修改导入
+import { getToken, getToken2, removeToken, removeToken2 } from "./cache/cookies"
 
 /** 创建请求实例 */
 type AppAxiosRequestConfig = AxiosRequestConfig & {
@@ -78,8 +78,14 @@ function createService(baseURL?: string) {
           error.message = "请求错误"
           break
         case 401:
-          // Token 过期时，直接退出登录并强制刷新页面（会重定向到登录页）
-          // useUserStoreHook().logout()
+          // 登录接口返回 401 说明密码错误，直接返回错误即可
+          if (error.config?.url?.includes('login')) {
+            error.message = error.response?.data?.message || error.response?.data?.detail || "用户名或密码错误"
+            break
+          }
+          // 非登录接口的 401 才是 Token 过期
+          removeToken()
+          removeToken2()
           location.reload()
           break
         case 403:

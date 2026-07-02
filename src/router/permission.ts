@@ -15,61 +15,56 @@ router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStoreHook()
   const permissionStore = usePermissionStoreHook()
 
-  // �������û�� Token���Զ�ʹ�� admin/123456 ���к�̨��¼
+  // 没有 Token：白名单放行，否则跳转登录页
   if (!getToken()) {
+    if (whiteList.includes(to.path)) {
+      next()
+    } else {
+      next(`/login?redirect=${to.path}`)
+    }
+    NProgress.done()
+    return
+  }
+
+  // 已经登录，不允许访问登录页
+  if (to.path === "/login" || to.path === "/") {
+    next({ path: "/dashboard/yunshu" })
+    NProgress.done()
+    return
+  }
+
+  // 判断是否有角色
+  if (userStore.roles.length === 0) {
     try {
-      await userStore.login({ username: "admin", password: "123456" })
-      // ��¼�ɹ���ǿ����ת��Ƥ����ҳ��
-      if (to.path === '/login' || to.path === '/' ) {
+      if (asyncRouteSettings.open) {
+        await userStore.getInfo()
+        const roles = userStore.roles
+        permissionStore.setRoutes(roles)
+      } else {
+        userStore.setRoles(asyncRouteSettings.defaultRoles)
+        permissionStore.setRoutes(asyncRouteSettings.defaultRoles)
+      }
+
+      permissionStore.dynamicRoutes.forEach((route) => {
+        router.addRoute(route)
+      })
+
+      if (to.path === "/") {
         next({ path: "/dashboard/yunshu", replace: true })
       } else {
         next({ ...to, replace: true })
       }
-      return
     } catch (err: any) {
-      ElMessage.error(err.message || "�Զ���¼ʧ��")
+      userStore.resetToken && userStore.resetToken()
+      ElMessage.error(err.message || "路由守卫过程发生错误")
+      next(`/login?redirect=${to.path}`)
       NProgress.done()
     }
-  }
-
-  // �ߵ�����˵���Ѿ��� Token ��
-  if (to.path === "/login" || to.path === "/" ) {
-    next({ path: "/dashboard/yunshu" })
-    NProgress.done()
   } else {
-    // ����Ƿ��н�ɫ
-    if (userStore.roles.length === 0) {
-      try {
-        if (asyncRouteSettings.open) {
-          await userStore.getInfo()
-          const roles = userStore.roles
-          permissionStore.setRoutes(roles)
-        } else {
-          userStore.setRoles(asyncRouteSettings.defaultRoles)
-          permissionStore.setRoutes(asyncRouteSettings.defaultRoles)
-        }
-
-        permissionStore.dynamicRoutes.forEach((route) => {
-          router.addRoute(route)
-        })
-
-        if (to.path === '/' ) {
-          next({ path: '/dashboard/yunshu', replace: true })
-        } else {
-          next({ ...to, replace: true })
-        }
-      } catch (err: any) {
-        userStore.resetToken && userStore.resetToken()
-        ElMessage.error(err.message || "·���������̷�������")
-        next("/login")
-        NProgress.done()
-      }
+    if (to.path === "/") {
+      next({ path: "/dashboard/yunshu" })
     } else {
-      if (to.path === '/' ) {
-        next({ path: '/dashboard/yunshu' })
-      } else {
-        next()
-      }
+      next()
     }
   }
 })

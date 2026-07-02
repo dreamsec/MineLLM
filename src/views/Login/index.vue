@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue"
-import { useRouter } from "vue-router"
+import { useRouter, useRoute } from "vue-router"
 import { useUserStore } from "@/store/modules/user"
 import { User, Lock } from "@element-plus/icons-vue"
 import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
-import { type FormInstance, type FormRules } from "element-plus"
+import { type FormInstance, type FormRules, ElMessage } from "element-plus"
 import { type ILoginRequestData } from "@/api/login/types/login"
 
 const router = useRouter()
+const route = useRoute()
 const loginFormRef = ref<FormInstance | null>(null)
 
 /** 登录按钮 Loading */
@@ -40,9 +41,11 @@ const handleLogin = () => {
           //code: loginForm.code
         })
         .then(() => {
-          router.push({ path: "/" })
+          const redirect = route.query.redirect as string
+          router.push({ path: redirect || "/" })
         })
-        .catch(() => {
+        .catch((err) => {
+          ElMessage.error(err?.message || "登录失败，请检查用户名和密码")
           loginForm.password = ""
         })
         .finally(() => {
@@ -52,9 +55,6 @@ const handleLogin = () => {
   })
 }
 
-const handleRegister = () => {
-  router.push({ path: "/register" })
-}
 </script>
 
 <template>
@@ -91,8 +91,7 @@ const handleRegister = () => {
             />
           </el-form-item>
           <div class="button-group">
-            <el-button :loading="loading" @click.prevent="handleLogin">登 录</el-button>
-            <el-button :loading="loading" @click.prevent="handleRegister">注 册</el-button>
+            <el-button :loading="loading" @click.prevent="handleLogin" style="width: 100%">登 录</el-button>
           </div>
         </el-form>
       </div>
