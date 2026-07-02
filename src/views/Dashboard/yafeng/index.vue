@@ -630,7 +630,7 @@ onMounted(() => {
   initUnity()
 
   // 4. 开启轮询 (参考代码是3秒)
-  refreshTimer = window.setInterval(loadAllRealtime, 2000)
+  refreshTimer = window.setInterval(loadAllRealtime, 5000)
 })
 
 watch(activeUnityCode, () => {

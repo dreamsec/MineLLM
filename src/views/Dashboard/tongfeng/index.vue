@@ -473,7 +473,7 @@ onMounted(() => {
   // 启动 1秒 轮询
   refreshTimer = window.setInterval(() => {
     loadRealtimeAndSync()
-  }, 1000)
+  }, 5000)
 })
 
 onUnmounted(() => {
