@@ -1,6 +1,6 @@
 // 导入项目中封装的请求工具函数
 import { request } from "@/utils/service"
-import { buildReportExportRequest, type ReportPeriodType } from "@/utils/reportExport"
+import { buildReportExportRequest, type EquipmentReportPeriodType } from "@/utils/reportExport"
 // 导入设备相关的类型定义
 import type * as Device from "./types/device"
 
@@ -95,7 +95,7 @@ export function exportByTypeDailyReportsApi(equipmentType: string, reportDate: s
 
 /** 按日报/周报/月报统一导出报表，内部会处理不同周期的日期参数名 */
 export function exportReportApi(
-  periodType: ReportPeriodType,
+  periodType: EquipmentReportPeriodType,
   equipmentType: string,
   equipmentCode: string,
   reportDate: string,

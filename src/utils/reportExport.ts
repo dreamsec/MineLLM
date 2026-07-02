@@ -1,4 +1,5 @@
-export type ReportPeriodType = 'daily' | 'weekly' | 'monthly'
+export type EquipmentReportPeriodType = 'daily' | 'weekly' | 'monthly'
+export type ReportPeriodType = EquipmentReportPeriodType | 'alarmDaily'
 export type ReportExportMethod = 'get' | 'post'
 
 export interface ReportPeriodOption {
@@ -38,12 +39,19 @@ const REPORT_PERIOD_META: Record<ReportPeriodType, ReportPeriodMeta> = {
     datePlaceholder: '选择每月1号',
     dateParamKey: 'period_start_date',
   },
+  alarmDaily: {
+    label: '报警日报',
+    dateLabel: '报警日期',
+    datePlaceholder: '选择日期',
+    dateParamKey: 'report_date',
+  },
 }
 
 export const REPORT_PERIOD_OPTIONS: ReportPeriodOption[] = [
   { label: REPORT_PERIOD_META.daily.label, value: 'daily' },
   { label: REPORT_PERIOD_META.weekly.label, value: 'weekly' },
   { label: REPORT_PERIOD_META.monthly.label, value: 'monthly' },
+  { label: REPORT_PERIOD_META.alarmDaily.label, value: 'alarmDaily' },
 ]
 
 function formatDate(date: Date) {
@@ -81,7 +89,7 @@ export function getDefaultReportDate(periodType: ReportPeriodType, baseDate = ne
 }
 
 export function buildReportExportRequest(
-  periodType: ReportPeriodType,
+  periodType: EquipmentReportPeriodType,
   equipmentType: string,
   equipmentCode: string,
   reportDate: string,
@@ -113,7 +121,7 @@ export function buildReportExportRequest(
 }
 
 export function buildReportFileName(
-  periodType: ReportPeriodType,
+  periodType: EquipmentReportPeriodType,
   equipmentType: string,
   equipmentCode: string,
   reportDate: string,
@@ -127,4 +135,53 @@ export function buildReportFileName(
     return `${reportDate}_${equipmentType}${reportLabel}汇总.docx`
   }
   return `${equipmentCode}_${reportDate}_${reportLabel}.docx`
+}
+
+function pickApiErrorMessage(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return ''
+  const data = payload as { message?: unknown }
+  return typeof data.message === 'string' ? data.message : ''
+}
+
+function isTextResponseBlob(blob: Blob) {
+  const type = blob.type.toLowerCase()
+  return type.includes('application/json') || type.startsWith('text/')
+}
+
+export async function ensureReportExportBlob(response: unknown) {
+  const directErrorMessage = pickApiErrorMessage(response)
+  if (directErrorMessage) {
+    throw new Error(directErrorMessage)
+  }
+
+  const blob = response instanceof Blob ? response : new Blob([response as BlobPart])
+  const shouldInspectBody = isTextResponseBlob(blob) || blob.size <= 128 * 1024
+  if (!shouldInspectBody) return blob
+
+  let text = ''
+  try {
+    text = await blob.text()
+  } catch {
+    return blob
+  }
+
+  const trimmedText = text.trim()
+  if (!trimmedText || trimmedText.startsWith('PK')) return blob
+
+  // responseType=blob 时，后端的 JSON 错误也会变成 Blob，这里拦住，避免保存成损坏的 docx。
+  if (trimmedText.startsWith('{') || trimmedText.startsWith('[')) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(trimmedText) as unknown
+    } catch {
+      throw new Error('导出失败，后端未返回有效的 Word 文件')
+    }
+    throw new Error(pickApiErrorMessage(parsed) || '导出失败，后端未返回有效的 Word 文件')
+  }
+
+  if (isTextResponseBlob(blob)) {
+    throw new Error(trimmedText || '导出失败，后端未返回有效的 Word 文件')
+  }
+
+  return blob
 }

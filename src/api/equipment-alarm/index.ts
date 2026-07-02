@@ -31,6 +31,19 @@ export function getEquipmentAlarmStatisticsApi(date: string) {
   })
 }
 
+/** 导出报警日报 Word，包含总览、统计和明细表 */
+export function exportEquipmentAlarmDailyReportApi(
+  params: EquipmentAlarm.ExportEquipmentAlarmDailyReportParams,
+) {
+  return request<Blob>({
+    url: '/api/v1/equipment-alarm/daily/export',
+    method: 'get',
+    params,
+    responseType: 'blob',
+    silent: true,
+  })
+}
+
 /** 确认报警：表示用户已知晓，但不代表设备已恢复 */
 export function acknowledgeEquipmentAlarmApi(id: number | string) {
   return request<EquipmentAlarm.UpdateEquipmentAlarmAckResponse>({
@@ -56,4 +69,5 @@ export type {
   EquipmentAlarmStatus,
   EquipmentAlarmAckStatus,
   EquipmentAlarmAckType,
+  ExportEquipmentAlarmDailyReportParams,
 } from './types/equipmentAlarm'

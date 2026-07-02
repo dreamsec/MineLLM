@@ -56,6 +56,16 @@ export interface GetEquipmentAlarmListParams {
 
 export type GetEquipmentAlarmListResponse = IApiResponseData<EquipmentAlarmListData>
 
+export interface ExportEquipmentAlarmDailyReportParams {
+  date: string
+  equipment_code?: string
+  equipment_type?: string
+  alarm_source?: EquipmentAlarmSource
+  level?: EquipmentAlarmLevel
+  status?: EquipmentAlarmStatus
+  ack_status?: EquipmentAlarmAckStatus
+}
+
 export interface EquipmentAlarmStatistics {
   date: string
   total_count: number

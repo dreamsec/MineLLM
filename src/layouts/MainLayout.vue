@@ -172,7 +172,7 @@
       <template #footer>
         <el-button @click="showReportDialog = false">取消</el-button>
         <el-button type="primary" :loading="downloading" @click="handleReportDownload">
-          下载{{ currentReportLabel }}
+          下载报表
         </el-button>
       </template>
     </el-dialog>
@@ -187,12 +187,19 @@ import * as ElementPlusIcons from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStoreHook } from '@/store/modules/user'
 import { exportReportApi } from '@/api/device'
+import { exportEquipmentAlarmDailyReportApi } from '@/api/equipment-alarm'
 import { useAlarmCenterStore } from '@/store/modules/alarmCenter'
+import {
+  buildAlarmDailyExportFileName,
+  buildAlarmDailyExportParams,
+} from '@/utils/alarmReportExport'
 import {
   REPORT_PERIOD_OPTIONS,
   buildReportFileName,
+  ensureReportExportBlob,
   getDefaultReportDate,
   getReportMeta,
+  type EquipmentReportPeriodType,
   type ReportPeriodType,
 } from '@/utils/reportExport'
 
@@ -259,33 +266,66 @@ async function handleReportDownload() {
 
   downloading.value = true
   try {
-    const res = await exportReportApi(
-      reportPeriodType.value,
-      selectedType.value,
-      selectedCode.value,
-      reportDate.value,
-    )
-    const blob = res instanceof Blob ? res : new Blob([res])
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = buildReportFileName(
-      reportPeriodType.value,
-      selectedType.value,
-      selectedCode.value,
-      reportDate.value,
-    )
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    if (reportPeriodType.value === 'alarmDaily') {
+      await downloadAlarmDailyReport()
+    } else {
+      await downloadEquipmentReport(reportPeriodType.value)
+    }
     ElMessage.success(`${currentReportLabel.value}下载成功`)
     showReportDialog.value = false
-  } catch {
-    ElMessage.error(`${currentReportLabel.value}下载失败，请稍后重试`)
+  } catch (error) {
+    const message = error instanceof Error && error.message
+      ? error.message
+      : `${currentReportLabel.value}下载失败，请稍后重试`
+    ElMessage.error(message)
   } finally {
     downloading.value = false
   }
+}
+
+async function downloadEquipmentReport(periodType: EquipmentReportPeriodType) {
+  const res = await exportReportApi(
+    periodType,
+    selectedType.value,
+    selectedCode.value,
+    reportDate.value,
+  )
+  const blob = await ensureReportExportBlob(res)
+  downloadBlob(
+    blob,
+    buildReportFileName(
+      periodType,
+      selectedType.value,
+      selectedCode.value,
+      reportDate.value,
+    ),
+  )
+}
+
+async function downloadAlarmDailyReport() {
+  const res = await exportEquipmentAlarmDailyReportApi(
+    buildAlarmDailyExportParams({
+      date: reportDate.value,
+      equipmentType: selectedType.value,
+      equipmentCode: selectedCode.value,
+    }),
+  )
+  const blob = await ensureReportExportBlob(res)
+  downloadBlob(
+    blob,
+    buildAlarmDailyExportFileName(reportDate.value, selectedType.value, selectedCode.value),
+  )
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 // 菜单路由配置
