@@ -212,13 +212,33 @@
               ></textarea>
 
               <div class="input-actions">
+                <!-- 语音输入按钮：只负责录音转写，不自动发送消息。 -->
+                <button
+                  class="voice-btn"
+                  :class="{ recording: isRecordingVoice }"
+                  :disabled="isLoading || isTranscribingVoice"
+                  :title="voiceButtonTitle"
+                  type="button"
+                  @click="toggleVoiceRecording"
+                >
+                  <el-icon class="button-icon" :class="{ spinning: isTranscribingVoice }">
+                    <Loading v-if="isTranscribingVoice" />
+                    <CircleCloseFilled v-else-if="isRecordingVoice" />
+                    <Microphone v-else />
+                  </el-icon>
+                </button>
+                <!-- 发送按钮：保持主操作样式，和语音按钮形成清晰区分。 -->
                 <button
                   class="send-btn"
                   :disabled="!inputText.trim() || isLoading"
+                  title="发送"
+                  type="button"
                   @click="sendMessage"
                 >
-                  <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
-                  <i v-else class="fas fa-paper-plane"></i>
+                  <el-icon class="button-icon" :class="{ spinning: isLoading }">
+                    <Loading v-if="isLoading" />
+                    <Promotion v-else />
+                  </el-icon>
                 </button>
               </div>
             </div>
@@ -276,7 +296,9 @@
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
-                <span class="tip">按 Enter 发送，Shift + Enter 换行</span>
+                <span v-if="isRecordingVoice" class="voice-status recording">录音中...</span>
+                <span v-else-if="isTranscribingVoice" class="voice-status">语音转写中...</span>
+                <span v-else class="tip">按 Enter 发送，Shift + Enter 换行</span>
               </div>
               <span class="char-count">{{ inputText.length }}/2000</span>
             </div>
@@ -373,9 +395,10 @@
 </template>
 
 <script setup lang="ts">
-import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue'
+import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
 import { ElMessage } from 'element-plus'
-import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary, uploadTempDocApi, removeTempDocApi} from '@/api/ai/index.ts'
+import { CircleCloseFilled, Loading, Microphone, Promotion } from '@element-plus/icons-vue'
+import {getAiResponse, newChatSessionId, getChatSessionList, getChatSessionMessages, deleteChatSession, getUsageSummary, uploadTempDocApi, removeTempDocApi, transcribeAudioApi} from '@/api/ai/index.ts'
 import { getKbContentTypesApi } from '@/api/knowledgebase/index.ts'
 import AiToolRenderer from '@/components/AiToolRenderer/index.vue'
 import MarkdownIt from 'markdown-it'
@@ -395,6 +418,11 @@ import {
   mergeToolResultData,
   parseSseJsonLine,
 } from '@/utils/aiToolStream'
+import {
+  buildVoiceButtonTitle,
+  extractTranscribeText,
+  getSupportedRecorderMimeType,
+} from '@/utils/voiceInput'
 import type { AiToolDisplayData, AiToolResult, AiToolStatus } from '@/utils/aiToolStream'
 import type { ChatType } from '@/utils/chatType'
 
@@ -497,6 +525,8 @@ interface KnowledgeCategory {
 const messages = ref<Message[]>([])
 const inputText = ref<string>('')
 const isLoading = ref<boolean>(false)
+const isRecordingVoice = ref(false)
+const isTranscribingVoice = ref(false)
 const currentSessionId = ref<string | null>("-1") // 当前对话ID，null表示无对话
 const currentChatType = ref<ChatType>(DEFAULT_CHAT_TYPE)
 const messagesContainer = ref<HTMLDivElement | null>(null)
@@ -505,6 +535,17 @@ const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 const currentChatTypeOption = computed(() => {
   return CHAT_TYPE_OPTIONS.find((option) => option.value === currentChatType.value) || CHAT_TYPE_OPTIONS[0]
 })
+
+const voiceButtonTitle = computed(() => {
+  return buildVoiceButtonTitle(isRecordingVoice.value, isTranscribingVoice.value)
+})
+
+const MAX_VOICE_RECORDING_MS = 60000
+let voiceRecorder: MediaRecorder | null = null
+let voiceStream: MediaStream | null = null
+let voiceChunks: Blob[] = []
+let voiceStopTimer: number | null = null
+let ignoreNextVoiceStop = false
 
 const handleChatTypeChange = (value: unknown) => {
   currentChatType.value = normalizeChatType(value)
@@ -1097,6 +1138,136 @@ const handleInput = () => {
   })
 }
 
+const toggleVoiceRecording = async () => {
+  if (isLoading.value || isTranscribingVoice.value) return
+
+  if (isRecordingVoice.value) {
+    stopVoiceRecording()
+    return
+  }
+
+  await startVoiceRecording()
+}
+
+const startVoiceRecording = async () => {
+  if (!isVoiceInputSupported()) {
+    ElMessage.warning('当前浏览器不支持语音输入')
+    return
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    })
+    const mimeType = getSupportedRecorderMimeType(MediaRecorder)
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+
+    voiceStream = stream
+    voiceRecorder = recorder
+    voiceChunks = []
+    ignoreNextVoiceStop = false
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        voiceChunks.push(event.data)
+      }
+    }
+
+    recorder.onstop = () => {
+      void handleVoiceRecordingStop(recorder.mimeType || mimeType || 'audio/webm')
+    }
+
+    recorder.start()
+    isRecordingVoice.value = true
+    ElMessage.info('开始录音，再次点击麦克风停止')
+
+    // 限制单次录音时长，避免长录音造成后端转写压力过大。
+    voiceStopTimer = window.setTimeout(() => {
+      ElMessage.info('录音已达到 60 秒，正在转写')
+      stopVoiceRecording()
+    }, MAX_VOICE_RECORDING_MS)
+  } catch (error) {
+    cleanupVoiceRecorder()
+    console.error('启动语音录制失败:', error)
+    ElMessage.error('无法访问麦克风，请检查浏览器权限')
+  }
+}
+
+const stopVoiceRecording = () => {
+  if (!voiceRecorder) return
+
+  clearVoiceStopTimer()
+  if (voiceRecorder.state !== 'inactive') {
+    isRecordingVoice.value = false
+    voiceRecorder.stop()
+    return
+  }
+
+  cleanupVoiceRecorder()
+  isRecordingVoice.value = false
+}
+
+const handleVoiceRecordingStop = async (mimeType: string) => {
+  const chunks = voiceChunks
+  const shouldIgnore = ignoreNextVoiceStop
+  cleanupVoiceRecorder()
+  isRecordingVoice.value = false
+  ignoreNextVoiceStop = false
+
+  if (shouldIgnore) return
+
+  const audioBlob = new Blob(chunks, { type: mimeType })
+  if (audioBlob.size === 0) {
+    ElMessage.warning('未录到有效语音')
+    return
+  }
+
+  isTranscribingVoice.value = true
+  try {
+    const response = await transcribeAudioApi(audioBlob, { language: 'zh' })
+    const text = extractTranscribeText(response)
+    fillVoiceText(text)
+    ElMessage.success('语音转写完成')
+  } catch (error) {
+    console.error('语音转写失败:', error)
+    const message = error instanceof Error ? error.message : '语音转写失败'
+    ElMessage.error(message)
+  } finally {
+    isTranscribingVoice.value = false
+  }
+}
+
+const fillVoiceText = (text: string) => {
+  const currentText = inputText.value.trim()
+  inputText.value = currentText ? `${currentText}\n${text}` : text
+  handleInput()
+  nextTick(() => inputTextarea.value?.focus())
+}
+
+const cleanupVoiceRecorder = () => {
+  clearVoiceStopTimer()
+  voiceRecorder = null
+  voiceChunks = []
+  voiceStream?.getTracks().forEach((track) => track.stop())
+  voiceStream = null
+}
+
+const clearVoiceStopTimer = () => {
+  if (voiceStopTimer !== null) {
+    window.clearTimeout(voiceStopTimer)
+    voiceStopTimer = null
+  }
+}
+
+const isVoiceInputSupported = () => {
+  return typeof navigator !== 'undefined'
+    && Boolean(navigator.mediaDevices?.getUserMedia)
+    && typeof MediaRecorder !== 'undefined'
+}
+
 const autoResizeTextarea = () => {
   if (inputTextarea.value) {
     inputTextarea.value.style.height = 'auto'
@@ -1417,6 +1588,14 @@ const refreshUsageStats = async () => {
 // 生命周期
 onMounted(async () => {
   await Promise.all([refreshSessionList(), refreshKnowledgeCategories(), refreshUsageStats()])
+})
+
+onBeforeUnmount(() => {
+  ignoreNextVoiceStop = true
+  if (voiceRecorder && voiceRecorder.state !== 'inactive') {
+    voiceRecorder.stop()
+  }
+  cleanupVoiceRecorder()
 })
 
 // 监听输入文本变化
@@ -2013,15 +2192,15 @@ watch(inputText, () => {
 .input-actions {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
+.voice-btn,
 .send-btn {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
-  color: #ffffff;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2029,14 +2208,57 @@ watch(inputText, () => {
   transition: all 0.25s ease;
 }
 
+.voice-btn {
+  border: 1px solid rgba(19, 194, 194, 0.35);
+  background: #ffffff;
+  color: #0d8f99;
+  box-shadow: 0 6px 16px rgba(13, 143, 153, 0.12);
+}
+
+.voice-btn.recording {
+  border-color: rgba(245, 108, 108, 0.55);
+  background: #fff1f0;
+  color: #cf1322;
+  box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.16);
+}
+
+.send-btn {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.24);
+}
+
+.voice-btn:disabled,
 .send-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
+.voice-btn:not(:disabled):hover,
 .send-btn:not(:disabled):hover {
-  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.3);
   transform: translateY(-1px);
+}
+
+.voice-btn:not(:disabled):hover {
+  border-color: rgba(19, 194, 194, 0.65);
+  background: #f0fdff;
+  box-shadow: 0 10px 22px rgba(13, 143, 153, 0.18);
+}
+
+.send-btn:not(:disabled):hover {
+  box-shadow: 0 10px 22px rgba(22, 119, 255, 0.32);
+}
+
+.button-icon {
+  font-size: 20px;
+}
+
+.send-btn .button-icon {
+  transform: translateX(1px);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .input-tips {
@@ -2054,6 +2276,16 @@ watch(inputText, () => {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.voice-status {
+  color: #1f63d7;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.voice-status.recording {
+  color: #cf1322;
 }
 
 /* 上传文档按钮 */

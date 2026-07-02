@@ -82,3 +82,27 @@ export function removeTempDocApi(sessionId: string, filename: string) {
     params: { session_id: sessionId, filename }
   })
 }
+
+/** 大模型主界面语音输入：上传录音并转写为文字 */
+export function transcribeAudioApi(file: Blob, options?: { language?: string; hotwords?: string }) {
+  const formData = new FormData()
+  formData.append("file", file, getVoiceAudioFileName(file))
+  formData.append("language", options?.language || "zh")
+  if (options?.hotwords) {
+    formData.append("hotwords", options.hotwords)
+  }
+
+  return request<AI.TranscribeAudioResponse>({
+    url: `/api/v1/chat/transcribe`,
+    method: "post",
+    data: formData,
+    timeout: 1000 * 60 * 2
+  })
+}
+
+function getVoiceAudioFileName(file: Blob) {
+  if (file.type.includes("mp4")) return "voice-input.m4a"
+  if (file.type.includes("wav")) return "voice-input.wav"
+  if (file.type.includes("ogg")) return "voice-input.ogg"
+  return "voice-input.webm"
+}

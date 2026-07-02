@@ -110,6 +110,14 @@ export interface UploadDocResponseData {
   session_id: string
 }
 
+// 语音输入转写响应
+export interface TranscribeAudioResponseData {
+  text: string
+  duration_ms?: number
+  engine?: string
+  language?: string
+}
+
 // 使用统计响应参数
 export interface UsageSummaryData {
   total_visits: number
@@ -121,3 +129,5 @@ export interface UsageSummaryData {
 }
 
 export type GetUsageSummaryResponse = IApiResponseData<UsageSummaryData>
+
+export type TranscribeAudioResponse = IApiResponseData<TranscribeAudioResponseData>
