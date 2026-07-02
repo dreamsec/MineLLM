@@ -4,6 +4,14 @@ import { get } from "lodash-es"
 import { getToken, getToken2 } from "./cache/cookies"  // 修改导入
 
 /** 创建请求实例 */
+type AppAxiosRequestConfig = AxiosRequestConfig & {
+  silent?: boolean
+}
+
+function isSilentRequest(config?: AxiosRequestConfig) {
+  return Boolean((config as AppAxiosRequestConfig | undefined)?.silent)
+}
+
 function createService(baseURL?: string) {
   // 创建一个 Axios 实例
   const service = axios.create({
@@ -20,6 +28,7 @@ function createService(baseURL?: string) {
     (response) => {
       const apiData = response.data as any
       const code = apiData?.code
+      const silent = isSilentRequest(response.config)
       // 兼容无 code 的 RESTful 响应：直接返回 data（例如部分更新接口仅以 HTTP 200 表示成功）
       if (code === undefined) {
         return response.data
@@ -30,37 +39,38 @@ function createService(baseURL?: string) {
           case 1:
             return apiData
           case 200:
-            ElMessage.success(apiData.message || "Success")
+            if (!silent) ElMessage.success(apiData.message || "Success")
             return apiData
           case 201:
-            ElMessage.error(apiData.message || "Error")
+            if (!silent) ElMessage.error(apiData.message || "Error")
             return apiData
           case 202:
-            ElMessage.warning(apiData.message || "Warning")
+            if (!silent) ElMessage.warning(apiData.message || "Warning")
             return apiData
           case 203:
-            ElMessage.info(apiData.message || "Info")
+            if (!silent) ElMessage.info(apiData.message || "Info")
             return apiData
           case 204:
-            ElNotification.success(apiData.message || "Success")
+            if (!silent) ElNotification.success(apiData.message || "Success")
             return apiData
           case 205:
-            ElNotification.error(apiData.message || "Error")
+            if (!silent) ElNotification.error(apiData.message || "Error")
             return apiData
           case 206:
-            ElNotification.warning(apiData.message || "Warning")
+            if (!silent) ElNotification.warning(apiData.message || "Warning")
             return apiData
           case 207:
-            ElNotification.info(apiData.message || "Info")
+            if (!silent) ElNotification.info(apiData.message || "Info")
             return apiData
           default:
             // 不是正确的 Code
-            ElMessage.error(apiData.message || "Error")
+            if (!silent) ElMessage.error(apiData.message || "Error")
             return Promise.reject(new Error("Error"))
         }
       }
     },
     (error) => {
+      const silent = isSilentRequest(error.config)
       // Status 是 HTTP 状态码
       const status = get(error, "response.status")
       switch (status) {
@@ -102,7 +112,7 @@ function createService(baseURL?: string) {
         default:
           break
       }
-      ElMessage.error(error.message)
+      if (!silent) ElMessage.error(error.message)
       return Promise.reject(error)
     }
   )
@@ -111,7 +121,7 @@ function createService(baseURL?: string) {
 
 /** 创建请求方法 */
 function createRequestFunction(service: AxiosInstance, useSecondToken: boolean = false) {
-  return function <T>(config: AxiosRequestConfig): Promise<T> {
+  return function <T>(config: AppAxiosRequestConfig): Promise<T> {
     const method = String(config.method || 'get').toLowerCase()
     const isFormData = typeof FormData !== "undefined" && (config.data instanceof FormData)
     const headers: Record<string, any> = {

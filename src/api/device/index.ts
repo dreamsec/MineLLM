@@ -1,5 +1,6 @@
 // 导入项目中封装的请求工具函数
 import { request } from "@/utils/service"
+import { buildReportExportRequest, type ReportPeriodType } from "@/utils/reportExport"
 // 导入设备相关的类型定义
 import type * as Device from "./types/device"
 
@@ -88,6 +89,20 @@ export function exportByTypeDailyReportsApi(equipmentType: string, reportDate: s
     url: "/api/v1/equipment-report/daily/export-by-type",
     method: "post",
     params: { equipment_type: equipmentType, report_date: reportDate },
+    responseType: "blob"
+  })
+}
+
+/** 按日报/周报/月报统一导出报表，内部会处理不同周期的日期参数名 */
+export function exportReportApi(
+  periodType: ReportPeriodType,
+  equipmentType: string,
+  equipmentCode: string,
+  reportDate: string,
+) {
+  const config = buildReportExportRequest(periodType, equipmentType, equipmentCode, reportDate)
+  return request<Blob>({
+    ...config,
     responseType: "blob"
   })
 }

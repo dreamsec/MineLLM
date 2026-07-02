@@ -91,8 +91,12 @@
                   <button class="action-btn ai-btn" @click="handleAiAssist(alarm)">
                     🤖 AI助手
                   </button>
-                  <button class="action-btn del-btn" @click="removeAlarm(alarm.id)">
-                    🗑️ 删除
+                  <button
+                    class="action-btn del-btn"
+                    :disabled="dismissingAlarmIds[alarm.id]"
+                    @click="removeAlarm(alarm)"
+                  >
+                    🗑️ {{ dismissingAlarmIds[alarm.id] ? '处理中' : '删除' }}
                   </button>
                 </div>
               </div>
@@ -122,11 +126,16 @@ defineOptions({
 })
 
 import {ref, onMounted, onUnmounted} from 'vue'
+import { ElMessage } from 'element-plus'
 import { getRealtimeDataApi, getEquipmentThresholdApi } from '@/api/device'
+import { dismissEquipmentAlarmApi, getActiveEquipmentAlarmsApi } from '@/api/equipment-alarm'
 import AiAssistant from '@/components/AiAssistant/index.vue'
-import { analyzeThresholdBreaches } from '@/utils/equipmentThresholdAlarm'
+import {
+  mapAlarmEventToHomeItem,
+  normalizeAlarmEventList,
+  type HomeAlarmItem,
+} from '@/utils/homeAlarmEvent'
 import type { ThresholdApiData } from '@/constants/equipmentThreshold'
-import type { ThresholdAlarmBreach } from '@/utils/equipmentThresholdAlarm'
 
 // 设备列表
 const DEVICE_CODES = [
@@ -137,28 +146,19 @@ const DEVICE_CODES = [
   "YS001"
 ]
 
-interface AlarmItem {
-  id: string
-  code: string
-  name: string
-  time: string
-  level: 'alarm'
-  message: string
-}
-
 // 存储实时数据
 const realtimeDeviceData = ref<Record<string, any>>({})
 const thresholdDeviceData = ref<Record<string, ThresholdApiData | null>>({})
 let dataPollingTimer: any = null // 使用 any 避免类型问题 (NodeJS.Timer vs number)
+let alarmPollingTimer: any = null
 
 // AI 助手控制
 const showAiAssistant = ref(false)
 const aiContext = ref('')
 
 // 报警列表
-const alarmList = ref<AlarmItem[]>([])
-// 记录上一次的报警状态，防止用户删除后同一个持续报警反复弹出。 key: deviceCode, value: stable alarm signature
-const lastAlarmState = new Map<string, string>()
+const alarmList = ref<HomeAlarmItem[]>([])
+const dismissingAlarmIds = ref<Record<string, boolean>>({})
 
 // 获取实时数据
 const fetchRealtimeData = async () => {
@@ -186,9 +186,6 @@ const fetchRealtimeData = async () => {
       // 假设我们要存的数据就在 res.data 中
       if (res && res.data) {
           realtimeDeviceData.value[code] = res.data
-
-          // 检查实时状态报警和阈值报警
-          checkAndGenerateAlarm(code, res.data, thresholdDeviceData.value[code])
       }
     } catch (error) {
       console.error(`获取设备 ${code} 实时数据失败:`, error)
@@ -198,93 +195,44 @@ const fetchRealtimeData = async () => {
   await Promise.all(promises)
 }
 
-// 检查并生成报警
-const checkAndGenerateAlarm = (code: string, data: any, thresholdData?: ThresholdApiData | null) => {
-  const { status, message, statusText } = getDeviceStatus(code, data)
-  const thresholdBreaches = analyzeThresholdBreaches({
-    equipmentCode: code,
-    realtimeData: data,
-    thresholdData,
-  })
-
-  if (status === 'alarm' || thresholdBreaches.length > 0) {
-    // 如果当前有报警
-    const currentSignature = buildAlarmSignature(status, message, thresholdBreaches)
-    const currentMsg = buildAlarmMessage(status, message, thresholdBreaches)
-    const currentStatusText = status === 'alarm' ? statusText : '阈值报警'
-    const lastSignature = lastAlarmState.get(code)
-
-    // 如果是新的报警信息（与上一次不同），则添加到列表
-    // 这样用户删除后，如果是同一个持续的报警，不会立即重新弹出来干扰
-    // 只有当报警状态发生变化（例如从"温度保护"变成了"设备故障"）才会再次弹窗
-    if (lastSignature !== currentSignature) {
-       addItemToAlarmList(code, currentStatusText, currentMsg)
-       lastAlarmState.set(code, currentSignature)
-    }
-  } else {
-    // 如果设备恢复正常，清除该设备的上一次报警记录
-    // 这样下次如果再次报警，就能正常添加到列表
-    if (lastAlarmState.has(code)) {
-      lastAlarmState.delete(code)
-    }
+// 获取后端统一维护的活跃报警事件，首页只负责展示，不再自行生成报警记录。
+const fetchActiveAlarms = async () => {
+  try {
+    const res = await getActiveEquipmentAlarmsApi()
+    const events = normalizeAlarmEventList(res?.data)
+    alarmList.value = events.map((event) =>
+      mapAlarmEventToHomeItem(event, getDeviceName(event.equipment_code)),
+    )
+  } catch (error) {
+    console.error('获取活跃报警失败:', error)
   }
 }
 
-const addItemToAlarmList = (code: string, statusText: string, message: string) => {
-  const newItem: AlarmItem = {
-    id: `${code}-${Date.now()}`,
-    code,
-    name: getDeviceName(code),
-    time: new Date().toLocaleTimeString(),
-    level: 'alarm',
-    message: `[${statusText}] ${message}`
-  }
-  // 新报警添加到顶部
-  alarmList.value.unshift(newItem)
-}
+// 删除报警卡片时通知后端做忽略处理，历史统计仍然保留该报警事件。
+const removeAlarm = async (item: HomeAlarmItem) => {
+  if (dismissingAlarmIds.value[item.id]) return
 
-const buildAlarmSignature = (
-  status: string,
-  statusMessage: string,
-  thresholdBreaches: ThresholdAlarmBreach[],
-) => {
-  const parts: string[] = []
-  if (status === 'alarm') {
-    parts.push(`status:${statusMessage}`)
+  dismissingAlarmIds.value = {
+    ...dismissingAlarmIds.value,
+    [item.id]: true,
   }
 
-  // 阈值报警签名只记录字段和方向，不记录实时数值，避免数值轻微波动导致已删除报警反复出现。
-  parts.push(
-    ...thresholdBreaches.map((breach) =>
-      `threshold:${breach.fieldKey}:${breach.sourceKey}:${breach.direction}`,
-    ),
-  )
-
-  return parts.join('|')
-}
-
-const buildAlarmMessage = (
-  status: string,
-  statusMessage: string,
-  thresholdBreaches: ThresholdAlarmBreach[],
-) => {
-  const messages: string[] = []
-  if (status === 'alarm') {
-    messages.push(statusMessage)
+  try {
+    await dismissEquipmentAlarmApi(item.eventId)
+    alarmList.value = alarmList.value.filter(alarm => alarm.id !== item.id)
+    ElMessage.success('报警已忽略')
+  } catch (error) {
+    console.error('忽略报警失败:', error)
+    ElMessage.error('报警忽略失败，请稍后重试')
+  } finally {
+    const nextState = { ...dismissingAlarmIds.value }
+    delete nextState[item.id]
+    dismissingAlarmIds.value = nextState
   }
-  if (thresholdBreaches.length > 0) {
-    messages.push(`阈值超限：${thresholdBreaches.map((breach) => breach.message).join('；')}`)
-  }
-  return messages.join('；')
-}
-
-// 删除报警
-const removeAlarm = (id: string) => {
-  alarmList.value = alarmList.value.filter(item => item.id !== id)
 }
 
 // AI助手占位功能
-const handleAiAssist = (item: AlarmItem) => {
+const handleAiAssist = (item: HomeAlarmItem) => {
   console.log('启动AI助手分析报警:', item)
 
   // 获取当前设备的实时数据
@@ -292,8 +240,9 @@ const handleAiAssist = (item: AlarmItem) => {
   const deviceThresholdData = thresholdDeviceData.value[item.code]
   const dataStr = deviceRealtimeData ? JSON.stringify(deviceRealtimeData, null, 2) : '暂无数据'
   const thresholdStr = deviceThresholdData ? JSON.stringify(deviceThresholdData, null, 2) : '暂无阈值配置'
+  const alarmEventStr = item.event ? JSON.stringify(item.event, null, 2) : '暂无报警事件详情'
 
-  aiContext.value = `请分析以下设备报警并给出处理建议：\n\n**基本信息**\n- 设备名称：${item.name} (${item.code})\n- 报警时间：${item.time}\n- 报警详情：${item.message}\n\n**实时运行数据**\n\`\`\`json\n${dataStr}\n\`\`\`\n\n**阈值配置**\n\`\`\`json\n${thresholdStr}\n\`\`\`\n\n请根据上述报警信息、实时运行数据和阈值配置，分析故障原因并给出处理建议。`
+  aiContext.value = `请分析以下设备报警并给出处理建议：\n\n**基本信息**\n- 设备名称：${item.name} (${item.code})\n- 报警时间：${item.time}\n- 报警详情：${item.message}\n\n**报警事件详情**\n\`\`\`json\n${alarmEventStr}\n\`\`\`\n\n**实时运行数据**\n\`\`\`json\n${dataStr}\n\`\`\`\n\n**阈值配置**\n\`\`\`json\n${thresholdStr}\n\`\`\`\n\n请根据上述报警信息、实时运行数据和阈值配置，分析故障原因并给出处理建议。`
   showAiAssistant.value = true
 }
 
@@ -414,13 +363,19 @@ const getDeviceStatus = (code: string, data: any) => {
 onMounted(() => {
   // 启动实时数据轮询
   fetchRealtimeData()
+  fetchActiveAlarms()
   dataPollingTimer = setInterval(fetchRealtimeData, 1000000)
+  alarmPollingTimer = setInterval(fetchActiveAlarms, 60000)
 })
 
 onUnmounted(() => {
   if (dataPollingTimer) {
     clearInterval(dataPollingTimer)
     dataPollingTimer = null
+  }
+  if (alarmPollingTimer) {
+    clearInterval(alarmPollingTimer)
+    alarmPollingTimer = null
   }
 })
 
@@ -1342,8 +1297,9 @@ article::-webkit-scrollbar {
 }
 
 .alarm-card.warning {
-  background: rgba(255, 165, 0, 0.1);
-  border-color: rgba(255, 165, 0, 0.3);
+  background: rgba(255, 193, 7, 0.12);
+  border-color: rgba(255, 193, 7, 0.75);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.12) inset;
 }
 
 .alarm-card.alarm {
@@ -1405,6 +1361,11 @@ article::-webkit-scrollbar {
   gap: 4px;
   transition: background 0.2s;
   color: #fff;
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .ai-btn {
