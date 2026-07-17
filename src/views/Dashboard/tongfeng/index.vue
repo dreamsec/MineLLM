@@ -168,7 +168,7 @@ defineOptions({
   name: 'TongfengIndex'
 })
 
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { VentilatorRealtimeData } from '@/api/device/types/device'
 
@@ -484,6 +484,21 @@ onUnmounted(() => {
   if (unityInstance) {
     unityInstance = null
   }
+})
+
+// keep-alive 缓存时暂停轮询，激活时恢复
+onDeactivated(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+})
+
+onActivated(() => {
+  loadRealtimeAndSync()
+  refreshTimer = window.setInterval(() => {
+    loadRealtimeAndSync()
+  }, 5000)
 })
 </script>
 

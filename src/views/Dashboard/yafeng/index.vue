@@ -155,7 +155,7 @@ defineOptions({
   name: 'YafengIndex'
 })
 
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getRealtimeDataApi } from '@/api/device'
 import type { CompressorRealtimeData } from '@/api/device/types/device'
@@ -653,6 +653,19 @@ onUnmounted(() => {
     // 释放引用，具体销毁逻辑视 Unity 版本和内存管理而定
     unityInstance = null
   }
+})
+
+// keep-alive 缓存时暂停轮询，激活时恢复
+onDeactivated(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+})
+
+onActivated(() => {
+  loadAllRealtime()
+  refreshTimer = window.setInterval(loadAllRealtime, 5000)
 })
 </script>
 

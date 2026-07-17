@@ -49,7 +49,7 @@ defineOptions({
   name: 'PaishuiIndex'
 })
 
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, onActivated, onDeactivated, reactive, ref } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { PumpRealtimeData } from '@/api/device/types/device'
 
@@ -301,6 +301,19 @@ onUnmounted(() => {
   if (unityInstance) {
     unityInstance = null
   }
+})
+
+// keep-alive 缓存时暂停轮询，激活时恢复
+onDeactivated(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+})
+
+onActivated(() => {
+  loadRealtime()
+  refreshTimer = window.setInterval(loadRealtime, 5000)
 })
 </script>
 

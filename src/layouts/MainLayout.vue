@@ -34,7 +34,7 @@
           <el-dropdown>
             <span class="user-info">
               <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-              <span class="username">管理员</span>
+              <span class="username">{{ useUserStoreHook().username || '管理员' }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -108,7 +108,7 @@
         <!-- 主内容区 -->
         <el-main class="main-content">
           <router-view v-slot="{ Component }">
-            <keep-alive :include="['TishengIndex', 'PaishuiIndex', 'TongfengIndex', 'YafengIndex', 'YunshuIndex']" :max="2">
+            <keep-alive :include="['TishengIndex', 'PaishuiIndex', 'TongfengIndex', 'YafengIndex', 'YunshuIndex', 'SafetyMonitorIndex']" :max="2">
               <component :is="Component" />
             </keep-alive>
           </router-view>

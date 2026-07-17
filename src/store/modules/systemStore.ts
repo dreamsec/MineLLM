@@ -8,7 +8,6 @@ import {
   updateRole,
   deleteRole,
   getPermissionList,
-  assignRolePermissionsapi,
   assignUserRoleapi,
 } from '@/api/permission'
 import type * as PermissionTypes from '@/api/permission/types/permission'
@@ -35,6 +34,7 @@ export const useSystemStore = defineStore('system', () => {
   const roleTotal = ref(0)
   const userTotal = ref(0)
   const permissionTotal = ref(0)
+  const activeRoleTotal = ref(0)
 
   // 加载状态
   const loading = ref({
@@ -160,6 +160,7 @@ export const useSystemStore = defineStore('system', () => {
 
       roles.value = response.data.items
       roleTotal.value = response.data.total
+      activeRoleTotal.value = response.data.items.filter((r: any) => r.status === 1).length
 
       return response
     } catch (error) {
@@ -187,7 +188,7 @@ export const useSystemStore = defineStore('system', () => {
     }
   }
 
-  //增加角色
+  //增加角色（包含权限分配，一步完成）
   async function addRole(data: PermissionTypes.CreatRoleRequest) {
     try {
       loading.value.roles = true
@@ -196,7 +197,6 @@ export const useSystemStore = defineStore('system', () => {
       // 创建成功后刷新列表
       await fetchRoleList(pagination.value.roles)
       return response
-
     } catch (error) {
       ElMessage.error('创建角色失败')
       console.error('创建角色失败:', error)
@@ -206,7 +206,7 @@ export const useSystemStore = defineStore('system', () => {
     }
   }
 
-  //更新角色
+  //更新角色（包含权限更新，一步完成）
   async function modifyRole(roleId: number, data: PermissionTypes.UpdateRoleRequest) {
     try {
       loading.value.roles = true
@@ -264,27 +264,6 @@ export const useSystemStore = defineStore('system', () => {
       loading.value.permissions = false
     }
   }
-  //为角色分配权限
-  async function assignRolePermissions(roleId: number, permissions: number[]) {
-    try {
-      loading.value.roles = true
-      const response = await assignRolePermissionsapi(roleId, {
-        permission_ids: permissions.map(id => Number(id)) // 确保ID是数字类型
-      })
-      ElMessage.success('分配权限成功')
-      return response
-    } catch (error) {
-      ElMessage.error('分配权限失败')
-      console.error('分配权限失败:', error)
-      throw error
-    } finally {
-      loading.value.roles = false
-    }
-  }
-
-
-
-
 
   function resetStore() {
     roles.value = []
@@ -307,6 +286,7 @@ export const useSystemStore = defineStore('system', () => {
     roles,
     currentRole,
     roleTotal,
+    activeRoleTotal,
 
     // 用户相关
     users,
@@ -332,10 +312,7 @@ export const useSystemStore = defineStore('system', () => {
     assignUserRole,
 
     // 权限方法
-
-    // 权限方法
     fetchPermissionList,
-    assignRolePermissions,
 
 
 

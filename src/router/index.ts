@@ -105,6 +105,15 @@ export const constantRoutes: RouteRecordRaw[] = [
               hideInMenu: true,
             },
           },
+          {
+            path: 'safety-monitor',
+            name: 'SafetyMonitor',
+            component: () => import('../views/Dashboard/safety-monitor/index.vue'),
+            meta: {
+              title: '安全监测',
+              hideInMenu: true,
+            },
+          },
         ],
       },
       // {

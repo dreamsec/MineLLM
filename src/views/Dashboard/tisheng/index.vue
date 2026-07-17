@@ -67,7 +67,7 @@ defineOptions({
   name: 'TishengIndex'
 })
 
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, onActivated, onDeactivated, computed } from 'vue'
 import { getRealtimeDataApi } from '@/api/device'
 import type { HoistRealtimeData } from '@/api/device/types/device'
 import { formatDecimal } from '@/utils/format'
@@ -428,6 +428,19 @@ onUnmounted(() => {
   if (unityInstance) {
     unityInstance = null
   }
+})
+
+// keep-alive 缓存时暂停轮询，激活时恢复
+onDeactivated(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+})
+
+onActivated(() => {
+  loadRealtime()
+  refreshTimer = window.setInterval(loadRealtime, 5000)
 })
 </script>
 <style scoped>

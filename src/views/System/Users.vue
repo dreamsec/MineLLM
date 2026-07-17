@@ -306,6 +306,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElForm, ElMessageBox } from 'element-plus'
 import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '@/api/user'
+import type * as UserTypes from '@/api/user/types/user'
 import { useSystemStore } from '@/store/modules/systemStore'
 
 //状态库
@@ -599,8 +600,13 @@ async function submitEditForm(): Promise<void> {
           return
         }
 
-        const userData = {
-          ...editFormData,
+        const userData: UserTypes.UpdateUserRequestData = {
+          name: editFormData.name || null,
+          email: editFormData.email || null,
+          phone: editFormData.phone || null,
+          status: editFormData.status,
+          roles: editFormData.roles,
+          password: editFormData.password || ''  // 为空表示不修改密码
         }
 
         // 通过store更新用户信息

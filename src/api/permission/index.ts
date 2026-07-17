@@ -52,12 +52,22 @@ export const getPermissionList = (params: PermissionTypes.GetPermissionListParam
     params
   });
 };
-// 为角色分配权限
+// 为角色分配权限（已废弃，功能已合并到 createRole/updateRole 的 permission_ids 字段）
+// @deprecated
 export const assignRolePermissionsapi = (roleId: number, data: PermissionTypes.AssignRolePermissionRequest)=> {
   return request<IApiResponseData<string>>({
     url: `/api/v1/rbac/role/${roleId}/permissions`,
     method: 'post',
     data
+  });
+};
+
+// 获取权限树
+export const getPermissionTree = (params?: PermissionTypes.GetPermissionTreeParams)=> {
+  return request<PermissionTypes.GetPermissionTreeResponse>({
+    url: '/api/v1/rbac/permission/tree',
+    method: 'get',
+    params
   });
 };
 

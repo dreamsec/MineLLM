@@ -70,11 +70,11 @@
           <div class="role-stats">
             <div class="stat-item">
               <span class="stat-label">用户数</span>
-              <span class="stat-value">{{ role.users.length }}</span>
+              <span class="stat-value">{{ role.user_count || 0 }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">权限数</span>
-              <span class="stat-value">{{ role.permissions.length }}</span>
+              <span class="stat-value">{{ role.permission_count || role.permissions?.length || 0 }}</span>
             </div>
           </div>
 
@@ -82,14 +82,14 @@
             <h4>主要权限</h4>
             <div class="permissions-list">
               <span
-                v-for="permission in role.permissions.slice(0, 3)"
-                :key="permission"
+                v-for="permission in (role.permissions || []).slice(0, 3)"
+                :key="permission.id"
                 class="permission-tag"
               >
-                {{ permission }}
+                {{ permission.name }}
               </span>
-              <span v-if="role.permissions.length > 3" class="more-permissions">
-                +{{ role.permissions.length - 3 }} 更多
+              <span v-if="(role.permissions?.length || 0) > 3" class="more-permissions">
+                +{{ (role.permissions?.length || 0) - 3 }} 更多
               </span>
             </div>
           </div>
@@ -133,7 +133,7 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">创建时间</span>
-              <span class="detail-value">{{ formatDate(selectedRole.createTime) }}</span>
+              <span class="detail-value">{{ selectedRole.createTime ? formatDate(selectedRole.createTime) : '-' }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">状态</span>
@@ -147,11 +147,11 @@
             <h4>权限列表</h4>
             <div class="permissions-grid">
               <div
-                v-for="permission in selectedRole.permissions"
-                :key="permission"
+                v-for="permission in (selectedRole.permissions || [])"
+                :key="permission.id"
                 class="permission-item"
               >
-                <span class="permission-name">{{ permission }}</span>
+                <span class="permission-name">{{ permission.name }}</span>
                 <span class="permission-type">系统权限</span>
               </div>
             </div>
@@ -161,7 +161,7 @@
             <h4>用户列表</h4>
             <div class="users-list">
               <div
-                v-for="user in selectedRole.users"
+                v-for="user in (selectedRole.users || [])"
                 :key="user.id"
                 class="user-item"
               >
@@ -196,17 +196,21 @@
             <input v-model="roleForm.name" type="text" required />
           </div>
           <div class="form-group">
+            <label>角色编码</label>
+            <input v-model="roleForm.code" type="text" required placeholder="唯一标识，如 admin、editor" />
+          </div>
+          <div class="form-group">
             <label>角色描述</label>
             <textarea v-model="roleForm.description" rows="3" required></textarea>
           </div>
           <div class="form-group">
             <label>角色图标</label>
             <select v-model="roleForm.icon" required>
-              <option value="管理员">👑 管理员</option>
-              <option value="操作员">⚙️ 操作员</option>
-              <option value="观察员">👁️ 观察员</option>
-              <option value="技术员">🔧 技术员</option>
-              <option value="分析师">📊 分析师</option>
+              <option value="👑">👑 管理员</option>
+              <option value="⚙️">⚙️ 操作员</option>
+              <option value="👁️">👁️ 观察员</option>
+              <option value="🔧">🔧 技术员</option>
+              <option value="📊">📊 分析师</option>
             </select>
           </div>
           <div class="form-group">
@@ -228,7 +232,7 @@
                   <input
                     type="checkbox"
                     :value="permission.id"
-                    v-model="roleForm.permissions"
+                    v-model="roleForm.permission_ids"
                   />
                   <span class="checkmark"></span>
                   {{ permission.name }}
@@ -251,11 +255,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onActivated } from 'vue'
-import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '@/api/user'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  getRoleList,
   getRoleDetail,
   createRole,
   updateRole,
@@ -285,12 +287,13 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 
 // 角色表单
-const roleForm = ref<PermissionTypes.RoleRequest>({
+const roleForm = ref({
   name: '',
+  code: '',
   description: '',
-  role: '',
+  icon: '👁️',
   status: 1, // 1: 启用, 0: 禁用
-  permissions: []
+  permission_ids: [] as number[]
 })
 
 // 可用权限列表 - 从store中获取并筛选id和name
@@ -340,12 +343,12 @@ const editRole = async (role: any) => {
       const roleData = response.data
       roleForm.value = {
         name: roleData.name,
+        code: roleData.code || '',
         description: roleData.description || '',
         icon: role.icon || '👁️',
-        status: roleData.status || 1,
-        permissions: roleData.permissions?.map((p: any) =>
-          availablePermissions.value.find(ap => ap.name === p)?.id
-        ).filter(Boolean) || []
+        status: roleData.status ?? 1,
+        // 直接用权限对象的 id，不再用名称反查
+        permission_ids: roleData.permissions?.map((p: any) => p.id) || []
       }
       showEditRoleModal.value = true
     }
@@ -386,24 +389,22 @@ const saveRole = async () => {
   try {
     loading.value = true
 
-    // 准备表单数据
-    const formData = {
-      ...roleForm.value,
-      // 确保状态是数字类型
-      status: roleForm.value.status === 'active' ? 1 :
-              roleForm.value.status === 'disabled' ? 0 :
-              Number(roleForm.value.status)
+    // 构建 API 请求体：权限通过 permission_ids 一步提交，无需单独调分配接口
+    const apiData: PermissionTypes.CreatRoleRequest = {
+      name: roleForm.value.name,
+      code: roleForm.value.code,
+      description: roleForm.value.description,
+      status: Number(roleForm.value.status),
+      permission_ids: roleForm.value.permission_ids.map(id => Number(id))
     }
 
     if (showEditRoleModal.value && editingRole.value) {
-      // 编辑角色
-      await updateRole(editingRole.value.id, formData)
-      await systemStore.assignRolePermissions(editingRole.value.id, formData.permissions)
+      // 编辑角色：updateRole 已包含权限更新
+      await updateRole(editingRole.value.id, apiData)
       ElMessage.success('角色更新成功')
     } else {
-      // 添加角色
-      await createRole(formData)
-      await systemStore.assignRolePermissions(editingRole.value.id, formData.permissions)
+      // 创建角色：createRole 已包含权限分配，返回完整的角色对象（含 id）
+      await createRole(apiData)
       ElMessage.success('角色创建成功')
     }
 
@@ -425,10 +426,11 @@ const closeModal = () => {
   editingRole.value = null
   roleForm.value = {
     name: '',
+    code: '',
     description: '',
-    role: '',
+    icon: '👁️',
     status: 1,
-    permissions: []
+    permission_ids: []
   }
 }
 
